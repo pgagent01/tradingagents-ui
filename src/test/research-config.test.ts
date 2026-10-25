@@ -1,6 +1,6 @@
 import { describe,it,expect } from 'vitest';
 import { findCompanies,resolveTicker } from '@/lib/companies';
-import { usage,estimateUsage,PRESETS,DEFAULT_MODEL,providerDefault,validExecutionRoles } from '@/lib/research-config';
+import { usage,estimateUsage,PRESETS,DEFAULT_MODEL,providerDefault,validExecutionRoles, rankModelChoices, blendedTokenCost, catalogBlendedCost } from '@/lib/research-config';
 describe('company-to-ticker matching',() => {
   for(const [company,ticker] of [['Apple','AAPL'],['Nvidia','NVDA'],['Tesla','TSLA'],['Microsoft','MSFT'],['Amazon','AMZN'],['Google','GOOGL'],['Alphabet','GOOGL'],['Meta','META']]) {
     it(`${company} populates ${ticker}`,() => { expect(resolveTicker(company ?? '')).toBe(ticker);expect(findCompanies(company ?? '')[0]?.ticker).toBe(ticker); });
@@ -26,4 +26,16 @@ describe('Phase 4 execution configuration',()=>{
   it('requires a model configuration for every specialist',()=>expect(validExecutionRoles(['fundamentals','risk'],{fundamentals:DEFAULT_MODEL})).toBe(false));
   it('rejects unsupported execution providers',()=>expect(validExecutionRoles(['risk'],{risk:{...DEFAULT_MODEL,provider:'untrusted'}})).toBe(false));
   it('accepts OpenRouter role configuration',()=>expect(validExecutionRoles(['risk'],{risk:providerDefault('openrouter')})).toBe(true));
+});
+describe('model cost rankings',()=>{
+  it('uses an equal input/output blend',()=>expect(blendedTokenCost(0.0000004,0.000002)).toBeCloseTo(0.0000012,12));
+  it('ranks cheapest first with ascending consecutive ranks',()=>{
+    expect(rankModelChoices([{model:'mini',blendedCost:0.0000105},{model:'luna',blendedCost:0.0000012},{model:'lite',blendedCost:0.0000035}]).map(m=>[m.model,m.rank])).toEqual([['luna',1],['lite',2],['mini',3]]);
+  });
+  it('uses uncached base-tier catalog rates',()=>expect(catalogBlendedCost({input:[{min:272000,cost:'0.0000008'},{min:0,cost:'0.0000004'}],output:[{min:0,cost:'0.000002'}]})).toBeCloseTo(0.0000012,12));
+  it('places missing prices last without a cheapest rank',()=>{
+    expect(rankModelChoices([{model:'unknown',blendedCost:null},{model:'free',blendedCost:0}]).map(m=>[m.model,m.rank])).toEqual([['free',1],['unknown',null]]);
+    expect(catalogBlendedCost({input:[],output:[{min:0,cost:'1'}]})).toBeNull();
+  });
+  it('breaks equal-cost ties by model identifier',()=>expect(rankModelChoices([{model:'z',blendedCost:1},{model:'a',blendedCost:1}]).map(m=>m.model)).toEqual(['a','z']));
 });
