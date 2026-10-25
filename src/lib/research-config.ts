@@ -41,6 +41,16 @@ export const MODEL_OPTIONS: RoleModel[] = [
 export function providerDefault(provider:string):RoleModel {
   return provider==='lovable'?{provider,model:'openai/gpt-6-astra',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
 }
+export function validExecutionRoles(agents:string[],roles:Record<string,unknown>) {
+  return agents.every(id=>{
+    const r=roles[id];if(!r||typeof r!=='object')return false;
+    const role=r as Partial<RoleModel>;
+    if(typeof role.provider!=='string'||!['lovable','openai','anthropic','google','groq','openrouter','xai','deepseek'].includes(role.provider)||typeof role.model!=='string'||!role.model.trim()||role.model.length>100)return false;
+    if(typeof role.inputRate!=='number'||typeof role.outputRate!=='number'||!Number.isFinite(role.inputRate)||!Number.isFinite(role.outputRate)||role.inputRate<0||role.outputRate<0)return false;
+    const known=MODEL_OPTIONS.find(m=>m.model===role.model);
+    return !known||known.provider===role.provider||role.provider==='lovable';
+  });
+}
 export const DEFAULT_MODEL: RoleModel = { provider: 'openai', model: 'gpt-4.1-mini', inputRate: 0.4, outputRate: 1.6 };
 export function tokenBudget(depth: string) {
   return depth==='exhaustive'?{input:8000,output:2000}:depth === 'quick' ? { input: 1000, output: 250 } : depth === 'deep' ? { input: 4000, output: 1000 } : { input: 2000, output: 500 };

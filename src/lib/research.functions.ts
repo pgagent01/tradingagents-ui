@@ -15,7 +15,7 @@ export const createAnalysis = createServerFn({ method: 'POST' }).middleware([req
   if (settingsError) throw settingsError;
   const demo = settings?.simulate_demo_run === true;
   const providers = new Set<string>();
-  for(const agent of data.agents) {
+  for(const agent of [...data.agents,...(data.roles['synthesis']?['synthesis']:[])]) {
     const role = data.roles[agent];
     if(!role) throw new Error('Choose a model for every selected agent.');
     const known=MODEL_OPTIONS.find(m=>m.model===role.model);if(known&&known.provider!==role.provider&&role.provider!=='lovable')throw new Error('Model and provider do not match.');
