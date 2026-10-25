@@ -11,9 +11,9 @@ describe('per-report token costs',() => {
   it('combines input and output, charges their separate USD rates',() => {
     expect(usage(1000,250,2,8)).toEqual({input:1000,output:250,total:1250,cost:0.004});
   });
-  it('Quick Pulse estimates exactly its two selected agents',() => {
+  it('Quick Scan includes Technical and News and estimates two agents',() => {
     const preset=PRESETS[0];
-    expect(preset.name).toBe('Quick Pulse');
+    expect(preset.agents).toEqual(['technical','news']);
     expect(estimateUsage(preset.depth,preset.agents.map(() => DEFAULT_MODEL))).toEqual({input:2000,output:500,total:2500,cost:0.0016});
   });
 });

@@ -19,7 +19,7 @@ const dashboardQuery = queryOptions({
     const [runs, cache] = await Promise.all([
       supabase
         .from("research_runs")
-        .select("id, ticker, analysis_date, status, total_cost_usd, total_input_tokens, total_output_tokens, is_demo, created_at, research_reports(id, recommendation, conviction_score, total_input_tokens, total_output_tokens, total_cost_usd)")
+        .select("id, ticker, analysis_date, status, total_cost_usd, total_input_tokens, total_output_tokens, lovable_credits,credit_basis,is_demo, created_at, research_reports(id, recommendation, conviction_score, total_input_tokens, total_output_tokens, total_cost_usd,lovable_credits,credit_basis)")
         .order("created_at", { ascending: false })
         .limit(500),
       supabase.from("research_events").select("event_type").in("event_type", ["cache_hit", "cache_miss"]).limit(1000),
@@ -82,7 +82,7 @@ function Dashboard() {
           <div className="overflow-x-auto"><table className="w-full text-xs">
             <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="border-b border-border">
-                {["Ticker", "Date", "Status", "Rec.", "Conviction", "Input", "Output", "Total tokens", "Cost · USD", ""].map((h, i) => (
+                {["Ticker", "Date", "Status", "Rec.", "Conviction", "Input", "Output", "Total tokens", "Cost · USD", "Credits", ""].map((h, i) => (
                   <th key={i} className={cn("px-3 py-2 text-left font-medium", i >= 4 && "text-right")}>{h}</th>
                 ))}
               </tr>
@@ -101,6 +101,7 @@ function Dashboard() {
                     <td className="px-3 py-1.5 text-right">{(rep?.total_output_tokens ?? r.total_output_tokens).toLocaleString()}</td>
                     <td className="px-3 py-1.5 text-right">{((rep?.total_input_tokens ?? r.total_input_tokens)+(rep?.total_output_tokens ?? r.total_output_tokens)).toLocaleString()}</td>
                     <td className="px-3 py-1.5 text-right">${Number(rep?.total_cost_usd ?? r.total_cost_usd).toFixed(4)}{r.is_demo && <span className="block text-[9px] text-warning">DEMO · $0 charged</span>}</td>
+                    <td className="px-3 py-1.5 text-right"><CreditMetric credits={r.is_demo?0:rep?.lovable_credits??r.lovable_credits} basis={rep?.credit_basis??r.credit_basis}/></td>
                     <td className="px-3 py-1.5 text-right">
                       <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs" >
                         {rep ? <Link to="/reports/$id" params={{id:rep.id}}>Report <ArrowUpRight className="h-3 w-3" /></Link> : <Link to="/analysis/$id" params={{id:r.id}}>Run <ArrowUpRight className="h-3 w-3" /></Link>}
