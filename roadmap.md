@@ -5,6 +5,7 @@
 - [ ] Run authenticated end-to-end app integration checks after Stock Info/FMP completion; report any credential-dependent gaps.
 - [ ] Persist researched-stock market snapshots alongside reports and readable agent/model metadata, preserving historical-date correctness and owner isolation.
 - [ ] Add same-stock report comparisons across analysis dates, including conclusions, target prices, models/agents and saved market values.
+- [ ] Add trusted-source company details to Stock Info, free sources first; linked citations, cached retrieval and freshness indicators across important app data.
 
 - [x] Rank model choices by equal-weight input/output blended cost; numbered ranks and Cheapest badges verified in triggers/lists, selection updates checked, 60 tests passed and build/typechecks passed.
 
