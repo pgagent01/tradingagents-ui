@@ -27,6 +27,8 @@ export const LOOKBACKS=[{days:30,label:'Last 30 Days'},{days:90,label:'Last 90 D
 // Editable USD per million token assumptions, not a live provider tariff.
 export type RoleModel = { provider: string; model: string; inputRate: number; outputRate: number };
 export const MODEL_OPTIONS: RoleModel[] = [
+  { provider: 'openai', model: 'gpt-6-luna', inputRate: 0.1, outputRate: 0.5 },
+  { provider: 'openai', model: 'gpt-5.4-mini', inputRate: 0.75, outputRate: 4.5 },
   { provider: 'openai', model: 'gpt-4.1-mini', inputRate: 0.4, outputRate: 1.6 },
   { provider: 'openai', model: 'gpt-4.1', inputRate: 2, outputRate: 8 },
   { provider: 'anthropic', model: 'claude-haiku-4-5', inputRate: 1, outputRate: 5 },
@@ -40,7 +42,7 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
 ];
 export function providerDefault(provider:string):RoleModel {
-  return provider==='lovable'?{provider,model:'openai/gpt-5.4-mini',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
+  return provider==='lovable'?{provider,model:'openai/gpt-6-luna',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
 }
 export function validExecutionRoles(agents:string[],roles:Record<string,unknown>) {
   return agents.every(id=>{
@@ -52,7 +54,7 @@ export function validExecutionRoles(agents:string[],roles:Record<string,unknown>
     return !known||known.provider===role.provider||role.provider==='lovable';
   });
 }
-export const DEFAULT_MODEL: RoleModel = { provider: 'openai', model: 'gpt-4.1-mini', inputRate: 0.4, outputRate: 1.6 };
+export const DEFAULT_MODEL: RoleModel = { provider: 'openai', model: 'gpt-6-luna', inputRate: 0.1, outputRate: 0.5 };
 export function tokenBudget(depth: string) {
   return depth==='exhaustive'?{input:8000,output:2000}:depth === 'quick' ? { input: 1000, output: 250 } : depth === 'deep' ? { input: 4000, output: 1000 } : { input: 2000, output: 500 };
 }
