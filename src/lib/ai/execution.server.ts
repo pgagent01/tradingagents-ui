@@ -14,6 +14,8 @@ import { getFredEvidence } from '@/lib/fred.server';
 import { getPredictionEvidence } from '@/lib/polymarket.server';
 import { evidenceContext } from '@/lib/data-evidence';
 import { createLovableAiGatewayProvider } from './gateway-helpers.server.ts';
+import { cachedStockData } from '@/lib/stock-service.server';
+import { snapshotAllowed,stockPrompt } from '@/lib/stock-snapshot';
 const resultSchema=z.object({recommendation:z.enum(['STRONG BUY','BUY','HOLD','SELL','STRONG SELL']).nullable(),price_target:z.number().nullable(),conviction_score:z.number().nullable(),risk_level:z.string().nullable(),executive_summary:z.string(),fundamental_analysis:z.string(),technical_analysis:z.string(),sentiment_news:z.string(),risk_debate:z.string(),catalysts:z.array(z.string()),upside_risks:z.array(z.string()),downside_risks:z.array(z.string()),financial_snapshot:z.array(z.object({metric:z.string(),value:z.string()})),final_synthesis:z.string()});
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
@@ -41,6 +43,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const macro=await getFredEvidence(sb,userId,run.analysis_date,encryption,signal);
   const predictions=await getPredictionEvidence(sb,userId,run.ticker,run.analysis_date,signal);
   const evidence={macro,predictions};
+  const stockSnapshot=snapshotAllowed(run.analysis_date,new Date().toISOString().slice(0,10))?await cachedStockData(sb,userId,run.ticker,'1M','annual'):null;
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets).`});
   if(evidenceEvent.error)throw evidenceEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status});
@@ -70,7 +73,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     if(synthesis){if(geminiSynthesis){try{object=resultSchema.parse(JSON.parse(text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')));}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
     return {text,input,output,cost,credit,model:modelId,object};
   }
-  const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`;
+  const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`+stockPrompt(stockSnapshot);
   for(const agent of agents) {
     if(signal.aborted) throw new DOMException('Cancelled','AbortError');
     const {data:state,error:stateError}=await sb.from('research_runs').select('status').eq('id',run.id).eq('user_id',userId).single();if(stateError)throw new SafeAiError(503,'Run status could not be verified.');if(state?.status!=='running') throw new DOMException('Cancelled','AbortError');
@@ -92,7 +95,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const {error:usageError}=await sb.rpc('save_agent_result',{_output_id:synthesisOutput.id,_result:{...final,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===final.model)?.rates??null}}});if(usageError)throw usageError;
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
-  const f={...final.object,external_evidence:evidence,conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
+  const f={...final.object,external_evidence:evidence,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
   const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:f});if(error)throw error;
   emit({type:'completed',reportId});
 }
