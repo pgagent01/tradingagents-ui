@@ -4,6 +4,11 @@ import { normalizeCredentialProvider } from '@/lib/access-rules';
 export const testMyApiKey=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((input:{provider:string})=>({provider:normalizeCredentialProvider(input.provider)})).handler(async({data,context})=>{
   const {data:row,error}=await context.supabase.from('user_api_keys').select('key_ciphertext').eq('user_id',context.userId).eq('provider',data.provider).single();
   if(error) throw new Error('Save your own provider key first.');
+  if(data.provider==='fmp') {
+    const {decryptSecret}=await import('@/lib/crypto.server');
+    let key:string;try{key=await decryptSecret(row.key_ciphertext,process.env['API_KEY_ENCRYPTION_SECRET']);}catch{throw new Error('Stored credential cannot be opened securely. Save it again in Settings.');}
+    const {validateFmpKey}=await import('@/lib/fmp.server');return validateFmpKey(key);
+  }
   if(data.provider==='fred') {
     const {decryptSecret}=await import('@/lib/crypto.server');
     let key:string;try{key=await decryptSecret(row.key_ciphertext,process.env['API_KEY_ENCRYPTION_SECRET']);}catch{throw new Error('Stored credential cannot be opened securely. Save it again in Settings.');}

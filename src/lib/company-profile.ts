@@ -1,0 +1,4 @@
+export type CompanyFact={label:string;value:string;source:string;date:string|null};
+export type CompanyProfile={ticker:string;fetchedAt:string;cached:boolean;description:string;facts:CompanyFact[];sources:{name:string;url:string;date:string|null}[];note:string};
+export function extractEmployees(text:string){const match=text.match(/(?:approximately|about)\s+([\d,]+)\s+(?:full[ -]time(?: equivalent)?\s+)?employees/i);return match?.[1]??null;}
+export function safeSource(url:unknown){if(typeof url!=='string')return null;try{const u=new URL(url);return u.protocol==='https:'?u.href:null;}catch{return null;}}

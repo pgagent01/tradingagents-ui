@@ -1,3 +1,4 @@
+import {DataFreshness} from '@/components/data-freshness';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -15,7 +16,7 @@ import { pageHead } from '@/lib/page-head';
 const config={input:{label:'Prompt tokens',color:'var(--chart-1)'},output:{label:'Completion tokens',color:'var(--chart-2)'},usd:{label:'Estimated USD',color:'var(--chart-3)'},credits:{label:'Calculated credits',color:'var(--chart-2)'},runs:{label:'Research runs',color:'var(--chart-1)'}};
 export const Route=createFileRoute('/_authenticated/analytics')({head:()=>pageHead('Token & Cost Analytics','Research usage history, per-model efficiency and isolated account cost auditing.'),errorComponent:DataError,loader:({context})=>context.queryClient.ensureQueryData(analyticsQuery),component:Analytics});
 function Analytics(){
-  const {data}=useSuspenseQuery(analyticsQuery);
+  const {data,dataUpdatedAt}=useSuspenseQuery(analyticsQuery);
   const audit=useQuery({queryKey:['admin-usage-audit'],queryFn:()=>getAdminUsageAudit()});
   const [scope,setScope]=useState('own');const [metric,setMetric]=useState('tokens');
   const [from,setFrom]=useState(()=>{const d=new Date();d.setUTCDate(d.getUTCDate()-29);return d.toISOString().slice(0,10);});
@@ -29,7 +30,7 @@ function Analytics(){
   const runs=data.rows.filter(r=>r.created_at.slice(0,10)>=from&&r.created_at.slice(0,10)<=to);
   return <div className="space-y-6">
     <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-lg font-semibold">Token & Cost Analytics</h1><p className="mt-1 text-xs text-muted-foreground">Live research · usage and estimated spend</p></div>{audit.data?.allowed&&<div className="flex gap-1" aria-label="Account scope"><Button size="sm" variant={scope==='own'?'secondary':'ghost'} onClick={()=>setScope('own')}>My account</Button><Button size="sm" variant={scope==='all'?'secondary':'ghost'} onClick={()=>setScope('all')}>All accounts · costs only</Button></div>}</header>
-    <div className="flex flex-wrap items-end gap-3"><div><Label htmlFor="audit-from">From</Label><Input id="audit-from" type="date" value={from} onChange={e=>setFrom(e.target.value)} className="mt-1 w-40"/></div><div><Label htmlFor="audit-to">Through</Label><Input id="audit-to" type="date" value={to} onChange={e=>setTo(e.target.value)} className="mt-1 w-40"/></div>{[7,30,90].map(days=><Button key={days} size="sm" variant="outline" onClick={()=>{const d=new Date();setTo(d.toISOString().slice(0,10));d.setUTCDate(d.getUTCDate()-days+1);setFrom(d.toISOString().slice(0,10));}}>{days} days</Button>)}</div>
+    <DataFreshness date={new Date(dataUpdatedAt).toISOString()} origin="Database usage retrieved"/><div className="flex flex-wrap items-end gap-3"><div><Label htmlFor="audit-from">From</Label><Input id="audit-from" type="date" value={from} onChange={e=>setFrom(e.target.value)} className="mt-1 w-40"/></div><div><Label htmlFor="audit-to">Through</Label><Input id="audit-to" type="date" value={to} onChange={e=>setTo(e.target.value)} className="mt-1 w-40"/></div>{[7,30,90].map(days=><Button key={days} size="sm" variant="outline" onClick={()=>{const d=new Date();setTo(d.toISOString().slice(0,10));d.setUTCDate(d.getUTCDate()-days+1);setFrom(d.toISOString().slice(0,10));}}>{days} days</Button>)}</div>
     {from>to&&<p role="alert" className="text-xs text-negative">Start date must be on or before the end date.</p>}
     <div className="grid gap-5 border-y border-border py-5 sm:grid-cols-3 xl:grid-cols-6">{[['Research runs',totals.runs.toLocaleString()],['Prompt tokens',totals.input.toLocaleString()],['Completion tokens',totals.output.toLocaleString()],['Combined tokens',(totals.input+totals.output).toLocaleString()],['Estimated USD',`$${totals.usd.toFixed(4)}`],['Lovable Credits Used',`${totals.credits.toFixed(4)}${totals.unknown?' + unknown':''}`]].map(([label,value])=><div key={label}><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-2 font-mono text-base text-primary">{value}</p></div>)}</div>
     <p className="text-xs text-muted-foreground">Demo runs excluded · {totals.unknown} runs with unknown credits. Credits are calculated token estimates, not verified billed deductions; USD uses saved rate assumptions.</p>

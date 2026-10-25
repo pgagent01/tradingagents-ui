@@ -1,0 +1,1 @@
+export function freshnessLabel(date:string|null|undefined,now=Date.now(),maxAge=86400000){const time=date?Date.parse(date):NaN;if(!Number.isFinite(time))return 'Date unavailable';const age=Math.max(0,now-time);return age>maxAge?'Older data':age<3600000?'Recent':'Dated data';}

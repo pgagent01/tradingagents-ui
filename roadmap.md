@@ -1,5 +1,12 @@
 # Roadmap
 
+- [x] Add Stock Info routes, cached multi-source market data, interactive charts/financial statements, sidebar integration and regression/live verification.
+- [x] Add encrypted owner-only FMP credentials, validation, owner-key market fallbacks and annual/quarterly statements; verify masking and fallback tests.
+- [x] Run authenticated end-to-end app integration checks after Stock Info/FMP completion; report any credential-dependent gaps.
+- [x] Persist researched-stock market snapshots alongside reports and readable agent/model metadata, preserving historical-date correctness and owner isolation.
+- [x] Add same-stock report comparisons across analysis dates, including conclusions, target prices, models/agents and saved market values.
+- [x] Add trusted-source company details to Stock Info, free sources first; linked citations, cached retrieval and freshness indicators across important app data.
+
 - [x] Rank model choices by equal-weight input/output blended cost; numbered ranks and Cheapest badges verified in triggers/lists, selection updates checked, 60 tests passed and build/typechecks passed.
 
 - [x] Integrate encrypted FRED credential management, dated/cache-aware macro ingestion and public Polymarket context/report evidence; authenticated live report verified with cached prediction evidence and explicit missing-FRED-key state.
@@ -35,3 +42,5 @@
 
 - [ ] Validate real BYOK provider credentials — blocked: no user-supplied working provider key was available for a real key test. Model-list validation is implemented.
 - [ ] Verify production HTTPS/WSS delivery — blocked: app has not been published; preview uses HTTPS and secure cloud connections.
+
+- [ ] Validate real FMP endpoint entitlements — blocked: no working FMP key supplied; encrypted storage, masking, validation and Yahoo→FMP fallback covered by tests.

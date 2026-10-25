@@ -13,6 +13,7 @@
 - API keys are encrypted with Web Crypto AES-GCM and decrypted only in server helpers; server functions never return plaintext keys.
 - Use shared company matching and research configuration modules for dashboard/wizard behavior and role-specific USD estimates.
 - Use the shared RankedModelSelect and research-config ranking helpers for model dropdowns; compare equal uncached input/output weights within each provider/currency and leave unknown prices unranked.
+- Stock data uses authenticated fetches, owner/version-scoped durable research_data_cache plus bounded hot caches, Yahoo fallback, owner-encrypted FMP keys and SEC filings; annual/quarterly periods stay separate, unavailable values remain null, and charts load after hydration. Research finalization stores immutable stock snapshots and role metadata in report sections; current market snapshots are excluded from historical-date runs.
 - Store demo execution progress in Lovable Cloud and advance one atomic locked step per request; demo mode never calls an LLM and costs are labeled hypothetical.
 - Snapshot run token totals and USD cost into each report on insert; report views use the report snapshot rather than account-wide totals.
 - Keep /new-analysis as a compatibility redirect to /analysis/new; /analysis/$id owns execution and redirects completed runs to the report-first /reports/$id viewer.
@@ -26,3 +27,7 @@
 - Keep macro/data credential providers separate from execution providers; use the same authenticated encrypted key storage without granting FRED access to LLM selection.
 - Persist sanitized external evidence in owner-only caches and report sections; use FRED point-in-time vintages and omit current prediction quotes from historical analysis to prevent look-ahead bias.
 - Route built-in OpenAI through Responses, Claude through Messages and Gemini through Chat Completions; validate Gemini synthesis JSON server-side because its compatible SDK does not reliably enforce report schemas.
+- Same-stock comparisons read completed owner-scoped reports through authenticated functions, use analysis dates separately from creation timestamps, and never invent missing snapshots or compare different tickers.
+
+- Company context prefers cached free SEC filings and dated Wikipedia references before owner-encrypted FMP enrichment; each fact retains its source/effective date, unresolved facts stay unavailable, and retrieval freshness is separate from evidence age.
+- Clear private query caches on account identity transitions so a new session cannot display the previous account’s research.

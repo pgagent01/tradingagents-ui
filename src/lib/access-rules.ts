@@ -3,10 +3,11 @@
 
 export const PROVIDERS = ["openai", "anthropic", "google", "groq", "openrouter", "xai", "deepseek"] as const;
 export type Provider = (typeof PROVIDERS)[number];
-export const DATA_PROVIDERS = ['fred'] as const;
+export const DATA_PROVIDERS = ['fred','fmp'] as const;
 export type CredentialProvider = Provider | (typeof DATA_PROVIDERS)[number];
 export function normalizeCredentialProvider(input: string): CredentialProvider {
-  return input.trim().toLowerCase() === 'fred' ? 'fred' : normalizeProvider(input);
+  const data=DATA_PROVIDERS.find(p=>p===input.trim().toLowerCase());
+  return data??normalizeProvider(input);
 }
 
 export function normalizeProvider(input: string): Provider {
