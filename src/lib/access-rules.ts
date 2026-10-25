@@ -15,7 +15,7 @@ export function normalizeProvider(input: string): Provider {
 export function maskKey(key: string): string {
   const k = key.trim();
   if (k.length <= 8) return "••••";
-  return `${k.slice(0, 4)}…${k.slice(-4)}`;
+  return "•••••••• (configured)";
 }
 
 export function validateTicker(input: string): string {

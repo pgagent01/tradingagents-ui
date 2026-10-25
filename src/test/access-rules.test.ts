@@ -26,7 +26,7 @@ describe("bring-your-own-key rule", () => {
     const key = "sk-supersecretvalue-1234";
     const hint = maskKey(key);
     expect(hint).not.toContain("supersecret");
-    expect(hint).toBe("sk-s…1234");
+    expect(hint).toBe("•••••••• (configured)");
   });
 });
 

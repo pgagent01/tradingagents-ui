@@ -68,7 +68,7 @@ export const listMyApiKeys = createServerFn({ method: "POST" })
     if (error) throw error;
     return (data ?? []).map((r: any) => ({
       provider: r.provider as Provider,
-      hint: r.key_hint as string,
+      hint: "•••••••• (configured)",
       updatedAt: r.updated_at as string,
     }));
   });

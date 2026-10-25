@@ -182,7 +182,7 @@ function InviteCodesPanel() {
   const makeMut = useMutation({
     mutationFn: () => make({ data: { note: note.trim() || undefined } }),
     onSuccess: (r) => {
-      toast.success(`Invite code ${r.code} created`);
+      toast.success("Invite code created");
       setNote("");
       qc.invalidateQueries({ queryKey: ["invite-codes"] });
     },
