@@ -17,11 +17,13 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedNewAnalysisRouteImport } from './routes/_authenticated/new-analysis'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedStocksRouteImport } from './routes/_authenticated/stocks'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
 import { Route as ApiResearchExecuteRouteImport } from './routes/api/research-execute'
 import { Route as AuthenticatedAnalysisIdRouteImport } from './routes/_authenticated/analysis.$id'
 import { Route as AuthenticatedAnalysisNewRouteImport } from './routes/_authenticated/analysis.new'
 import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports_.$id'
+import { Route as AuthenticatedStocksTickerRouteImport } from './routes/_authenticated/stocks_.$ticker'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,6 +65,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStocksRoute = AuthenticatedStocksRouteImport.update({
+  id: '/stocks',
+  path: '/stocks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWatchlistsRoute = AuthenticatedWatchlistsRouteImport.update({
   id: '/watchlists',
   path: '/watchlists',
@@ -89,6 +96,12 @@ const AuthenticatedReportsIdRoute = AuthenticatedReportsIdRouteImport.update({
   path: '/reports/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStocksTickerRoute =
+  AuthenticatedStocksTickerRouteImport.update({
+    id: '/stocks_/$ticker',
+    path: '/stocks/$ticker',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,11 +111,13 @@ export interface FileRoutesByFullPath {
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/stocks': typeof AuthenticatedStocksRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/api/research-execute': typeof ApiResearchExecuteRoute
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
+  '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,11 +127,13 @@ export interface FileRoutesByTo {
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/stocks': typeof AuthenticatedStocksRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/api/research-execute': typeof ApiResearchExecuteRoute
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
+  '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,11 +145,13 @@ export interface FileRoutesById {
   '/_authenticated/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/stocks': typeof AuthenticatedStocksRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/api/research-execute': typeof ApiResearchExecuteRoute
   '/_authenticated/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/_authenticated/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/_authenticated/reports_/$id': typeof AuthenticatedReportsIdRoute
+  '/_authenticated/stocks_/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,11 +163,13 @@ export interface FileRouteTypes {
     | '/new-analysis'
     | '/reports'
     | '/settings'
+    | '/stocks'
     | '/watchlists'
     | '/api/research-execute'
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
+    | '/stocks/$ticker'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -158,11 +179,13 @@ export interface FileRouteTypes {
     | '/new-analysis'
     | '/reports'
     | '/settings'
+    | '/stocks'
     | '/watchlists'
     | '/api/research-execute'
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
+    | '/stocks/$ticker'
   id:
     | '__root__'
     | '/'
@@ -173,11 +196,13 @@ export interface FileRouteTypes {
     | '/_authenticated/new-analysis'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/stocks'
     | '/_authenticated/watchlists'
     | '/api/research-execute'
     | '/_authenticated/analysis/$id'
     | '/_authenticated/analysis/new'
     | '/_authenticated/reports_/$id'
+    | '/_authenticated/stocks_/$ticker'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -245,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stocks': {
+      id: '/_authenticated/stocks'
+      path: '/stocks'
+      fullPath: '/stocks'
+      preLoaderRoute: typeof AuthenticatedStocksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/watchlists': {
       id: '/_authenticated/watchlists'
       path: '/watchlists'
@@ -280,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stocks_/$ticker': {
+      id: '/_authenticated/stocks_/$ticker'
+      path: '/stocks/$ticker'
+      fullPath: '/stocks/$ticker'
+      preLoaderRoute: typeof AuthenticatedStocksTickerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -289,10 +328,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNewAnalysisRoute: typeof AuthenticatedNewAnalysisRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedStocksRoute: typeof AuthenticatedStocksRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedAnalysisIdRoute: typeof AuthenticatedAnalysisIdRoute
   AuthenticatedAnalysisNewRoute: typeof AuthenticatedAnalysisNewRoute
   AuthenticatedReportsIdRoute: typeof AuthenticatedReportsIdRoute
+  AuthenticatedStocksTickerRoute: typeof AuthenticatedStocksTickerRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -301,10 +342,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNewAnalysisRoute: AuthenticatedNewAnalysisRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedStocksRoute: AuthenticatedStocksRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
   AuthenticatedAnalysisIdRoute: AuthenticatedAnalysisIdRoute,
   AuthenticatedAnalysisNewRoute: AuthenticatedAnalysisNewRoute,
   AuthenticatedReportsIdRoute: AuthenticatedReportsIdRoute,
+  AuthenticatedStocksTickerRoute: AuthenticatedStocksTickerRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
