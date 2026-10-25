@@ -36,7 +36,11 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'anthropic',model:'claude-sonnet-5',inputRate:3,outputRate:15 },
   { provider:'anthropic',model:'claude-opus-5-5',inputRate:5,outputRate:25 },
   { provider:'groq',model:'llama-3.3-70b-versatile',inputRate:0.59,outputRate:0.79 },
+  { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
 ];
+export function providerDefault(provider:string):RoleModel {
+  return provider==='lovable'?{provider,model:'openai/gpt-6-astra',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
+}
 export const DEFAULT_MODEL: RoleModel = { provider: 'openai', model: 'gpt-4.1-mini', inputRate: 0.4, outputRate: 1.6 };
 export function tokenBudget(depth: string) {
   return depth==='exhaustive'?{input:8000,output:2000}:depth === 'quick' ? { input: 1000, output: 250 } : depth === 'deep' ? { input: 4000, output: 1000 } : { input: 2000, output: 500 };
