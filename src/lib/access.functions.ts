@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { encryptSecret, decryptSecret } from "@/lib/crypto.server";
+import { encryptSecret } from "@/lib/crypto.server";
 import {
   assertCanRunResearch,
   generateInviteCode,
@@ -46,7 +46,7 @@ export const saveMyApiKey = createServerFn({ method: "POST" })
       {
         user_id: context.userId,
         provider,
-        key_ciphertext: await encryptSecret(apiKey),
+        key_ciphertext: await encryptSecret(apiKey, process.env['API_KEY_ENCRYPTION_SECRET']),
         key_hint: maskKey(apiKey),
         updated_at: new Date().toISOString(),
       },
@@ -85,26 +85,6 @@ export const deleteMyApiKey = createServerFn({ method: "POST" })
       .eq("provider", provider);
     if (error) throw error;
     return { removed: provider };
-  });
-
-/**
- * Decrypts the caller's own key for use by that caller's research run.
- * RLS scopes the row to auth.uid(), so no other account's key can be read here.
- */
-export const getMyResearchKey = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { provider: string }) => input)
-  .handler(async ({ data, context }) => {
-    const provider = normalizeProvider(data.provider);
-    const { data: row, error } = await context.supabase
-      .from("user_api_keys")
-      .select("key_ciphertext")
-      .eq("user_id", context.userId)
-      .eq("provider", provider)
-      .maybeSingle();
-    if (error) throw error;
-    if (!row) throw new Error(`No ${provider} API key stored for this account.`);
-    return { provider, apiKey: await decryptSecret(row.key_ciphertext) };
   });
 
 /** Creates a run only when the caller has its own key for the chosen provider. */
