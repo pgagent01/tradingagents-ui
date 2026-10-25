@@ -6,6 +6,12 @@ export const AGENTS = [
   { id: 'debate', name: 'Bull/Bear Debate', detail: 'Competing investment theses' },
   { id: 'risk', name: 'Risk Manager', detail: 'Exposure & downside' },
 ] as const;
+export const AGENT_GROUPS=[
+  {name:'Fundamental Analyst',agents:['fundamentals']},
+  {name:'Technical Analyst',agents:['technical']},
+  {name:'Sentiment & News Analyst',agents:['sentiment','news']},
+  {name:'Risk / Valuation Debate',agents:['risk','debate']},
+] as const;
 export const PRESETS = [
   { name: 'Quick Scan', depth: 'quick', agents: ['technical', 'news'] },
   { name: 'Standard Due Diligence', depth: 'standard', agents: AGENTS.map(a => a.id) },

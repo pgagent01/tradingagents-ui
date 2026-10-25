@@ -130,10 +130,10 @@
 
 @media print {
   :root, .dark { --background: oklch(1 0 0); --foreground: oklch(0.18 0 0); --muted-foreground: oklch(0.4 0 0); --border: oklch(0.8 0 0); --secondary: oklch(0.96 0 0); }
-  [data-sidebar], [data-slot="sidebar-gap"], [data-slot="sidebar-container"], .report-actions, main > header { display: none !important; }
+  [data-sidebar], [data-slot="sidebar-gap"], [data-slot="sidebar-container"], .report-actions, header:has([data-sidebar="trigger"]) { display: none !important; }
   body, main, [data-slot="sidebar-inset"] { background: var(--background); width: 100%; margin: 0; padding: 0; }
   .report-document { max-width: none; padding: 0; }
   .report-section > :not(summary) { display: block !important; }
-  .report-section { break-inside: avoid; }
+  .report-section p, .report-document tr { break-inside: avoid; }
   .report-document h2 { break-after: avoid; }
 }
