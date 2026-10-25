@@ -28,3 +28,6 @@
 - Persist sanitized external evidence in owner-only caches and report sections; use FRED point-in-time vintages and omit current prediction quotes from historical analysis to prevent look-ahead bias.
 - Route built-in OpenAI through Responses, Claude through Messages and Gemini through Chat Completions; validate Gemini synthesis JSON server-side because its compatible SDK does not reliably enforce report schemas.
 - Same-stock comparisons read completed owner-scoped reports through authenticated functions, use analysis dates separately from creation timestamps, and never invent missing snapshots or compare different tickers.
+
+- Company context prefers cached free SEC filings and dated Wikipedia references before owner-encrypted FMP enrichment; each fact retains its source/effective date, unresolved facts stay unavailable, and retrieval freshness is separate from evidence age.
+- Clear private query caches on account identity transitions so a new session cannot display the previous account’s research.
