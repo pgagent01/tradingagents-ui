@@ -143,6 +143,10 @@ export type Database = {
           run_id: string
           sections: Json
           ticker: string
+          total_cost_usd: number
+          total_input_tokens: number
+          total_output_tokens: number
+          usage_recorded: boolean
         }
         Insert: {
           conviction_score?: number | null
@@ -154,6 +158,10 @@ export type Database = {
           run_id: string
           sections?: Json
           ticker: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          usage_recorded?: boolean
         }
         Update: {
           conviction_score?: number | null
@@ -165,6 +173,10 @@ export type Database = {
           run_id?: string
           sections?: Json
           ticker?: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          usage_recorded?: boolean
         }
         Relationships: [
           {
@@ -183,6 +195,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          is_demo: boolean
           model_config: Json
           research_depth: string
           selected_agents: Json
@@ -200,6 +213,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          is_demo?: boolean
           model_config?: Json
           research_depth?: string
           selected_agents?: Json
@@ -217,6 +231,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          is_demo?: boolean
           model_config?: Json
           research_depth?: string
           selected_agents?: Json
@@ -283,6 +298,7 @@ export type Database = {
           daily_budget_usd: number
           default_depth: string
           default_provider: string
+          simulate_demo_run: boolean
           theme: string
           updated_at: string
           user_id: string
@@ -291,6 +307,7 @@ export type Database = {
           daily_budget_usd?: number
           default_depth?: string
           default_provider?: string
+          simulate_demo_run?: boolean
           theme?: string
           updated_at?: string
           user_id: string
@@ -299,6 +316,7 @@ export type Database = {
           daily_budget_usd?: number
           default_depth?: string
           default_provider?: string
+          simulate_demo_run?: boolean
           theme?: string
           updated_at?: string
           user_id?: string
@@ -310,6 +328,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_demo_run: { Args: { _run_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
