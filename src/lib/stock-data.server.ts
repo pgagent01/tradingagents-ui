@@ -30,7 +30,7 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   if(!result.candles.length&&av&&range!=='1D'){
     try{const raw=object(await json(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(av)}&outputsize=compact`));const series=object(raw['Time Series (Daily)']);result.candles=Object.entries(series).flatMap(([day,v])=>{const r=object(v),open=Number(r['1. open']),high=Number(r['2. high']),low=Number(r['3. low']),close=Number(r['4. close']);return [open,high,low,close].every(Number.isFinite)?[{time:Date.parse(day)/1000,open,high,low,close,volume:numeric(Number(r['5. volume']))}]:[];}).sort((a,b)=>a.time-b.time);if(result.candles.length)result.chartSource='Alpha Vantage · daily';}catch{/* Continue with quote fallbacks. */}
   }
-  if(result.price===null){const quote=await firstAvailable([
+  if(result.price===null){const quote=await firstAvailable<Partial<StockData>>([
     ...(fmp?[{source:'Financial Modeling Prep',load:()=>fmpQuote(ticker,fmp)}]:[]),
     ...(av?[{source:'Alpha Vantage',load:async()=>{const q=object(object(await json(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(av)}`))['Global Quote']);return Number(q['05. price'])>0?{price:Number(q['05. price']),change:numeric(Number(q['09. change'])),changePercent:numeric(Number(String(q['10. change percent']).replace('%',''))),asOf:typeof q['07. latest trading day']==='string'?`${q['07. latest trading day']}T00:00:00Z`:null}:null;}}]:[]),
   ]);if(quote)Object.assign(result,quote.data,{quoteSource:quote.source});}
