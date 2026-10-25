@@ -96,6 +96,6 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
   const f={...final.object,external_evidence:evidence,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
-  const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:f});if(error)throw error;
+  const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;
   emit({type:'completed',reportId});
 }

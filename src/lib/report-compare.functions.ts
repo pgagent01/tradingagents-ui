@@ -1,0 +1,8 @@
+import {createServerFn} from '@tanstack/react-start';
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import {sectionObject,contentText} from '@/lib/report-content';
+export const getComparableReports=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
+  const {data:runs,error}=await context.supabase.from('research_runs').select('id,ticker,analysis_date,selected_agents,model_config,research_depth,is_demo').eq('user_id',context.userId).eq('status','completed');if(error)throw new Error('Research history unavailable.');if(!runs?.length)return [];
+  const {data:reports,error:reportError}=await context.supabase.from('research_reports').select('id,run_id,ticker,created_at,recommendation,price_target,conviction_score,executive_summary,sections,total_input_tokens,total_output_tokens,total_cost_usd').in('run_id',runs.map(r=>r.id)).order('created_at',{ascending:false});if(reportError)throw new Error('Research history unavailable.');
+  return (reports??[]).flatMap(r=>{const run=runs.find(run=>run.id===r.run_id);if(!run)return [];const roles=sectionObject(sectionObject(run.model_config)['roles']);return [{...r,analysis_date:run.analysis_date,is_demo:run.is_demo,depth:run.research_depth,agents:Array.isArray(run.selected_agents)?run.selected_agents.filter((v):v is string=>typeof v==='string'):[],models:Object.values(roles).map(v=>contentText(sectionObject(v)['model'])).filter(Boolean)}];});
+});
