@@ -13,3 +13,5 @@
 - [ ] Report-first detail viewer with analyst sections, synthesis, catalysts/risks, snapshot, compact metadata and exports
 - [ ] Searchable/filterable reports archive with card/table views and direct report links
 - [ ] Automatically open report on execution completion; recent research links directly to report
+- [ ] Provider/model choices with BYOK status; Quick Scan, Standard Due Diligence, Deep Value & Risk bundles
+- [ ] Quick/Standard/Deep/Exhaustive depth and 30-day/90-day/1-year lookback stored and shown on execution/report
