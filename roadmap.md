@@ -10,3 +10,6 @@
 - [ ] Three-step /analysis/new wizard: date, presets, agents, role models, cost preview
 - [ ] /analysis/$id execution graph, realtime activity, cancellation, timer and usage
 - [ ] Settings demo simulation toggle and isolated mock execution fallback
+- [ ] Report-first detail viewer with analyst sections, synthesis, catalysts/risks, snapshot, compact metadata and exports
+- [ ] Searchable/filterable reports archive with card/table views and direct report links
+- [ ] Automatically open report on execution completion; recent research links directly to report
