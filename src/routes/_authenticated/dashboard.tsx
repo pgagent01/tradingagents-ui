@@ -143,7 +143,7 @@ function TickerSearch() {
     const u = q.trim().toUpperCase();
     return u ? SYMBOLS.filter((x) => x.s.startsWith(u) || x.n.toUpperCase().includes(u)) : SYMBOLS.slice(0, 4);
   }, [q]);
-  const go = (s: string) => { setOpen(false); nav({ to: "/new-analysis", search: { ticker: s } as never }); };
+  const go = (s: string) => { setOpen(false); void s; nav({ to: "/new-analysis" }); };
   return (
     <div className="relative w-72">
       <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
