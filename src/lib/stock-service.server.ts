@@ -10,6 +10,6 @@ export async function cachedStockData(sb:SupabaseClient<Database>,userId:string,
   const cached=await readDataCache(sb,userId,'stocks',cacheKey);const previous=object(cached?.payload);
   if(cached?.fresh&&previous['ticker']===ticker&&Array.isArray(previous['candles']))return {...cached.payload as unknown as StockData,cached:true};
   const data=await getStockData(ticker,range,userId,credential,period);
-  if(!data.quoteSource&&!data.chartSource&&previous['ticker']===ticker&&Array.isArray(previous['candles']))return {...cached?.payload as unknown as StockData,cached:true,warnings:[...(Array.isArray(previous['warnings'])?previous['warnings'].filter((w):w is string=>typeof w==='string'):[]),'Providers unavailable; showing previously saved data.']};
+  if(!data.quoteSource&&!data.chartSource&&previous['ticker']===ticker&&Array.isArray(previous['candles']))return {...cached?.payload as unknown as StockData,...(data.financialSource?{financialSource:data.financialSource,financialDate:data.financialDate,ratios:data.ratios,statements:data.statements}:{}),cached:true,warnings:[...(Array.isArray(previous['warnings'])?previous['warnings'].filter((w):w is string=>typeof w==='string'):[]),'Providers unavailable; showing previously saved data.']};
   await writeDataCache(sb,userId,'stocks',cacheKey,data,60000);return data;
 }
