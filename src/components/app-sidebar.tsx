@@ -5,6 +5,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
+import { SidebarAttribution } from "@/components/attribution-note";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -50,6 +51,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <SidebarAttribution collapsed={collapsed} />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="sm" tooltip="Sign out" onClick={async () => { await supabase.auth.signOut(); nav({ to: "/auth" }); }}>
