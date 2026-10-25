@@ -14,4 +14,4 @@
 - Use shared company matching and research configuration modules for dashboard/wizard behavior and role-specific USD estimates.
 - Store demo execution progress in Lovable Cloud and advance one atomic locked step per request; demo mode never calls an LLM and costs are labeled hypothetical.
 - Snapshot run token totals and USD cost into each report on insert; report views use the report snapshot rather than account-wide totals.
-- Keep /new-analysis as a compatibility redirect to /analysis/new; /analysis/$id owns both live execution and the resulting report.
+- Keep /new-analysis as a compatibility redirect to /analysis/new; /analysis/$id owns execution and redirects completed runs to the report-first /reports/$id viewer.

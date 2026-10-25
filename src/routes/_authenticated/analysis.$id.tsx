@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { queryOptions,useSuspenseQuery,useQueryClient,useMutation } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
@@ -10,13 +10,18 @@ import { getExecution,advanceDemo,cancelAnalysis } from '@/lib/research.function
 import { AGENTS } from '@/lib/research-config';
 import { supabase } from '@/integrations/supabase/client';
 import { pageHead } from '@/lib/page-head';
+import { DataError,DataNotFound } from '@/components/route-feedback';
 import { cn } from '@/lib/utils';
 const executionQuery=(id:string) => queryOptions({queryKey:['execution',id],queryFn:() => getExecution({data:{id}}),refetchInterval:3000});
-export const Route=createFileRoute('/_authenticated/analysis/$id')({head:() => pageHead('Live Execution','Agent execution status, realtime activity and per-run token costs.'),loader:({context,params}) => context.queryClient.ensureQueryData(executionQuery(params.id)),component:Execution});
+export const Route=createFileRoute('/_authenticated/analysis/$id')({head:() => pageHead('Live Execution','Agent execution status, realtime activity and per-run token costs.'),validateSearch:(s:Record<string,unknown>)=>({execution:s['execution']===true||s['execution']==='true'}),errorComponent:DataError,notFoundComponent:DataNotFound,loader:({context,params}) => context.queryClient.ensureQueryData(executionQuery(params.id)),component:Execution});
 function Execution() {
   const {id}=Route.useParams();
   const {data}=useSuspenseQuery(executionQuery(id));
   const qc=useQueryClient();
+  const nav=useNavigate();
+  const search=Route.useSearch();
+  const readyReport=data.reports[0]?.id;
+  useEffect(()=>{if(readyReport && data.run.status==='completed' && !search.execution) { void nav({to:'/reports/$id',params:{id:readyReport},replace:true}); }},[readyReport,data.run.status,search.execution,nav]);
   const advance=useServerFn(advanceDemo);
   const cancel=useServerFn(cancelAnalysis);
   const [now,setNow]=useState(Date.now());
@@ -54,6 +59,6 @@ function Execution() {
       })}</div>{selected && <div className="border-y border-border py-3 text-xs"><strong>{AGENTS.find(a=>a.id===selected)?.name ?? selected}</strong><p className="mt-2 font-mono text-muted-foreground">{selectedOutput?.model_used ?? 'Awaiting execution'} · Input {selectedOutput?.input_tokens ?? 0} · Output {selectedOutput?.output_tokens ?? 0} · USD ${Number(selectedOutput?.cost_usd ?? 0).toFixed(4)}</p></div>}</section>
       <section className="min-w-0"><h2 className="mb-3 text-xs uppercase text-muted-foreground">Live activity stream</h2><div className="h-96 overflow-y-auto border-y border-border py-3 font-mono text-[11px]" aria-live="polite">{data.events.length===0?<p className="text-muted-foreground">Awaiting first agent event…</p>:data.events.map(e => <div key={e.id} className="flex gap-3 border-b border-border/50 py-2"><time className="shrink-0 text-muted-foreground">{new Date(e.created_at).toISOString().slice(11,19)}</time><span className={e.event_type==='completed'?'text-positive':'text-foreground'}>{e.message}</span></div>)}</div></section>
     </div>
-    {report && <section className="space-y-4 border-t border-border pt-4"><header><h2 className="text-lg font-semibold">{report.ticker} Research Report</h2><p className="mt-1 text-xs text-muted-foreground">{data.run.is_demo?'Demo report · not investment advice':report.recommendation} · {new Date(report.created_at).toLocaleString()}</p></header><UsageMetrics input={report.total_input_tokens} output={report.total_output_tokens} cost={Number(report.total_cost_usd)} demo={data.run.is_demo} /><p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{report.executive_summary}</p><Button asChild variant="outline" size="sm"><Link to="/reports"><FileText className="h-4 w-4" />Research Reports</Link></Button></section>}
+    {report && <section className="space-y-4 border-t border-border pt-4"><header><h2 className="text-lg font-semibold">{report.ticker} Research Report</h2><p className="mt-1 text-xs text-muted-foreground">{data.run.is_demo?'Demo report · not investment advice':report.recommendation} · {new Date(report.created_at).toLocaleString()}</p></header><UsageMetrics input={report.total_input_tokens} output={report.total_output_tokens} cost={Number(report.total_cost_usd)} demo={data.run.is_demo} /><p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{report.executive_summary}</p><Button asChild variant="outline" size="sm"><Link to="/reports/$id" params={{id:report.id}}><FileText className="h-4 w-4" />Research Reports</Link></Button></section>}
   </div>;
 }

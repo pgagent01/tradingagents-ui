@@ -33,7 +33,7 @@ export function financialRows(value:unknown):{metric:string;value:string}[] {
 }
 export function reportMarkdown(report:Report,outputs:AnalystOutput[],demo:boolean) {
   const s=sectionObject(report.sections);
-  const metadata=`Date: ${report.created_at}\nRecommendation: ${report.recommendation ?? 'Not provided'}\nTarget price: ${report.price_target ?? 'Not provided'}\nConviction: ${report.conviction_score ?? 'Not provided'}\nRisk: ${report.risk_level ?? contentText(s['risk_level']) || 'Not provided'}`;
+  const metadata=`Date: ${report.created_at}\nRecommendation: ${report.recommendation ?? 'Not provided'}\nTarget price: ${report.price_target ?? 'Not provided'}\nConviction: ${report.conviction_score ?? 'Not provided'}\nRisk: ${(report.risk_level ?? contentText(s['risk_level'])) || 'Not provided'}`;
   const tokens=`Input: ${report.total_input_tokens} | Output: ${report.total_output_tokens} | Total: ${report.total_input_tokens+report.total_output_tokens} | ${demo?'Hypothetical':'Calculated'} cost USD: $${Number(report.total_cost_usd).toFixed(4)}`;
   const analysis=ANALYST_SECTIONS.map(group=>`## ${group.title}\n\n${analystContent(report.sections,outputs,group)||'Not provided in this report.'}`).join('\n\n');
   const rest=[['Catalysts','catalysts'],['Upside potential','upside_risks'],['Downside risks','downside_risks'],['Financial snapshot','financial_snapshot'],['Final synthesis','final_synthesis']].map(([title,key])=>`## ${title}\n\n${contentText(s[key ?? ''])||'Not provided in this report.'}`).join('\n\n');

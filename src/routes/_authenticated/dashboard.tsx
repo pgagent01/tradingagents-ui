@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DashboardAttribution } from "@/components/attribution-note";
+import { DataError,DataNotFound } from "@/components/route-feedback";
 import { cn } from "@/lib/utils";
 import { CompanyPicker } from "@/components/company-picker";
 
@@ -47,6 +48,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { property: "og:description", content: "Research runs, spend and recent reports." },
     ],
   }),
+  errorComponent:DataError,
+  notFoundComponent:DataNotFound,
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQuery),
   component: Dashboard,
 });
@@ -99,7 +102,7 @@ function Dashboard() {
                     <td className="px-3 py-1.5 text-right">${Number(rep?.total_cost_usd ?? r.total_cost_usd).toFixed(4)}{r.is_demo && <span className="block text-[9px] text-warning">DEMO · $0 charged</span>}</td>
                     <td className="px-3 py-1.5 text-right">
                       <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs" >
-                        <Link to="/analysis/$id" params={{ id:r.id }}>Open <ArrowUpRight className="h-3 w-3" /></Link>
+                        {rep ? <Link to="/reports/$id" params={{id:rep.id}}>Report <ArrowUpRight className="h-3 w-3" /></Link> : <Link to="/analysis/$id" params={{id:r.id}}>Run <ArrowUpRight className="h-3 w-3" /></Link>}
                       </Button>
                     </td>
                   </tr>
