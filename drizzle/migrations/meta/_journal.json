@@ -22,6 +22,13 @@
       "when": 1792964035651,
       "tag": "0002_phase_two_execution_and_report_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792964204980,
+      "tag": "0003_harden_signup_and_role_checks",
+      "breakpoints": true
     }
   ]
 }
