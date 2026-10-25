@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Correct reported wizard navigation and analytics string-state errors; confirm a clean build.
+
 - [ ] Phase 4 analytics: interactive usage/cost history, total runs, model efficiency, and admin aggregate per-user costs without exposing private research or credentials.
 - [ ] Phase 4 live execution: built-in AI and BYOK OpenAI, Anthropic, Groq, OpenRouter; live specialist and synthesis output with persisted report usage.
 - [ ] Phase 4 settings: active provider selection, provider-key management/testing, and existing primary-admin invite management.
