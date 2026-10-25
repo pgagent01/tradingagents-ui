@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Integrate encrypted FRED credential management and validation, cached macro ingestion, public Polymarket evidence, agent context and report findings; verify tests and live data paths.
+
 - [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
 
 - [x] Phase 4 analytics: interactive usage/cost history, total runs, model efficiency, and admin aggregate per-user costs without exposing private research or credentials.
