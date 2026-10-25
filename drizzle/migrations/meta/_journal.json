@@ -29,6 +29,13 @@
       "when": 1792964204980,
       "tag": "0003_harden_signup_and_role_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792964422801,
+      "tag": "0004_report_risk_and_expanded_recommendations",
+      "breakpoints": true
     }
   ]
 }

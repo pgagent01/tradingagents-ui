@@ -140,6 +140,7 @@ export type Database = {
           id: string
           price_target: number | null
           recommendation: string | null
+          risk_level: string | null
           run_id: string
           sections: Json
           ticker: string
@@ -155,6 +156,7 @@ export type Database = {
           id?: string
           price_target?: number | null
           recommendation?: string | null
+          risk_level?: string | null
           run_id: string
           sections?: Json
           ticker: string
@@ -170,6 +172,7 @@ export type Database = {
           id?: string
           price_target?: number | null
           recommendation?: string | null
+          risk_level?: string | null
           run_id?: string
           sections?: Json
           ticker?: string
