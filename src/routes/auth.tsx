@@ -10,6 +10,8 @@ import { Activity } from "lucide-react";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Sign in — TradingAgents AI" },
       { name: "description", content: "Sign in to your TradingAgents AI research terminal." },
       { property: "og:title", content: "Sign in — TradingAgents AI" },

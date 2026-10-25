@@ -1,14 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "@/components/placeholder-page";
-
-export const Route = createFileRoute("/_authenticated/reports")({
-  head: () => ({
-    meta: [
-      { title: "Research Reports — TradingAgents AI" },
-      { name: "description", content: "Completed research reports will be listed here." },
-      { property: "og:title", content: "Research Reports — TradingAgents AI" },
-      { property: "og:description", content: "Completed research reports will be listed here." },
-    ],
-  }),
-  component: () => <PlaceholderPage title="Research Reports" description="Completed research reports will be listed here." />,
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { queryOptions,useSuspenseQuery } from '@tanstack/react-query';
+import { zodValidator } from '@tanstack/zod-adapter';
+import { z } from 'zod';
+import { Search,LayoutGrid,List } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { CreditMetric } from '@/components/credit-metric';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { RecommendationBadge } from '@/components/recommendation-badge';
+import { DataError,DataNotFound } from '@/components/route-feedback';
+import { companyName,filterReports,RECOMMENDATIONS } from '@/lib/report-content';
+import { pageHead } from '@/lib/page-head';
+const reportsQuery=queryOptions({queryKey:['reports'],queryFn:async () => {
+  const {data,error}=await supabase.from('research_reports').select('*, research_runs(is_demo,status)').order('created_at',{ascending:false});
+  if(error) throw error;
+  return (data ?? []).filter(r=>r.research_runs?.status==='completed');
+}});
+export const Route=createFileRoute('/_authenticated/reports')({
+  head:() => pageHead('Reports Archive','Search completed equity research by company, recommendation and date.'),
+  validateSearch:zodValidator(z.object({q:z.string().default(''),recommendation:z.string().default(''),from:z.string().default(''),to:z.string().default(''),view:z.string().default('cards')})),
+  loader:({context})=>context.queryClient.ensureQueryData(reportsQuery),errorComponent:DataError,notFoundComponent:DataNotFound,component:Reports,
 });
+function Reports() {
+  const {data}=useSuspenseQuery(reportsQuery);const filters=Route.useSearch();const navigate=useNavigate({from:Route.fullPath});
+  const reports=filterReports(data,filters);
+  function set(key:string,value:string) { void navigate({search:prev=>({...prev,[key]:value}),replace:true}); }
+  return <div className="space-y-5"><header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-xl font-semibold">Reports Archive</h1><p className="mt-1 text-xs text-muted-foreground">{reports.length} completed reports</p></div><div className="flex gap-1"><Button variant={filters.view==='cards'?'secondary':'ghost'} size="icon" aria-label="Card view" title="Card view" onClick={()=>set('view','cards')}><LayoutGrid className="h-4 w-4" /></Button><Button variant={filters.view==='table'?'secondary':'ghost'} size="icon" aria-label="Table view" title="Table view" onClick={()=>set('view','table')}><List className="h-4 w-4" /></Button></div></header>
+  <div className="flex flex-wrap items-end gap-3 border-y border-border py-3"><div className="relative min-w-52 flex-1"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"/><Input aria-label="Search reports" placeholder="Company or ticker" className="pl-8" value={filters.q} onChange={e=>set('q',e.target.value)} /></div><select aria-label="Recommendation filter" value={filters.recommendation} onChange={e=>set('recommendation',e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-xs"><option value="">All recommendations</option>{RECOMMENDATIONS.map(r=><option key={r}>{r}</option>)}</select><div><label className="mb-1 block text-[10px] text-muted-foreground" htmlFor="from-date">From</label><Input id="from-date" type="date" value={filters.from} onChange={e=>set('from',e.target.value)} /></div><div><label className="mb-1 block text-[10px] text-muted-foreground" htmlFor="to-date">To</label><Input id="to-date" type="date" value={filters.to} onChange={e=>set('to',e.target.value)} /></div>{(filters.q||filters.recommendation||filters.from||filters.to)&&<Button variant="ghost" size="sm" onClick={()=>{void navigate({search:{q:'',recommendation:'',from:'',to:'',view:filters.view}});}}>Clear filters</Button>}</div>
+  {reports.length===0?<div className="py-12 text-center text-sm text-muted-foreground">{data.length?'No reports match these filters.':'No completed reports yet.'}</div>:filters.view==='table'?<div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground">{['Company','Recommendation','Date','Summary','Input / Output / Total','Cost · USD','Credits'].map(h=><th key={h} className="p-2 font-medium">{h}</th>)}</tr></thead><tbody>{reports.map(r=><tr key={r.id} className="border-b border-border hover:bg-secondary"><td className="p-2"><Link to="/reports/$id" params={{id:r.id}} className="font-mono font-semibold text-primary hover:underline">{r.ticker}</Link><div className="mt-1 text-[10px] text-muted-foreground">{companyName(r.ticker)}</div></td><td className="p-2"><RecommendationBadge value={r.recommendation} demo={r.research_runs?.is_demo===true}/></td><td className="whitespace-nowrap p-2 font-mono">{r.created_at.slice(0,10)}</td><td className="max-w-64 p-2"><p className="line-clamp-2 text-muted-foreground">{r.executive_summary}</p></td><td className="whitespace-nowrap p-2 font-mono">{r.total_input_tokens.toLocaleString()} / {r.total_output_tokens.toLocaleString()} / {(r.total_input_tokens+r.total_output_tokens).toLocaleString()}</td><td className="p-2 font-mono">${Number(r.total_cost_usd).toFixed(4)}{r.research_runs?.is_demo&&<span className="block text-[9px] text-warning">DEMO · $0 charged</span>}</td><td className="p-2"><CreditMetric credits={r.research_runs?.is_demo?0:r.lovable_credits} basis={r.credit_basis}/></td></tr>)}</tbody></table></div>:<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{reports.map(r=><Link key={r.id} to="/reports/$id" params={{id:r.id}} className="flex min-w-0 flex-col gap-4 rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50"><div className="flex items-start justify-between gap-2"><div><h2 className="font-mono text-lg font-semibold">{r.ticker}</h2><p className="mt-1 text-xs text-muted-foreground">{companyName(r.ticker)}</p></div><RecommendationBadge value={r.recommendation} demo={r.research_runs?.is_demo===true}/></div><time className="font-mono text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</time><p className="line-clamp-3 flex-1 text-sm leading-6 text-muted-foreground">{r.executive_summary||'Executive summary not supplied.'}</p><div className="flex flex-wrap justify-between gap-2 border-t border-border pt-3 font-mono text-[10px] text-muted-foreground"><span>IN {r.total_input_tokens.toLocaleString()} · OUT {r.total_output_tokens.toLocaleString()} · TOTAL {(r.total_input_tokens+r.total_output_tokens).toLocaleString()}</span><span className="text-foreground">USD ${Number(r.total_cost_usd).toFixed(4)}</span><CreditMetric credits={r.research_runs?.is_demo?0:r.lovable_credits} basis={r.credit_basis}/>{r.research_runs?.is_demo&&<span className="w-full text-warning">Hypothetical cost · actual charge $0</span>}</div></Link>)}</div>}
+  </div>;
+}

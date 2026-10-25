@@ -20,36 +20,45 @@ export type Database = {
           content: string | null
           cost_usd: number
           created_at: string
+          credit_basis: string | null
           id: string
           input_tokens: number
+          lovable_credits: number | null
           model_used: string | null
           output_tokens: number
           run_id: string
           status: string | null
+          usage_details: Json | null
         }
         Insert: {
           agent_id: string
           content?: string | null
           cost_usd?: number
           created_at?: string
+          credit_basis?: string | null
           id?: string
           input_tokens?: number
+          lovable_credits?: number | null
           model_used?: string | null
           output_tokens?: number
           run_id: string
           status?: string | null
+          usage_details?: Json | null
         }
         Update: {
           agent_id?: string
           content?: string | null
           cost_usd?: number
           created_at?: string
+          credit_basis?: string | null
           id?: string
           input_tokens?: number
+          lovable_credits?: number | null
           model_used?: string | null
           output_tokens?: number
           run_id?: string
           status?: string | null
+          usage_details?: Json | null
         }
         Relationships: [
           {
@@ -60,6 +69,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_access_state: {
+        Row: {
+          paused: boolean
+          reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          paused?: boolean
+          reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          paused?: boolean
+          reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       invite_codes: {
         Row: {
@@ -136,35 +166,56 @@ export type Database = {
         Row: {
           conviction_score: number | null
           created_at: string
+          credit_basis: string | null
           executive_summary: string | null
           id: string
+          lovable_credits: number | null
           price_target: number | null
           recommendation: string | null
+          risk_level: string | null
           run_id: string
           sections: Json
           ticker: string
+          total_cost_usd: number
+          total_input_tokens: number
+          total_output_tokens: number
+          usage_recorded: boolean
         }
         Insert: {
           conviction_score?: number | null
           created_at?: string
+          credit_basis?: string | null
           executive_summary?: string | null
           id?: string
+          lovable_credits?: number | null
           price_target?: number | null
           recommendation?: string | null
+          risk_level?: string | null
           run_id: string
           sections?: Json
           ticker: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          usage_recorded?: boolean
         }
         Update: {
           conviction_score?: number | null
           created_at?: string
+          credit_basis?: string | null
           executive_summary?: string | null
           id?: string
+          lovable_credits?: number | null
           price_target?: number | null
           recommendation?: string | null
+          risk_level?: string | null
           run_id?: string
           sections?: Json
           ticker?: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          usage_recorded?: boolean
         }
         Relationships: [
           {
@@ -181,8 +232,13 @@ export type Database = {
           analysis_date: string
           completed_at: string | null
           created_at: string
+          credit_basis: string | null
           error_message: string | null
+          execution_lease_until: string | null
           id: string
+          is_demo: boolean
+          lookback_days: number
+          lovable_credits: number | null
           model_config: Json
           research_depth: string
           selected_agents: Json
@@ -198,8 +254,13 @@ export type Database = {
           analysis_date?: string
           completed_at?: string | null
           created_at?: string
+          credit_basis?: string | null
           error_message?: string | null
+          execution_lease_until?: string | null
           id?: string
+          is_demo?: boolean
+          lookback_days?: number
+          lovable_credits?: number | null
           model_config?: Json
           research_depth?: string
           selected_agents?: Json
@@ -215,8 +276,13 @@ export type Database = {
           analysis_date?: string
           completed_at?: string | null
           created_at?: string
+          credit_basis?: string | null
           error_message?: string | null
+          execution_lease_until?: string | null
           id?: string
+          is_demo?: boolean
+          lookback_days?: number
+          lovable_credits?: number | null
           model_config?: Json
           research_depth?: string
           selected_agents?: Json
@@ -283,6 +349,7 @@ export type Database = {
           daily_budget_usd: number
           default_depth: string
           default_provider: string
+          simulate_demo_run: boolean
           theme: string
           updated_at: string
           user_id: string
@@ -291,6 +358,7 @@ export type Database = {
           daily_budget_usd?: number
           default_depth?: string
           default_provider?: string
+          simulate_demo_run?: boolean
           theme?: string
           updated_at?: string
           user_id: string
@@ -299,6 +367,7 @@ export type Database = {
           daily_budget_usd?: number
           default_depth?: string
           default_provider?: string
+          simulate_demo_run?: boolean
           theme?: string
           updated_at?: string
           user_id?: string
@@ -310,6 +379,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_demo_run: { Args: { _run_id: string }; Returns: undefined }
+      claim_research_execution: { Args: { _run_id: string }; Returns: boolean }
+      finalize_research_report: {
+        Args: { _report: Json; _run_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -318,6 +393,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_invite_code: { Args: { _code: string }; Returns: boolean }
+      save_agent_result: {
+        Args: { _output_id: string; _result: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

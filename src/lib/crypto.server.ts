@@ -14,8 +14,7 @@ function fromBase64(text: string): Uint8Array {
   return bytes;
 }
 
-async function getKey(): Promise<CryptoKey> {
-  const secret = process.env["API_KEY_ENCRYPTION_SECRET"];
+async function getKey(secret: string | undefined): Promise<CryptoKey> {
   if (!secret) throw new Error("API_KEY_ENCRYPTION_SECRET is not configured on this server.");
   const material = new TextEncoder().encode(secret);
   const digest = await crypto.subtle.digest("SHA-256", material);
@@ -23,8 +22,8 @@ async function getKey(): Promise<CryptoKey> {
 }
 
 /** Returns "v1.<base64(iv||ciphertext)>" — safe to persist. */
-export async function encryptSecret(plaintext: string): Promise<string> {
-  const key = await getKey();
+export async function encryptSecret(plaintext: string, secret: string | undefined): Promise<string> {
+  const key = await getKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(plaintext));
   const out = new Uint8Array(iv.byteLength + cipher.byteLength);
@@ -33,11 +32,11 @@ export async function encryptSecret(plaintext: string): Promise<string> {
   return `v1.${toBase64(out)}`;
 }
 
-export async function decryptSecret(payload: string): Promise<string> {
+export async function decryptSecret(payload: string, secret: string | undefined): Promise<string> {
   const [version, body] = payload.split(".");
   if (version !== "v1" || !body) throw new Error("Stored key is in an unsupported format.");
   const raw = fromBase64(body);
-  const key = await getKey();
+  const key = await getKey(secret);
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: raw.slice(0, 12) },
     key,
