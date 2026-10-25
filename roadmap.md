@@ -6,3 +6,7 @@
 - [ ] BYOK: each user stores their own LLM API key in settings and must have one to run research
 - [ ] Strict isolation: keys and research runs scoped to own user_id; primary account's keys never shared or readable
 - [ ] Per-report token metrics (input, output, total) and dollar cost shown in report header and recent research list
+- [ ] Phase 2 company/ticker finder shared by dashboard and analysis wizard
+- [ ] Three-step /analysis/new wizard: date, presets, agents, role models, cost preview
+- [ ] /analysis/$id execution graph, realtime activity, cancellation, timer and usage
+- [ ] Settings demo simulation toggle and isolated mock execution fallback
