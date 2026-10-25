@@ -15,3 +15,5 @@
 - [ ] Automatically open report on execution completion; recent research links directly to report
 - [ ] Provider/model choices with BYOK status; Quick Scan, Standard Due Diligence, Deep Value & Risk bundles
 - [ ] Quick/Standard/Deep/Exhaustive depth and 30-day/90-day/1-year lookback stored and shown on execution/report
+- [ ] Admin-only built-in Lovable AI execution, per-agent/run/report calculated credit accounting and cumulative analytics
+- [ ] Dedicated Lovable Credits Used badges across report metadata/audit, archive and recent research
