@@ -1,3 +1,4 @@
+import {DataFreshness} from '@/components/data-freshness';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -56,14 +57,14 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const { data } = useSuspenseQuery(dashboardQuery);
+  const { data,dataUpdatedAt } = useSuspenseQuery(dashboardQuery);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-base font-semibold tracking-tight">Dashboard</h1>
         <TickerSearch />
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <DataFreshness date={new Date(dataUpdatedAt).toISOString()} origin="Database totals retrieved"/><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Total Researched Tickers" value={String(data.tickers)} />
         <Metric label="Active Runs" value={String(data.active)} accent={data.active > 0 ? "text-primary" : undefined} />
         <Metric label="MTD Token Spend" value={`$${data.mtd.toFixed(2)}`} />
@@ -93,7 +94,7 @@ function Dashboard() {
                 return (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-card/60">
                     <td className="px-3 py-1.5 font-semibold text-foreground">{r.ticker}</td>
-                    <td className="px-3 py-1.5 text-muted-foreground">{r.analysis_date}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground">{r.analysis_date}<div><DataFreshness date={r.created_at}/></div></td>
                     <td className="px-3 py-1.5 text-muted-foreground">{r.status}</td>
                     <td className="px-3 py-1.5"><RecBadge rec={rep?.recommendation ?? null} /></td>
                     <td className="px-3 py-1.5 text-right">{rep?.conviction_score ?? "—"}</td>
