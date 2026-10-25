@@ -37,7 +37,7 @@ export async function getFredEvidence(sb:EvidenceClient,userId:string,asOf:strin
     } catch { return null; } // Never log fetch exceptions: their URLs may include the key.
   }));
   if (signal.aborted) throw new DOMException('Cancelled','AbortError');
-  const available = metrics.filter(m=>m!==null && m.value!==null);
+  const available = metrics.flatMap(m=>m!==null && m.value!==null?[m]:[]);
   if (!available.length) return cachedFeed?.metrics?.length ? {...cachedFeed,status:'cached',note:`Stale cache fallback; retrieved ${cachedFeed.fetchedAt}. FRED could not be refreshed.`} : unavailable('FRED observations unavailable. Research proceeds without macro values.');
   const feed:MacroFeed = {status:'live',asOf,fetchedAt:new Date().toISOString(),note:`Point-in-time FRED vintage ${asOf}; observation dates differ by release frequency. ${available.length}/5 series available. Trends compare published observations, not live prices.`,metrics:available};
   await writeDataCache(sb,userId,'fred',cacheKey,feed,60*60*1000);
