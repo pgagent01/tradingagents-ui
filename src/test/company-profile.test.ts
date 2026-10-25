@@ -1,0 +1,3 @@
+import {it,expect} from 'vitest';
+import {extractEmployees,safeSource} from '@/lib/company-profile';
+it('extracts filing employee values without inventing missing ones',()=>{expect(extractEmployees('approximately 166,000 full-time equivalent employees')).toBe('166,000');expect(extractEmployees('employee information unavailable')).toBeNull();expect(safeSource('javascript:alert(1)')).toBeNull();expect(safeSource('https://www.sec.gov/Archives/a.htm')).toBe('https://www.sec.gov/Archives/a.htm');});
