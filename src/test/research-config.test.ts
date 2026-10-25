@@ -18,7 +18,9 @@ describe('per-report token costs',() => {
   });
 });
 describe('Phase 4 execution configuration',()=>{
-  it('defaults built-in Lovable roles to GPT-5 Nano',()=>expect(providerDefault('lovable').model).toBe('openai/gpt-5-nano'));
+  it('defaults built-in Lovable roles to approved current GPT-5.4 Mini',()=>expect(providerDefault('lovable').model).toBe('openai/gpt-5.4-mini'));
+  it('defaults Claude to Haiku 4.5',()=>expect(providerDefault('anthropic').model).toBe('claude-haiku-4-5'));
+  it('defaults Google to current Gemini 3.1 Flash-Lite',()=>expect(providerDefault('google').model).toBe('gemini-3.1-flash-lite'));
   it('initializes OpenRouter with its own provider-qualified model',()=>expect(providerDefault('openrouter')).toMatchObject({provider:'openrouter',model:'openai/gpt-4o-mini'}));
   it('requires a model configuration for every specialist',()=>expect(validExecutionRoles(['fundamentals','risk'],{fundamentals:DEFAULT_MODEL})).toBe(false));
   it('rejects unsupported execution providers',()=>expect(validExecutionRoles(['risk'],{risk:{...DEFAULT_MODEL,provider:'untrusted'}})).toBe(false));

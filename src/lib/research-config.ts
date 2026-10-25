@@ -30,6 +30,7 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider: 'openai', model: 'gpt-4.1-mini', inputRate: 0.4, outputRate: 1.6 },
   { provider: 'openai', model: 'gpt-4.1', inputRate: 2, outputRate: 8 },
   { provider: 'anthropic', model: 'claude-haiku-4-5', inputRate: 1, outputRate: 5 },
+  { provider: 'google', model: 'gemini-3.1-flash-lite', inputRate: 0.25, outputRate: 1.5 },
   { provider: 'google', model: 'gemini-2.5-flash', inputRate: 0.3, outputRate: 2.5 },
   { provider:'openai',model:'gpt-4o',inputRate:2.5,outputRate:10 },
   { provider:'openai',model:'gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
@@ -39,7 +40,7 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
 ];
 export function providerDefault(provider:string):RoleModel {
-  return provider==='lovable'?{provider,model:'openai/gpt-5-nano',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
+  return provider==='lovable'?{provider,model:'openai/gpt-5.4-mini',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
 }
 export function validExecutionRoles(agents:string[],roles:Record<string,unknown>) {
   return agents.every(id=>{
