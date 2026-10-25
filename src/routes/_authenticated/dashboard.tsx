@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { DashboardAttribution } from "@/components/attribution-note";
 import { cn } from "@/lib/utils";
 
 const SYMBOLS = [
@@ -113,6 +114,7 @@ function Dashboard() {
           </table>
         )}
       </section>
+      <DashboardAttribution />
     </div>
   );
 }
