@@ -27,3 +27,4 @@
 - Keep macro/data credential providers separate from execution providers; use the same authenticated encrypted key storage without granting FRED access to LLM selection.
 - Persist sanitized external evidence in owner-only caches and report sections; use FRED point-in-time vintages and omit current prediction quotes from historical analysis to prevent look-ahead bias.
 - Route built-in OpenAI through Responses, Claude through Messages and Gemini through Chat Completions; validate Gemini synthesis JSON server-side because its compatible SDK does not reliably enforce report schemas.
+- Same-stock comparisons read completed owner-scoped reports through authenticated functions, use analysis dates separately from creation timestamps, and never invent missing snapshots or compare different tickers.
