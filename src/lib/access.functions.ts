@@ -144,7 +144,7 @@ export const createResearchRun = createServerFn({ method: "POST" })
 
 export const createInviteCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { note?: string }) => input)
+  .inputValidator((input: { note?: string | undefined }) => input)
   .handler(async ({ data, context }) => {
     await assertAdmin({ context } as Authed);
     const code = generateInviteCode();
