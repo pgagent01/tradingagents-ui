@@ -24,6 +24,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [invite, setInvite] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -34,17 +35,40 @@ function AuthPage() {
       setBusy(false);
       if (error) { toast.error(error.message); return; }
       nav({ to: "/dashboard" });
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      setBusy(false);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Check your email to confirm your account.");
-      setMode("in");
+      return;
     }
+
+    const code = invite.trim().toUpperCase();
+    if (!code) {
+      setBusy(false);
+      toast.error("An invite code is required to create an account.");
+      return;
+    }
+
+    const { data: valid, error: checkError } = await supabase.rpc("is_valid_invite_code", {
+      _code: code,
+    });
+    if (checkError) {
+      setBusy(false);
+      toast.error(checkError.message);
+      return;
+    }
+    if (!valid) {
+      setBusy(false);
+      toast.error("That invite code is invalid or already used.");
+      return;
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin, data: { invite_code: code } },
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Check your email to confirm your account.");
+    setMode("in");
+    setInvite("");
   }
 
   return (
@@ -55,6 +79,23 @@ function AuthPage() {
           <span className="font-mono text-sm font-semibold tracking-tight">TRADINGAGENTS<span className="text-primary">.AI</span></span>
         </div>
         <h1 className="text-lg font-semibold">{mode === "in" ? "Sign in to terminal" : "Create account"}</h1>
+        {mode === "up" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="invite">Invite code</Label>
+            <Input
+              id="invite"
+              required
+              autoComplete="off"
+              placeholder="TA-XXXX-XXXX-XXXX"
+              value={invite}
+              onChange={(e) => setInvite(e.target.value)}
+              className="font-mono"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Accounts can only be created with a valid invite code from an admin.
+            </p>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
