@@ -1,0 +1,10 @@
+import {describe,it,expect} from 'vitest';
+import {parseYahooChart,firstAvailable,validTicker,parseSecFinancials,STOCK_RANGES} from '@/lib/stock-data';
+describe('stock data',()=>{
+ it('supports all requested chart ranges',()=>expect(STOCK_RANGES).toEqual(['1D','1W','1M','6M','1Y','5Y']));
+ it('filters missing OHLC and calculates quote change',()=>{const r=parseYahooChart({chart:{result:[{meta:{regularMarketPrice:110,chartPreviousClose:100},timestamp:[1,2],indicators:{quote:[{open:[100,null],high:[112,113],low:[99,100],close:[110,111],volume:[1000,2000]}]}}]}});expect(r.candles).toEqual([{time:1,open:100,high:112,low:99,close:110,volume:1000}]);expect(r.changePercent).toBe(10);});
+ it('cascades after failures and stops at first valid source',async()=>{const calls:string[]=[];const r=await firstAvailable([{source:'yahoo',load:async()=>{calls.push('yahoo');throw Error('429');}},{source:'fallback',load:async()=>{calls.push('fallback');return 42;}},{source:'unused',load:async()=>{calls.push('unused');return 1;}}]);expect(r).toEqual({source:'fallback',data:42});expect(calls).toEqual(['yahoo','fallback']);});
+ it('returns unavailable instead of inventing market data',async()=>expect(await firstAvailable([{source:'missing',load:async()=>null}])).toBeNull());
+ it('validates tickers before constructing provider URLs',()=>{expect(validTicker('BRK.B')).toBe(true);expect(validTicker('AAPL&apikey=secret')).toBe(false);});
+ it('does not mix quarterly revenue into annual ratios',()=>{const entry=(val:number,start:string)=>({val,start,end:'2025-12-31',filed:'2026-02-01',form:'10-K'});const facts={facts:{'us-gaap':{Revenues:{units:{USD:[entry(50,'2025-10-01'),entry(200,'2025-01-01')]}},NetIncomeLoss:{units:{USD:[entry(20,'2025-01-01')]}}}}};const r=parseSecFinancials(facts,100);expect(r.statements.income[0]?.value).toBe(200);expect(r.ratios.find(v=>v.label==='Net margin %')?.value).toBe(10);expect(r.ratios.find(v=>v.label==='EV / EBITDA')?.value).toBeNull();});
+});
