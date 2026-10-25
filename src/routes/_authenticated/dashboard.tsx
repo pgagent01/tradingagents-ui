@@ -117,7 +117,7 @@ function Dashboard() {
   );
 }
 
-function Metric({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function Metric({ label, value, accent }: { label: string; value: string; accent?: string | undefined }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
