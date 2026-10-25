@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { UsageMetrics } from '@/components/usage-metrics';
 import { getExecution,advanceDemo,cancelAnalysis } from '@/lib/research.functions';
+import { CreditMetric } from '@/components/credit-metric';
+import { useRef } from 'react';
 import { AGENTS } from '@/lib/research-config';
 import { supabase } from '@/integrations/supabase/client';
 import { pageHead } from '@/lib/page-head';
@@ -26,6 +28,13 @@ function Execution() {
   useEffect(()=>{if(readyReport && data.run.status==='completed' && !search.execution) { void nav({to:'/reports/$id',params:{id:readyReport},replace:true}); }},[readyReport,data.run.status,search.execution,nav]);
   const advance=useServerFn(advanceDemo);
   const cancel=useServerFn(cancelAnalysis);
+  const requestAbort=useRef<AbortController|null>(null);
+  const [executing,setExecuting]=useState(false);
+  const [streamText,setStreamText]=useState('');
+  async function startExecution(){
+    if(executing)return;setExecuting(true);setStreamText('');const abort=new AbortController();requestAbort.current=abort;
+    try{const {data:session}=await supabase.auth.getSession();if(!session.session)throw new Error('Sign in to run research.');const response=await fetch('/api/research-execute',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.session.access_token}`},body:JSON.stringify({id}),signal:abort.signal});if(!response.ok){const body=await response.json();throw new Error(body.error||'Execution unavailable.');}const reader=response.body?.getReader();if(!reader)throw new Error('No execution stream.');const decoder=new TextDecoder();let buffer='';while(true){const part=await reader.read();if(part.done)break;buffer+=decoder.decode(part.value,{stream:true});let n=buffer.indexOf('\n');while(n>=0){const event=JSON.parse(buffer.slice(0,n));buffer=buffer.slice(n+1);if(event.type==='delta')setStreamText(prev=>(prev+event.text).slice(-12000));if(event.type==='error')toast.error(event.message);if(event.type==='completed')void nav({to:'/reports/$id',params:{id:event.reportId}});void qc.invalidateQueries({queryKey:['execution',id]});n=buffer.indexOf('\n');}}}catch(e){if(!abort.signal.aborted)toast.error(e instanceof Error?e.message:'Execution stopped.');}finally{setExecuting(false);requestAbort.current=null;void qc.invalidateQueries({queryKey:['execution',id]});}
+  }
   const [now,setNow]=useState(Date.now());
   const [selected,setSelected]=useState<string|null>(null);
   const [demoError,setDemoError]=useState('');
@@ -49,10 +58,13 @@ function Execution() {
   const selectedOutput=data.outputs.find(o => o.agent_id===selected);
   const report=data.reports[0];
   return <div className="space-y-4">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-mono text-xl font-semibold">{data.run.ticker} <span className="text-sm font-normal text-muted-foreground">/ Execution</span></h1><p className="mt-1 text-xs text-muted-foreground">{data.run.analysis_date} · {data.run.research_depth} · {data.run.status}{data.run.is_demo?' · DEMO':''}</p></div><div className="flex items-center gap-3"><span className="font-mono text-xs">{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span><Button variant="outline" size="sm" disabled={!active||cancelMut.isPending} onClick={() => cancelMut.mutate()}><Square className="h-3 w-3" />Cancel Run</Button></div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-mono text-xl font-semibold">{data.run.ticker} <span className="text-sm font-normal text-muted-foreground">/ Execution</span></h1><p className="mt-1 text-xs text-muted-foreground">{data.run.analysis_date} · {data.run.research_depth} · {data.run.status}{data.run.is_demo?' · DEMO':''} · Lookback {data.run.lookback_days} days · {String((data.run.model_config as {preset?:string})?.preset??'Custom')}</p></div><div className="flex items-center gap-3"><span className="font-mono text-xs">{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span><Button variant="outline" size="sm" disabled={!active||cancelMut.isPending} onClick={() => {requestAbort.current?.abort();cancelMut.mutate();}}><Square className="h-3 w-3" />Cancel Run</Button></div></header>
     <UsageMetrics input={data.run.total_input_tokens} output={data.run.total_output_tokens} cost={Number(data.run.total_cost_usd)} demo={data.run.is_demo} />
     {data.run.is_demo && <p className="text-xs text-warning">Demo simulation · mock agent events · hypothetical cost shown above · actual charge $0.</p>}
-    {!data.run.is_demo && data.run.status==='pending' && <p className="text-xs text-warning">Queued. No research worker is connected yet; use demo simulation in Settings to test execution.</p>}
+    <CreditMetric credits={data.run.is_demo?0:data.run.lovable_credits} basis={data.run.credit_basis} />
+    {!data.run.is_demo&&active&&<Button disabled={executing} size="sm" onClick={()=>void startExecution()}><Activity className="h-4 w-4"/>{executing?'Research in progress…':'Execute research'}</Button>}
+    {streamText&&<details open className="border-y border-border py-3"><summary className="text-xs font-semibold">Live analyst output</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">{streamText}</pre></details>}
+    {data.run.error_message&&<p role="alert" className="text-negative">{data.run.error_message}</p>}
     {demoError && <p role="alert" className="text-xs text-negative">{demoError}</p>}
     <div className="grid gap-6 xl:grid-cols-[3fr_2fr]">
       <section className="min-w-0"><h2 className="mb-3 text-xs uppercase text-muted-foreground">Agent graph</h2><div className="flex items-center gap-2 border-b border-border pb-4 font-mono text-xs"><Activity className="h-4 w-4 text-primary" />{data.run.ticker} → {agents.length} agents → Consensus report</div><div className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-3">{agents.map(id => {

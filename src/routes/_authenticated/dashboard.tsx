@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DashboardAttribution } from "@/components/attribution-note";
+import { CreditMetric } from '@/components/credit-metric';
 import { DataError,DataNotFound } from "@/components/route-feedback";
 import { cn } from "@/lib/utils";
 import { CompanyPicker } from "@/components/company-picker";

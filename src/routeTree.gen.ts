@@ -18,6 +18,7 @@ import { Route as AuthenticatedNewAnalysisRouteImport } from './routes/_authenti
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
+import { Route as ApiResearchExecuteRouteImport } from './routes/api/research-execute'
 import { Route as AuthenticatedAnalysisIdRouteImport } from './routes/_authenticated/analysis.$id'
 import { Route as AuthenticatedAnalysisNewRouteImport } from './routes/_authenticated/analysis.new'
 import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports_.$id'
@@ -67,6 +68,11 @@ const AuthenticatedWatchlistsRoute = AuthenticatedWatchlistsRouteImport.update({
   path: '/watchlists',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiResearchExecuteRoute = ApiResearchExecuteRouteImport.update({
+  id: '/api/research-execute',
+  path: '/api/research-execute',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAnalysisIdRoute = AuthenticatedAnalysisIdRouteImport.update({
   id: '/analysis/$id',
   path: '/analysis/$id',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/api/research-execute': typeof ApiResearchExecuteRoute
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/api/research-execute': typeof ApiResearchExecuteRoute
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/api/research-execute': typeof ApiResearchExecuteRoute
   '/_authenticated/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/_authenticated/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/_authenticated/reports_/$id': typeof AuthenticatedReportsIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/watchlists'
+    | '/api/research-execute'
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/watchlists'
+    | '/api/research-execute'
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/watchlists'
+    | '/api/research-execute'
     | '/_authenticated/analysis/$id'
     | '/_authenticated/analysis/new'
     | '/_authenticated/reports_/$id'
@@ -172,6 +184,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiResearchExecuteRoute: typeof ApiResearchExecuteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWatchlistsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/research-execute': {
+      id: '/api/research-execute'
+      path: '/api/research-execute'
+      fullPath: '/api/research-execute'
+      preLoaderRoute: typeof ApiResearchExecuteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/analysis/$id': {
       id: '/_authenticated/analysis/$id'
       path: '/analysis/$id'
@@ -294,6 +314,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiResearchExecuteRoute: ApiResearchExecuteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

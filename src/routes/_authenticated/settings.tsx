@@ -19,6 +19,8 @@ import {
 } from "@/lib/access.functions";
 import { Switch } from "@/components/ui/switch";
 import { getDemoSetting, setDemoSetting } from "@/lib/research.functions";
+import { testMyApiKey } from '@/lib/credential-test.functions';
+import { resumeMyAiAccess } from '@/lib/ai-access.functions';
 import { PROVIDERS } from "@/lib/access-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -42,6 +44,7 @@ function SettingsPage() {
       <DemoPanel />
       <ApiKeysPanel />
       <InviteCodesPanel />
+      <AiResumePanel />
     </div>
   );
 }
@@ -62,6 +65,9 @@ function ApiKeysPanel() {
   const qc = useQueryClient();
   const save = useServerFn(saveMyApiKey);
   const remove = useServerFn(deleteMyApiKey);
+  const test=useServerFn(testMyApiKey);
+  const [validation,setValidation]=useState<Record<string,string>>({});
+  const testMut=useMutation({mutationFn:(p:string)=>test({data:{provider:p}}),onSuccess:r=>setValidation(v=>({...v,[r.provider]:r.message})),onError:(e:Error)=>toast.error(e.message)});
   const [provider, setProvider] = useState<string>("openai");
   const [apiKey, setApiKey] = useState("");
 
@@ -73,7 +79,7 @@ function ApiKeysPanel() {
   const saveMut = useMutation({
     mutationFn: () => save({ data: { provider, apiKey } }),
     onSuccess: (r) => {
-      toast.success(`${r.provider} key saved (${r.hint})`);
+      toast.success(`${r.provider} key saved`);
       setApiKey("");
       qc.invalidateQueries({ queryKey: ["my-api-keys"] });
     },
@@ -91,9 +97,10 @@ function ApiKeysPanel() {
 
   return (
     <Panel
-      title="LLM API keys — bring your own"
+      title="AI & Credentials — bring your own"
       description="Each account stores its own keys, encrypted and visible only to you. Research cannot run without one."
     >
+      <p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <Label htmlFor="provider">Provider</Label>
@@ -140,7 +147,7 @@ function ApiKeysPanel() {
               <span className="font-mono font-semibold uppercase">{k.provider}</span>
               <span className="font-mono text-muted-foreground">{k.hint}</span>
             </div>
-            <Button
+            <div className="flex flex-wrap items-center gap-2"><span className="max-w-72 text-[10px] text-muted-foreground">{validation[k.provider]}</span><Button variant="outline" size="sm" disabled={testMut.isPending} onClick={()=>testMut.mutate(k.provider)}>Test key</Button><Button
               size="sm"
               variant="ghost"
               className="h-6 px-2 text-[11px] text-negative"
@@ -148,7 +155,7 @@ function ApiKeysPanel() {
             >
               <Trash2 className="h-3 w-3" />
               Remove
-            </Button>
+            </Button></div>
           </div>
         ))}
       </div>
@@ -272,3 +279,5 @@ function DemoPanel() {
   const mutation=useMutation({mutationFn:(enabled:boolean) => save({data:{enabled}}),onSuccess:() => { void qc.invalidateQueries({queryKey:['demo-setting']}); },onError:(e:Error) => toast.error(e.message)});
   return <section className="flex items-center justify-between gap-4 border-y border-border py-4"><div><Label htmlFor="demo-mode">Simulate Demo Run</Label><p className="mt-1 text-xs text-muted-foreground">Mock events only · no API key needed · no LLM calls or charges.</p></div><Switch id="demo-mode" checked={setting.data ?? false} disabled={setting.isPending||mutation.isPending} onCheckedChange={enabled => mutation.mutate(enabled)} /></section>;
 }
+
+function AiResumePanel(){const resume=useServerFn(resumeMyAiAccess);const role=useQuery({queryKey:['my-role'],queryFn:()=>getMyRole()});const m=useMutation({mutationFn:()=>resume(),onSuccess:()=>toast.success('AI access resumed. Start a fresh run.'),onError:(e:Error)=>toast.error(e.message)});return role.data?.isAdmin?<section className="border-t border-border pt-4"><p className="mb-2 text-xs text-muted-foreground">After restoring credits or provider access, explicitly resume built-in AI.</p><Button size="sm" variant="outline" disabled={m.isPending} onClick={()=>m.mutate()}>Resume AI after access restored</Button></section>:null;}
