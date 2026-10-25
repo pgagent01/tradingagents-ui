@@ -8,6 +8,13 @@
       "when": 1792963254057,
       "tag": "0000_trading_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792963871747,
+      "tag": "0001_add_invite_codes_roles_and_byok_keys",
+      "breakpoints": true
     }
   ]
 }
