@@ -21,3 +21,4 @@
 - Keep gateway catalogs and credit-rate snapshots server-side; displayed credits are calculated token estimates, not verified billed deductions, and unknown usage is not zero.
 - Admin analytics use a role-checked cost-only aggregate RPC; no broader research or credential SELECT policies are added, preserving account isolation.
 - Saved active providers initialize wizard role defaults once; each run retains its own role configuration so later setting changes cannot alter execution.
+- Wizard submission uses a consumed, run-specific session intent to start execution once; server-side pending-run claiming remains the authority against duplicate charges.
