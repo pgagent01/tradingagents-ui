@@ -36,6 +36,13 @@
       "when": 1792964422801,
       "tag": "0004_report_risk_and_expanded_recommendations",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792964773298,
+      "tag": "0005_research_scope_and_credit_audit",
+      "breakpoints": true
     }
   ]
 }
