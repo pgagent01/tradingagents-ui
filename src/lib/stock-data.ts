@@ -1,0 +1,30 @@
+export const STOCK_RANGES = ['1D','1W','1M','6M','1Y','5Y'] as const;
+export type StockRange = typeof STOCK_RANGES[number];
+export type Candle = {time:number;open:number;high:number;low:number;close:number;volume:number|null};
+export type FinancialRow = {label:string;value:number|null};
+export type StockData = {
+  ticker:string;company:string;currency:string;quoteSource:string|null;chartSource:string|null;financialSource:string|null;
+  asOf:string|null;fetchedAt:string;cached:boolean;warnings:string[];candles:Candle[];
+  price:number|null;change:number|null;changePercent:number|null;marketCap:number|null;low52:number|null;high52:number|null;volume:number|null;
+  ratios:FinancialRow[];statements:Record<'income'|'balance'|'cash',FinancialRow[]>;financialDate:string|null;
+};
+export function numeric(v:unknown):number|null {return typeof v==='number'&&Number.isFinite(v)?v:null;}
+export function object(v:unknown):Record<string,unknown>{return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};}
+export function validTicker(ticker:string){return /^[A-Z0-9^][A-Z0-9.^-]{0,14}$/.test(ticker);}
+export function parseYahooChart(raw:unknown) {
+  const chart=object(object(raw)['chart']);const result=chart['result'];const data=object(Array.isArray(result)?result[0]:null);
+  const meta=object(data['meta']);const indicators=object(data['indicators']);const q=indicators['quote'];const quote=object(Array.isArray(q)?q[0]:null);
+  const times=data['timestamp'];const values=(key:string)=>Array.isArray(quote[key])?quote[key] as unknown[]:[];
+  const candles:Candle[]=[];
+  if(Array.isArray(times))times.forEach((t,i)=>{const time=numeric(t),open=numeric(values('open')[i]),high=numeric(values('high')[i]),low=numeric(values('low')[i]),close=numeric(values('close')[i]);if(time!==null&&open!==null&&high!==null&&low!==null&&close!==null)candles.push({time,open,high,low,close,volume:numeric(values('volume')[i])});});
+  const price=numeric(meta['regularMarketPrice']);const previous=numeric(meta['chartPreviousClose'])??numeric(meta['previousClose']);
+  return {candles,meta,price,change:price!==null&&previous!==null?price-previous:null,changePercent:price!==null&&previous!==null&&previous!==0?(price-previous)/previous*100:null};
+}
+export function parseStooqCsv(csv:string):Candle[]{
+  return csv.trim().split(/\r?\n/).slice(1).flatMap(line=>{const [date,...values]=line.split(',');const time=Date.parse(`${date}T00:00:00Z`)/1000;const [open,high,low,close,volume]=values.map(Number);if(!Number.isFinite(time)||open===undefined||high===undefined||low===undefined||close===undefined||![open,high,low,close].every(n=>Number.isFinite(n)&&n>0))return [];return [{time,open,high,low,close,volume:volume!==undefined&&Number.isFinite(volume)?volume:null}];}).sort((a,b)=>a.time-b.time);
+}
+export async function firstAvailable<T>(providers:{source:string;load:()=>Promise<T|null>}[]):Promise<{source:string;data:T}|null>{
+  for(const provider of providers){try{const data=await provider.load();if(data!==null)return {source:provider.source,data};}catch{/* Provider failure is isolated; try the next source. */}}
+  return null;
+}
+export function emptyStock(ticker:string,company:string):StockData{return {ticker,company,currency:'USD',quoteSource:null,chartSource:null,financialSource:null,asOf:null,fetchedAt:new Date().toISOString(),cached:false,warnings:[],candles:[],price:null,change:null,changePercent:null,marketCap:null,low52:null,high52:null,volume:null,ratios:[],statements:{income:[],balance:[],cash:[]},financialDate:null};}
