@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { queryOptions,useSuspenseQuery } from '@tanstack/react-query';
+import { zodValidator } from '@tanstack/zod-adapter';
+import { z } from 'zod';
 import { Search,LayoutGrid,List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +17,7 @@ const reportsQuery=queryOptions({queryKey:['reports'],queryFn:async () => {
 }});
 export const Route=createFileRoute('/_authenticated/reports')({
   head:() => pageHead('Reports Archive','Search completed equity research by company, recommendation and date.'),
-  validateSearch:(s:Record<string,unknown>)=>({q:typeof s['q']==='string'?s['q']:'',recommendation:typeof s['recommendation']==='string'?s['recommendation']:'',from:typeof s['from']==='string'?s['from']:'',to:typeof s['to']==='string'?s['to']:'',view:typeof s['view']==='string'?s['view']:'cards'}),
+  validateSearch:zodValidator(z.object({q:z.string().default(''),recommendation:z.string().default(''),from:z.string().default(''),to:z.string().default(''),view:z.string().default('cards')})),
   loader:({context})=>context.queryClient.ensureQueryData(reportsQuery),errorComponent:DataError,notFoundComponent:DataNotFound,component:Reports,
 });
 function Reports() {

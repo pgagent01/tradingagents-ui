@@ -10,7 +10,7 @@ import { getReport } from '@/lib/report.functions';
 import { pageHead } from '@/lib/page-head';
 import { ANALYST_SECTIONS,analystContent,companyName,sectionObject,contentText,financialRows,reportMarkdown } from '@/lib/report-content';
 const reportQuery=(id:string)=>queryOptions({queryKey:['report',id],queryFn:()=>getReport({data:{id}})});
-export const Route=createFileRoute('/_authenticated/reports/$id')({head:()=>pageHead('Report Analysis','Executive summary, multi-analyst research, investment thesis and report-level usage.'),loader:({context,params})=>context.queryClient.ensureQueryData(reportQuery(params.id)),errorComponent:DataError,notFoundComponent:DataNotFound,component:ReportDetail});
+export const Route=createFileRoute('/_authenticated/reports_/$id')({head:()=>pageHead('Report Analysis','Executive summary, multi-analyst research, investment thesis and report-level usage.'),loader:({context,params})=>context.queryClient.ensureQueryData(reportQuery(params.id)),errorComponent:DataError,notFoundComponent:DataNotFound,component:ReportDetail});
 function Markdown({text}:{text:string}) {
   return <div className="report-prose break-words text-sm leading-7 text-foreground"><ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown></div>;
 }

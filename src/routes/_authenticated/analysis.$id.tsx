@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { zodValidator } from '@tanstack/zod-adapter';
+import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { queryOptions,useSuspenseQuery,useQueryClient,useMutation } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
@@ -13,7 +15,7 @@ import { pageHead } from '@/lib/page-head';
 import { DataError,DataNotFound } from '@/components/route-feedback';
 import { cn } from '@/lib/utils';
 const executionQuery=(id:string) => queryOptions({queryKey:['execution',id],queryFn:() => getExecution({data:{id}}),refetchInterval:3000});
-export const Route=createFileRoute('/_authenticated/analysis/$id')({head:() => pageHead('Live Execution','Agent execution status, realtime activity and per-run token costs.'),validateSearch:(s:Record<string,unknown>)=>({execution:s['execution']===true||s['execution']==='true'}),errorComponent:DataError,notFoundComponent:DataNotFound,loader:({context,params}) => context.queryClient.ensureQueryData(executionQuery(params.id)),component:Execution});
+export const Route=createFileRoute('/_authenticated/analysis/$id')({head:() => pageHead('Live Execution','Agent execution status, realtime activity and per-run token costs.'),validateSearch:zodValidator(z.object({execution:z.boolean().default(false)})),errorComponent:DataError,notFoundComponent:DataNotFound,loader:({context,params}) => context.queryClient.ensureQueryData(executionQuery(params.id)),component:Execution});
 function Execution() {
   const {id}=Route.useParams();
   const {data}=useSuspenseQuery(executionQuery(id));
