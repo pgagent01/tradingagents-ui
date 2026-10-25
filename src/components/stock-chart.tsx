@@ -6,7 +6,10 @@ export function StockChart({candles,mode}:{candles:Candle[];mode:'line'|'candles
   useEffect(()=>{let dispose:()=>void=()=>{};let cancelled=false;
     void import('lightweight-charts').then(({createChart,ColorType,LineSeries,CandlestickSeries,HistogramSeries})=>{
       if(cancelled||!ref.current)return;
-      const css=getComputedStyle(document.documentElement);const color=(name:string)=>css.getPropertyValue(name).trim();
+      const css=getComputedStyle(document.documentElement);
+      // Canvas accepts modern CSS tokens; the chart library only accepts legacy RGB/hex.
+      const canvas=document.createElement('canvas');canvas.width=1;canvas.height=1;const ctx=canvas.getContext('2d');
+      const color=(name:string)=>{if(!ctx)return '';ctx.clearRect(0,0,1,1);ctx.fillStyle=css.getPropertyValue(name).trim();ctx.fillRect(0,0,1,1);const [r,g,b]=ctx.getImageData(0,0,1,1).data;return `rgb(${r}, ${g}, ${b})`;};
       const chart=createChart(ref.current,{autoSize:true,layout:{background:{type:ColorType.Solid,color:color('--background')},textColor:color('--muted-foreground')},grid:{vertLines:{color:color('--border')},horzLines:{color:color('--border')}},timeScale:{timeVisible:candles.length>0&&((candles[1]?.time??0)-(candles[0]?.time??0))<86400},rightPriceScale:{scaleMargins:{top:0.1,bottom:0.25}}});
       const points=candles.map(c=>({...c,time:c.time as import('lightweight-charts').UTCTimestamp}));
       if(mode==='candles'){const series=chart.addSeries(CandlestickSeries,{upColor:color('--positive'),downColor:color('--negative'),borderVisible:false,wickUpColor:color('--positive'),wickDownColor:color('--negative')});series.setData(points);}else{const series=chart.addSeries(LineSeries,{color:color('--primary'),lineWidth:2});series.setData(points.map(c=>({time:c.time,value:c.close})));}
