@@ -24,3 +24,4 @@
 - Wizard submission uses a consumed, run-specific session intent to start execution once; server-side pending-run claiming remains the authority against duplicate charges.
 - Keep macro/data credential providers separate from execution providers; use the same authenticated encrypted key storage without granting FRED access to LLM selection.
 - Persist sanitized external evidence in owner-only caches and report sections; use FRED point-in-time vintages and omit current prediction quotes from historical analysis to prevent look-ahead bias.
+- Route built-in OpenAI through Responses, Claude through Messages and Gemini through Chat Completions; validate Gemini synthesis JSON server-side because its compatible SDK does not reliably enforce report schemas.

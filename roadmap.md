@@ -1,8 +1,9 @@
 # Roadmap
 
-- [ ] Integrate encrypted FRED credential management and validation, cached macro ingestion, public Polymarket evidence, agent context and report findings; verify tests and live data paths.
-- [ ] Default new Lovable AI role configurations to openai/gpt-5-nano and verify.
-- [ ] Make Claude Haiku 4.5 and Gemini 2.5 Flash-Lite selectable per role; verify supported provider protocols and build.
+- [x] Integrate encrypted FRED credential management, dated/cache-aware macro ingestion and public Polymarket context/report evidence; authenticated live report verified with cached prediction evidence and explicit missing-FRED-key state.
+- [x] Apply final requested OpenAI/Lovable GPT-6 Luna defaults, retain GPT-5.4 Mini and low-cost Claude/Gemini choices; 55 tests passed and a live Luna/Gemini report saved.
+- [x] Make Claude Haiku 4.5 and current Gemini 3.1 Flash-Lite selectable per role; verified dropdowns and provider-specific execution protocols.
+- [ ] Validate live FRED observations with a real key — blocked: no FRED credential supplied; encrypted settings and unavailable-data path verified.
 
 - [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
 

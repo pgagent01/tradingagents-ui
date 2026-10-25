@@ -14,11 +14,14 @@ describe('per-report token costs',() => {
   it('Quick Scan includes Technical and News and estimates two agents',() => {
     const preset=PRESETS[0];
     expect(preset.agents).toEqual(['technical','news']);
-    expect(estimateUsage(preset.depth,preset.agents.map(() => DEFAULT_MODEL))).toEqual({input:2000,output:500,total:2500,cost:0.0016});
+    expect(estimateUsage(preset.depth,preset.agents.map(() => DEFAULT_MODEL))).toEqual({input:2000,output:500,total:2500,cost:0.00045});
   });
 });
 describe('Phase 4 execution configuration',()=>{
-  it('defaults built-in Lovable roles to GPT-5 Nano',()=>expect(providerDefault('lovable').model).toBe('openai/gpt-5-nano'));
+  it('defaults built-in Lovable roles to requested GPT-6 Luna',()=>expect(providerDefault('lovable').model).toBe('openai/gpt-6-luna'));
+  it('defaults BYOK OpenAI roles to native GPT-6 Luna',()=>expect(providerDefault('openai').model).toBe('gpt-6-luna'));
+  it('defaults Claude to Haiku 4.5',()=>expect(providerDefault('anthropic').model).toBe('claude-haiku-4-5'));
+  it('defaults Google to current Gemini 3.1 Flash-Lite',()=>expect(providerDefault('google').model).toBe('gemini-3.1-flash-lite'));
   it('initializes OpenRouter with its own provider-qualified model',()=>expect(providerDefault('openrouter')).toMatchObject({provider:'openrouter',model:'openai/gpt-4o-mini'}));
   it('requires a model configuration for every specialist',()=>expect(validExecutionRoles(['fundamentals','risk'],{fundamentals:DEFAULT_MODEL})).toBe(false));
   it('rejects unsupported execution providers',()=>expect(validExecutionRoles(['risk'],{risk:{...DEFAULT_MODEL,provider:'untrusted'}})).toBe(false));
