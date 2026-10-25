@@ -39,7 +39,7 @@ export const setDemoSetting = createServerFn({ method:'POST' }).middleware([requ
   if(error) throw error;
   return data.enabled;
 });
-export const getExecution = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.uuid() }).parse(input)).handler(async ({ data,context }) => {
+export const getExecution = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
   const { data:run,error } = await context.supabase.from('research_runs').select('*').eq('id',data.id).eq('user_id',context.userId).single();
   if(error) throw new Error('Run not found or unavailable to this account.');
   const [events,outputs,reports] = await Promise.all([
@@ -52,12 +52,12 @@ export const getExecution = createServerFn({ method:'POST' }).middleware([requir
   if(reports.error) throw reports.error;
   return { run, events:events.data ?? [], outputs:outputs.data ?? [], reports:reports.data ?? [] };
 });
-export const advanceDemo = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.uuid() }).parse(input)).handler(async ({ data,context }) => {
+export const advanceDemo = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
   const { error } = await context.supabase.rpc('advance_demo_run',{ _run_id:data.id });
   if(error) throw error;
   return { ok:true };
 });
-export const cancelAnalysis = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.uuid() }).parse(input)).handler(async ({ data,context }) => {
+export const cancelAnalysis = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
   const { data:run,error } = await context.supabase.from('research_runs').update({ status:'cancelled', completed_at:new Date().toISOString() }).eq('id',data.id).eq('user_id',context.userId).in('status',['pending','running']).select('id').maybeSingle();
   if(error) throw error;
   if(run) {

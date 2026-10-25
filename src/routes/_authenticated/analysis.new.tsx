@@ -18,7 +18,7 @@ import { resolveTicker } from '@/lib/companies';
 
 export const Route = createFileRoute('/_authenticated/analysis/new')({
   head: () => pageHead('New Analysis', 'Configure a stock, agents, role models and estimated report costs.'),
-  validateSearch: (search: Record<string,unknown>) => ({ ticker: typeof search.ticker === 'string' ? search.ticker : '' }),
+  validateSearch: (search: Record<string,unknown>) => ({ ticker: typeof search['ticker'] === 'string' ? search['ticker'] : '' }),
   component: AnalysisWizard,
 });
 function AnalysisWizard() {
@@ -26,7 +26,7 @@ function AnalysisWizard() {
   const nav = useNavigate();
   const submit = useServerFn(createAnalysis);
   const [step,setStep] = useState(1);
-  const [ticker,setTicker] = useState(search.ticker);
+  const [ticker,setTicker] = useState(search['ticker']);
   const [date,setDate] = useState(() => new Date().toISOString().slice(0,10));
   const [depth,setDepth] = useState('standard');
   const [agents,setAgents] = useState<string[]>(AGENTS.map(a => a.id));
