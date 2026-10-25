@@ -39,7 +39,7 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
 ];
 export function providerDefault(provider:string):RoleModel {
-  return provider==='lovable'?{provider,model:'openai/gpt-6-astra',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
+  return provider==='lovable'?{provider,model:'openai/gpt-5-nano',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
 }
 export function validExecutionRoles(agents:string[],roles:Record<string,unknown>) {
   return agents.every(id=>{

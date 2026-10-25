@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Integrate encrypted FRED credential management and validation, cached macro ingestion, public Polymarket evidence, agent context and report findings; verify tests and live data paths.
+- [ ] Default new Lovable AI role configurations to openai/gpt-5-nano and verify.
 
 - [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
 
