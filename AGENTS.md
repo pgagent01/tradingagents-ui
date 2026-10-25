@@ -22,3 +22,5 @@
 - Admin analytics use a role-checked cost-only aggregate RPC; no broader research or credential SELECT policies are added, preserving account isolation.
 - Saved active providers initialize wizard role defaults once; each run retains its own role configuration so later setting changes cannot alter execution.
 - Wizard submission uses a consumed, run-specific session intent to start execution once; server-side pending-run claiming remains the authority against duplicate charges.
+- Keep macro/data credential providers separate from execution providers; use the same authenticated encrypted key storage without granting FRED access to LLM selection.
+- Persist sanitized external evidence in owner-only caches and report sections; use FRED point-in-time vintages and omit current prediction quotes from historical analysis to prevent look-ahead bias.

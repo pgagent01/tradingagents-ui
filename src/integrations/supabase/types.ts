@@ -124,6 +124,33 @@ export type Database = {
         }
         Relationships: []
       }
+      research_data_cache: {
+        Row: {
+          cache_key: string
+          expires_at: string
+          fetched_at: string
+          payload: Json
+          provider: string
+          user_id: string
+        }
+        Insert: {
+          cache_key: string
+          expires_at: string
+          fetched_at?: string
+          payload: Json
+          provider: string
+          user_id: string
+        }
+        Update: {
+          cache_key?: string
+          expires_at?: string
+          fetched_at?: string
+          payload?: Json
+          provider?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       research_events: {
         Row: {
           agent_id: string | null

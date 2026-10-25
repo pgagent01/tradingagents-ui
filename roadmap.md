@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Integrate encrypted FRED credential management and validation, cached macro ingestion, public Polymarket evidence, agent context and report findings; verify tests and live data paths.
+- [ ] Default new Lovable AI role configurations to openai/gpt-5-nano and verify.
+- [ ] Make Claude Haiku 4.5 and Gemini 2.5 Flash-Lite selectable per role; verify supported provider protocols and build.
+
 - [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
 
 - [x] Phase 4 analytics: interactive usage/cost history, total runs, model efficiency, and admin aggregate per-user costs without exposing private research or credentials.

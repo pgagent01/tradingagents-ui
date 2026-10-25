@@ -46,6 +46,7 @@ function SettingsPage() {
       <DemoPanel />
       <ActiveProviderPanel />
       <ApiKeysPanel />
+      <ApiKeysPanel dataOnly />
       <InviteCodesPanel />
       <AiResumePanel />
       <CreditSummary />
@@ -65,14 +66,14 @@ function Panel({ title, description, children }: { title: string; description: s
   );
 }
 
-function ApiKeysPanel() {
+function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
   const qc = useQueryClient();
   const save = useServerFn(saveMyApiKey);
   const remove = useServerFn(deleteMyApiKey);
   const test=useServerFn(testMyApiKey);
   const [validation,setValidation]=useState<Record<string,string>>({});
   const testMut=useMutation({mutationFn:(p:string)=>test({data:{provider:p}}),onSuccess:r=>setValidation(v=>({...v,[r.provider]:r.message})),onError:(e:Error)=>toast.error(e.message)});
-  const [provider, setProvider] = useState<string>("openai");
+  const [provider, setProvider] = useState<string>(dataOnly?"fred":"openai");
   const [apiKey, setApiKey] = useState("");
 
   const keys = useQuery({
@@ -101,31 +102,31 @@ function ApiKeysPanel() {
 
   return (
     <Panel
-      title="AI & Credentials — bring your own"
-      description="Each account stores its own keys, encrypted and visible only to you. BYOK providers require your own key; built-in Lovable AI is reserved for admins."
+      title={dataOnly?"FRED API Key (Macroeconomic Data)":"AI & Credentials — bring your own"}
+      description={dataOnly?"Optional · encrypted for your account only. Federal funds, yield spread, CPI, real GDP and unemployment.":"Each account stores its own keys, encrypted and visible only to you. BYOK providers require your own key; built-in Lovable AI is reserved for admins."}
     >
-      <p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>
+      {dataOnly?<p className="mb-3 text-xs text-muted-foreground"><a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get a FRED API key</a> · No key means unavailable macro data, never invented values. Polymarket public predictions require no key.</p>:<p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>}
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <Label htmlFor="provider">Provider</Label>
+          <Label htmlFor={dataOnly?'data-provider':'provider'}>Provider</Label>
           <Select value={provider} onValueChange={setProvider}>
-            <SelectTrigger id="provider" className="h-8 w-40 text-xs">
+            <SelectTrigger id={dataOnly?'data-provider':'provider'} className="h-8 w-40 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PROVIDERS.map((p) => (
+              {(dataOnly?['fred']:PROVIDERS).map((p) => (
                 <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="min-w-56 flex-1 space-y-1">
-          <Label htmlFor="apikey">API key</Label>
+          <Label htmlFor={dataOnly?'fred-apikey':'apikey'}>API key</Label>
           <Input
-            id="apikey"
+            id={dataOnly?'fred-apikey':'apikey'}
             type="password"
             autoComplete="off"
-            placeholder="sk-…"
+            placeholder={dataOnly?'FRED API key':'sk-…'}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="h-8 font-mono text-xs"
@@ -139,13 +140,12 @@ function ApiKeysPanel() {
 
       <div className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
         {keys.isPending && <div className="px-3 py-2 text-xs text-muted-foreground">Loading…</div>}
-        {keys.data?.length === 0 && (
+        {keys.data?.filter(k=>(k.provider==='fred')===dataOnly).length === 0 && (
           <div className="px-3 py-2 text-xs text-muted-foreground">
-            No keys yet. Add your own key to run research —{" "}
-            <Link to="/new-analysis" className="text-primary hover:underline">New Analysis</Link> will ask for one.
+            {dataOnly?'No FRED key configured. Macroeconomic evidence is optional.':<>No keys yet. Add your own key to run research — <Link to="/new-analysis" className="text-primary hover:underline">New Analysis</Link> will ask for one.</>}
           </div>
         )}
-        {keys.data?.map((k) => (
+        {keys.data?.filter(k=>(k.provider==='fred')===dataOnly).map((k) => (
           <div key={k.provider} className="flex items-center justify-between gap-3 px-3 py-1.5">
             <div className="flex items-center gap-2 text-xs">
               <span className="font-mono font-semibold uppercase">{k.provider}</span>

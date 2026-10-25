@@ -6,8 +6,9 @@ import {
   generateInviteCode,
   maskKey,
   normalizeProvider,
+  normalizeCredentialProvider,
   validateTicker,
-  type Provider,
+  type CredentialProvider,
 } from "@/lib/access-rules";
 
 type Authed = { context: { supabase: any; userId: string } };
@@ -39,7 +40,7 @@ export const saveMyApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { provider: string; apiKey: string }) => input)
   .handler(async ({ data, context }) => {
-    const provider = normalizeProvider(data.provider);
+    const provider = normalizeCredentialProvider(data.provider);
     const apiKey = data.apiKey.trim();
     if (apiKey.length < 8) throw new Error("That API key looks too short.");
     const { error } = await context.supabase.from("user_api_keys").upsert(
@@ -67,7 +68,7 @@ export const listMyApiKeys = createServerFn({ method: "POST" })
       .order("provider");
     if (error) throw error;
     return (data ?? []).map((r: any) => ({
-      provider: r.provider as Provider,
+      provider: r.provider as CredentialProvider,
       hint: "•••••••• (configured)",
       updatedAt: r.updated_at as string,
     }));
@@ -77,7 +78,7 @@ export const deleteMyApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { provider: string }) => input)
   .handler(async ({ data, context }) => {
-    const provider = normalizeProvider(data.provider);
+    const provider = normalizeCredentialProvider(data.provider);
     const { error } = await context.supabase
       .from("user_api_keys")
       .delete()

@@ -18,6 +18,7 @@ describe('per-report token costs',() => {
   });
 });
 describe('Phase 4 execution configuration',()=>{
+  it('defaults built-in Lovable roles to GPT-5 Nano',()=>expect(providerDefault('lovable').model).toBe('openai/gpt-5-nano'));
   it('initializes OpenRouter with its own provider-qualified model',()=>expect(providerDefault('openrouter')).toMatchObject({provider:'openrouter',model:'openai/gpt-4o-mini'}));
   it('requires a model configuration for every specialist',()=>expect(validExecutionRoles(['fundamentals','risk'],{fundamentals:DEFAULT_MODEL})).toBe(false));
   it('rejects unsupported execution providers',()=>expect(validExecutionRoles(['risk'],{risk:{...DEFAULT_MODEL,provider:'untrusted'}})).toBe(false));
