@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Complete Phase 4 and fully functional live integration — awaiting the Phase 4 requirements from the workspace chat.
+
 - [x] Attribution note: sidebar bottom + dashboard footer crediting the open-source TradingAgents framework (link to github.com/TauricResearch/TradingAgents) — verified rendering
 - [x] Invite code required at sign-up (existing logins unaffected); valid codes only
 - [x] Designate gprithvi@gmail.com as primary admin with full access
