@@ -1,6 +1,8 @@
 # Roadmap
 
-- [ ] Complete Phase 4 and fully functional live integration — awaiting the Phase 4 requirements from the workspace chat.
+- [ ] Phase 4 analytics: interactive usage/cost history, total runs, model efficiency, and admin aggregate per-user costs without exposing private research or credentials.
+- [ ] Phase 4 live execution: built-in AI and BYOK OpenAI, Anthropic, Groq, OpenRouter; live specialist and synthesis output with persisted report usage.
+- [ ] Phase 4 settings: active provider selection, provider-key management/testing, and existing primary-admin invite management.
 
 - [x] Attribution note: sidebar bottom + dashboard footer crediting the open-source TradingAgents framework (link to github.com/TauricResearch/TradingAgents) — verified rendering
 - [x] Invite code required at sign-up (existing logins unaffected); valid codes only
