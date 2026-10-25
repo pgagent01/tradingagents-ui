@@ -11,7 +11,7 @@ async function json(url:string,sec=false):Promise<unknown>{
   const response=await fetch(url,{signal:AbortSignal.timeout(sec?20000:8000),headers:{'User-Agent':sec?(process.env['SEC_USER_AGENT']??'TradingAgentsAI gprithvi@gmail.com'):'Mozilla/5.0',Accept:'application/json'}});
   if(!response.ok){if(sec)console.warn('SEC public request status',response.status);throw new Error('Market provider unavailable');}return response.json();
 }
-async function secFacts(ticker:string){
+export async function secFacts(ticker:string){
   const cached=financialCache.get(ticker);if(cached&&cached.expires>Date.now())return cached.raw;
   if(!tickers||tickers.expires<Date.now())tickers={expires:Date.now()+86400000,data:object(await json('https://www.sec.gov/files/company_tickers.json',true))};
   const match=Object.values(tickers.data).map(object).find(r=>r['ticker']===ticker||r['ticker']===ticker.replace('.','-'));
@@ -36,7 +36,7 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   ]);if(quote)Object.assign(result,quote.data,{quoteSource:quote.source});}
   if(fmp){try{const financial=await fmpFinancials(ticker,fmp,period);if(financial)Object.assign(result,{financialSource:`Financial Modeling Prep · ${period}`,financialDate:financial.date,ratios:financial.ratios,statements:financial.statements});}catch{/* SEC remains available without FMP entitlements. */}}
   // SEC offers filings, not a substitute for current market quotes or price history.
-  if(!result.financialSource){try{const raw=await secFacts(ticker);if(raw){const financial=parseSecFinancials(raw,result.price,period);if(financial.date)Object.assign(result,{financialSource:`SEC EDGAR · ${period==='annual'?'annual 10-K':'quarterly 10-Q'}`,financialDate:financial.date,ratios:financial.ratios,statements:financial.statements});if(result.marketCap===null)result.marketCap=financial.marketCap;}}catch{result.warnings.push('SEC financial filings are temporarily unavailable.');}}
+  if(!result.financialSource||Object.values(result.statements).some(rows=>rows.every(r=>r.value===null))){try{const raw=await secFacts(ticker);if(raw){const financial=parseSecFinancials(raw,result.price,period);if(financial.date&&(!result.financialSource||financial.date===result.financialDate))Object.assign(result,{financialSource:`SEC EDGAR · ${period==='annual'?'annual 10-K':'quarterly 10-Q'}`,financialDate:financial.date,ratios:result.financialSource?result.ratios.map(row=>({...row,value:row.value??financial.ratios.find(r=>r.label===row.label)?.value??null})):financial.ratios,statements:result.financialSource?Object.fromEntries((['income','balance','cash'] as const).map(group=>[group,result.statements[group].every(r=>r.value===null)?financial.statements[group]:result.statements[group]])):financial.statements});if(result.marketCap===null)result.marketCap=financial.marketCap;}}catch{result.warnings.push('SEC financial filings are temporarily unavailable.');}}
   if(!result.quoteSource)result.warnings.push('Latest quote unavailable. Free Alpha Vantage / FMP fallback requires a configured API key.');
   if(!result.chartSource)result.warnings.push('Price history unavailable from current providers.');
   if(result.chartSource==='Alpha Vantage · daily')result.warnings.push('Fallback history is daily and limited to the free provider window.');
@@ -46,5 +46,5 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
 export async function getStockData(ticker:string,range:StockRange,userId:string,credential:{key:string;version:string}|null,period:'annual'|'quarter'){
   const key=`${userId}:${credential?.version??'public'}:${ticker}:${range}:${period}`,cached=cache.get(key);if(cached&&cached.expires>Date.now())return {...cached.data,cached:true};
   const inflight=pending.get(key);if(inflight)return inflight;
-  const task=loadStock(ticker,range,credential?.key??null,period).then(data=>{if(!data.chartSource&&cached)return {...cached.data,cached:true,warnings:[...cached.data.warnings,'Providers unavailable; showing last cached data.']};if(cache.size>=100)cache.delete(cache.keys().next().value??'');cache.set(key,{expires:Date.now()+60000,data});return data;}).finally(()=>pending.delete(key));pending.set(key,task);return task;
+  const task=loadStock(ticker,range,credential?.key??null,period).then(data=>{if(!data.chartSource&&cached){data.candles=cached.data.candles;data.chartSource=cached.data.chartSource;data.warnings.push(`Cached chart fetched ${cached.data.fetchedAt}; current chart unavailable.`);}if(cache.size>=100)cache.delete(cache.keys().next().value??'');cache.set(key,{expires:Date.now()+60000,data});return data;}).finally(()=>pending.delete(key));pending.set(key,task);return task;
 }

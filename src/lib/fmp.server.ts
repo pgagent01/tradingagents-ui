@@ -24,7 +24,8 @@ export async function validateFmpKey(key:string){
 }
 export async function fmpQuote(ticker:string,key:string){
   const q=(await fmpRequest('quote',key,{symbol:ticker}))[0];if(!q||numeric(q['price'])===null)return null;
-  const range=String(q['yearRange']??'').split('-').map(Number);
+  const rawRange=typeof q['yearRange']==='string'?q['yearRange'].trim():'';
+  const range=/^\d+(\.\d+)?\s*-\s*\d+(\.\d+)?$/.test(rawRange)?rawRange.split('-').map(Number):[];
   return {price:numeric(q['price']),change:numeric(q['change']),changePercent:numeric(q['changePercentage']),marketCap:numeric(q['marketCap']),volume:numeric(q['volume']),low52:numeric(q['yearLow'])??numeric(range[0]),high52:numeric(q['yearHigh'])??numeric(range[1]),asOf:numeric(q['timestamp'])!==null?new Date(Number(q['timestamp'])*1000).toISOString():null};
 }
 export async function fmpChart(ticker:string,key:string,range:StockRange){
@@ -38,7 +39,9 @@ export async function fmpFinancials(ticker:string,key:string,period:'annual'|'qu
   const data:Record<string,Record<string,unknown>[]>={};
   // Sequential requests avoid a burst against the user's free-tier account.
   for(const endpoint of endpoints){try{data[endpoint]=await fmpRequest(endpoint,key,{symbol:ticker,period,limit:'1'});}catch{data[endpoint]=[];}}
-  const income=data['income-statement']?.[0],balance=data['balance-sheet-statement']?.[0],cash=data['cash-flow-statement']?.[0],ratios=data['ratios']?.[0],metrics=data['key-metrics']?.[0];
+  const reference=data['income-statement']?.[0]??data['balance-sheet-statement']?.[0]??data['cash-flow-statement']?.[0]??data['ratios']?.[0]??data['key-metrics']?.[0];
+  const aligned=(endpoint:string)=>{const row=data[endpoint]?.[0];return row?.['date']===reference?.['date']?row:undefined;};
+  const income=aligned('income-statement'),balance=aligned('balance-sheet-statement'),cash=aligned('cash-flow-statement'),ratios=aligned('ratios'),metrics=aligned('key-metrics');
   if(!income&&!balance&&!cash&&!ratios&&!metrics)return null;
   const rows=(r:Record<string,unknown>|undefined,fields:[string,string][])=>fields.map(([label,key])=>({label,value:numeric(r?.[key])}));
   const date=String(income?.['date']??balance?.['date']??cash?.['date']??ratios?.['date']??metrics?.['date']??'')||null;
