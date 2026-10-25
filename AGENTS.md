@@ -12,6 +12,7 @@
 - Authenticate every account mutation with requireSupabaseAuth and scope queries to context.userId; roles never grant access to another user's credentials or research.
 - API keys are encrypted with Web Crypto AES-GCM and decrypted only in server helpers; server functions never return plaintext keys.
 - Use shared company matching and research configuration modules for dashboard/wizard behavior and role-specific USD estimates.
+- Use the shared RankedModelSelect and research-config ranking helpers for model dropdowns; compare equal uncached input/output weights within each provider/currency and leave unknown prices unranked.
 - Store demo execution progress in Lovable Cloud and advance one atomic locked step per request; demo mode never calls an LLM and costs are labeled hypothetical.
 - Snapshot run token totals and USD cost into each report on insert; report views use the report snapshot rather than account-wide totals.
 - Keep /new-analysis as a compatibility redirect to /analysis/new; /analysis/$id owns execution and redirects completed runs to the report-first /reports/$id viewer.

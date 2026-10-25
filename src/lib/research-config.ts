@@ -26,6 +26,23 @@ export const DEPTHS=[
 export const LOOKBACKS=[{days:30,label:'Last 30 Days'},{days:90,label:'Last 90 Days'},{days:365,label:'Last 1 Year'}] as const;
 // Editable USD per million token assumptions, not a live provider tariff.
 export type RoleModel = { provider: string; model: string; inputRate: number; outputRate: number };
+export type ModelChoice = { model: string; blendedCost: number | null };
+// Compare equal amounts of uncached input and output within one provider/currency.
+export function blendedTokenCost(inputRate: number, outputRate: number): number | null {
+  return [inputRate, outputRate].every(n => Number.isFinite(n) && n >= 0)
+    ? (inputRate + outputRate) / 2 : null;
+}
+export function rankModelChoices<T extends ModelChoice>(models: readonly T[]) {
+  return [...models].sort((a,b) => (a.blendedCost ?? Infinity) - (b.blendedCost ?? Infinity) || a.model.localeCompare(b.model))
+    .map((model,index) => ({...model, rank: model.blendedCost === null ? null : index + 1}));
+}
+export function catalogBlendedCost(rates: {input: {min: number; max?: number; cost: string}[]; output: {min: number; max?: number; cost: string}[]}) {
+  const firstRate = (tiers: typeof rates.input) => {
+    const tier = tiers.find(t => t.min === 0 && (t.max === undefined || t.max >= 0));
+    return tier && tier.cost.trim() ? Number(tier.cost) : NaN;
+  };
+  return blendedTokenCost(firstRate(rates.input), firstRate(rates.output));
+}
 export const MODEL_OPTIONS: RoleModel[] = [
   { provider: 'openai', model: 'gpt-6-luna', inputRate: 0.1, outputRate: 0.5 },
   { provider: 'openai', model: 'gpt-5.4-mini', inputRate: 0.75, outputRate: 4.5 },
