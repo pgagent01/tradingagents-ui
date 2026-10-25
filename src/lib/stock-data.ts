@@ -28,13 +28,15 @@ export async function firstAvailable<T>(providers:{source:string;load:()=>Promis
   return null;
 }
 export function emptyStock(ticker:string,company:string):StockData{return {ticker,company,currency:'USD',quoteSource:null,chartSource:null,financialSource:null,asOf:null,fetchedAt:new Date().toISOString(),cached:false,warnings:[],candles:[],price:null,change:null,changePercent:null,marketCap:null,low52:null,high52:null,volume:null,ratios:[],statements:{income:[],balance:[],cash:[]},financialDate:null};}
-export function parseSecFinancials(raw:unknown,price:number|null) {
+export function parseSecFinancials(raw:unknown,price:number|null,period:'annual'|'quarter'='annual') {
   const facts=object(object(object(raw)['facts'])['us-gaap']);
   const entries=(names:string[],unit='USD')=>names.flatMap(name=>{const rows=object(object(facts[name])['units'])[unit];return Array.isArray(rows)?rows.map(object):[];});
-  const annual=entries(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet']).filter(r=>r['form']==='10-K'&&typeof r['start']==='string'&&typeof r['end']==='string'&&(Date.parse(r['end'])-Date.parse(r['start']))/86400000>300).sort((a,b)=>String(b['end']).localeCompare(String(a['end']))||String(b['filed']).localeCompare(String(a['filed'])));
+  const form=period==='annual'?'10-K':'10-Q';
+  const durationMatches=(r:Record<string,unknown>)=>{if(typeof r['start']!=='string'||typeof r['end']!=='string')return false;const days=(Date.parse(r['end'])-Date.parse(r['start']))/86400000;return period==='annual'?days>300:days>=60&&days<=110;};
+  const annual=entries(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet']).filter(r=>r['form']===form&&durationMatches(r)).sort((a,b)=>String(b['end']).localeCompare(String(a['end']))||String(b['filed']).localeCompare(String(a['filed'])));
   const date=typeof annual[0]?.['end']==='string'?annual[0]['end']:null;
   const get=(names:string[],duration=false,unit='USD')=>{
-    const rows=entries(names,unit).filter(r=>r['end']===date&&r['form']==='10-K'&&(!duration||(typeof r['start']==='string'&&(Date.parse(String(r['end']))-Date.parse(r['start']))/86400000>300))).sort((a,b)=>String(b['filed']).localeCompare(String(a['filed'])));
+    const rows=entries(names,unit).filter(r=>r['end']===date&&r['form']===form&&(!duration||durationMatches(r))).sort((a,b)=>String(b['filed']).localeCompare(String(a['filed'])));
     return numeric(rows[0]?.['val']);
   };
   const revenue=get(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet'],true),income=get(['NetIncomeLoss'],true),equity=get(['StockholdersEquity']),shares=get(['CommonStockSharesOutstanding'],false,'shares'),cash=get(['CashAndCashEquivalentsAtCarryingValue']),assets=get(['Assets']),liabilities=get(['Liabilities']);
