@@ -381,6 +381,10 @@ export type Database = {
     Functions: {
       advance_demo_run: { Args: { _run_id: string }; Returns: undefined }
       claim_research_execution: { Args: { _run_id: string }; Returns: boolean }
+      finalize_research_report: {
+        Args: { _report: Json; _run_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -389,6 +393,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_invite_code: { Args: { _code: string }; Returns: boolean }
+      save_agent_result: {
+        Args: { _output_id: string; _result: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -43,6 +43,13 @@
       "when": 1792964773298,
       "tag": "0005_research_scope_and_credit_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792964969835,
+      "tag": "0006_secure_execution_claim_and_report_finalization",
+      "breakpoints": true
     }
   ]
 }
