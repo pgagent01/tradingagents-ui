@@ -17,3 +17,5 @@
 - [ ] Quick/Standard/Deep/Exhaustive depth and 30-day/90-day/1-year lookback stored and shown on execution/report
 - [ ] Admin-only built-in Lovable AI execution, per-agent/run/report calculated credit accounting and cumulative analytics
 - [ ] Dedicated Lovable Credits Used badges across report metadata/audit, archive and recent research
+- [ ] Settings AI & Credentials: OpenAI API key link/subscription note and explicit provider-key validation
+- [ ] Verify AES-GCM key storage, owner-only RLS, HTTPS/WSS and sanitized errors/events for all execution paths
