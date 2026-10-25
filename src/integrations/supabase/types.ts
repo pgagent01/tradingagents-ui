@@ -14,7 +14,216 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agent_outputs: {
+        Row: {
+          agent_id: string
+          content: string | null
+          cost_usd: number
+          created_at: string
+          id: string
+          input_tokens: number
+          model_used: string | null
+          output_tokens: number
+          run_id: string
+          status: string | null
+        }
+        Insert: {
+          agent_id: string
+          content?: string | null
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model_used?: string | null
+          output_tokens?: number
+          run_id: string
+          status?: string | null
+        }
+        Update: {
+          agent_id?: string
+          content?: string | null
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model_used?: string | null
+          output_tokens?: number
+          run_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_outputs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "research_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_events: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          message: string | null
+          run_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          message?: string | null
+          run_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "research_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_reports: {
+        Row: {
+          conviction_score: number | null
+          created_at: string
+          executive_summary: string | null
+          id: string
+          price_target: number | null
+          recommendation: string | null
+          run_id: string
+          sections: Json
+          ticker: string
+        }
+        Insert: {
+          conviction_score?: number | null
+          created_at?: string
+          executive_summary?: string | null
+          id?: string
+          price_target?: number | null
+          recommendation?: string | null
+          run_id: string
+          sections?: Json
+          ticker: string
+        }
+        Update: {
+          conviction_score?: number | null
+          created_at?: string
+          executive_summary?: string | null
+          id?: string
+          price_target?: number | null
+          recommendation?: string | null
+          run_id?: string
+          sections?: Json
+          ticker?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_reports_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "research_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_runs: {
+        Row: {
+          analysis_date: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          model_config: Json
+          research_depth: string
+          selected_agents: Json
+          started_at: string | null
+          status: string
+          ticker: string
+          total_cost_usd: number
+          total_input_tokens: number
+          total_output_tokens: number
+          user_id: string
+        }
+        Insert: {
+          analysis_date?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_config?: Json
+          research_depth?: string
+          selected_agents?: Json
+          started_at?: string | null
+          status?: string
+          ticker: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          user_id?: string
+        }
+        Update: {
+          analysis_date?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_config?: Json
+          research_depth?: string
+          selected_agents?: Json
+          started_at?: string | null
+          status?: string
+          ticker?: string
+          total_cost_usd?: number
+          total_input_tokens?: number
+          total_output_tokens?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          daily_budget_usd: number
+          default_depth: string
+          default_provider: string
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_budget_usd?: number
+          default_depth?: string
+          default_provider?: string
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_budget_usd?: number
+          default_depth?: string
+          default_provider?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
