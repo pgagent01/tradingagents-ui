@@ -67,7 +67,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     const cost=usage(input,output,Number(role['inputRate']??0),Number(role['outputRate']??0)).cost;
     const credit=provider==='lovable'&&built?(u.inputTokens===undefined||u.outputTokens===undefined?null:calculateCredits(built.rates,input,output,u.inputTokenDetails?.cacheReadTokens??0,u.inputTokenDetails?.cacheWriteTokens??0)):0;
     let object:z.infer<typeof resultSchema>|null=null;
-    if(synthesis){if(geminiSynthesis){try{object=resultSchema.parse(JSON.parse(text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')));}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=await result.output??null;}
+    if(synthesis){if(geminiSynthesis){try{object=resultSchema.parse(JSON.parse(text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')));}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
     return {text,input,output,cost,credit,model:modelId,object};
   }
   const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`;
