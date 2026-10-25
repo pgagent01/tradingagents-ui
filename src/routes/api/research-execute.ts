@@ -11,10 +11,12 @@ export const Route=createFileRoute('/api/research-execute')({server:{handlers:{P
   if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({error:'Invalid run.'},{status:400});
   const {data:run,error}=await sb.from('research_runs').select('*').eq('id',id).eq('user_id',user.user.id).single();if(error) return Response.json({error:'Run not available.'},{status:404});
   if(run.is_demo) return Response.json({error:'Demo runs do not call AI.'},{status:400});
+  const {AGENTS}=await import('@/lib/research-config');const team=Array.isArray(run.selected_agents)?run.selected_agents:[];if(team.length===0||team.some(a=>!AGENTS.some(v=>v.id===a)))return Response.json({error:'Invalid analyst selection.'},{status:400});
   const roles=Object.values((run.model_config as {roles?:Record<string,{provider?:string}>})?.roles??{});
+  if(roles.some(r=>!r.provider||!['lovable','openai','anthropic','google','groq','xai','deepseek'].includes(r.provider)))return Response.json({error:'Invalid execution provider.'},{status:400});
   const built=roles.some(r=>r.provider==='lovable');
   if(built){const {data:admin}=await sb.rpc('has_role',{_user_id:user.user.id,_role:'admin'});if(!admin) return Response.json({error:'Built-in AI is reserved for the primary/admin account.'},{status:403});}
-  const {data:paused}=await sb.from('ai_access_state').select('paused,reason').eq('user_id',user.user.id).maybeSingle();if(paused?.paused) return Response.json({error:paused.reason??'AI access is paused. Restore access before a fresh request.'},{status:403});
+  const {data:paused,error:pauseReadError}=await sb.from('ai_access_state').select('paused,reason').eq('user_id',user.user.id).maybeSingle();if(pauseReadError)return Response.json({error:'AI access cannot be verified.'},{status:503});if(paused?.paused) return Response.json({error:paused.reason??'AI access is paused. Restore access before a fresh request.'},{status:403});
   const {data:claimed,error:claimError}=await sb.rpc('claim_research_execution',{_run_id:run.id});if(claimError||!claimed) return Response.json({error:'This run is already executing or finished.'},{status:409});
   const abort=new AbortController();request.signal.addEventListener('abort',()=>abort.abort(),{once:true});
   const encoder=new TextEncoder();

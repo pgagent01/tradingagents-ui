@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
-import { AGENTS } from '@/lib/research-config';
+import { AGENTS,MODEL_OPTIONS } from '@/lib/research-config';
 import { assertCanRunResearch, normalizeProvider, validateTicker } from '@/lib/access-rules';
 import { resolveTicker } from '@/lib/companies';
 
@@ -18,6 +18,7 @@ export const createAnalysis = createServerFn({ method: 'POST' }).middleware([req
   for(const agent of data.agents) {
     const role = data.roles[agent];
     if(!role) throw new Error('Choose a model for every selected agent.');
+    const known=MODEL_OPTIONS.find(m=>m.model===role.model);if(known&&known.provider!==role.provider&&role.provider!=='lovable')throw new Error('Model and provider do not match.');
     if(role.provider==='lovable') {
       const {data:admin,error}=await context.supabase.rpc('has_role',{_user_id:context.userId,_role:'admin'});
       if(error||!admin) throw new Error('Built-in Lovable AI is reserved for the primary/admin account. Bring your own provider key.');

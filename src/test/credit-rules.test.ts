@@ -6,6 +6,7 @@ describe('per-call credit accounting',()=>{
   it('separates cached and uncached prompt tokens',()=>expect(calculateCredits(rates,1000,100,500)).toBeCloseTo(0.042));
   it('keeps unavailable cache rates unknown, never zero',()=>expect(calculateCredits(rates,1000,100,0,50)).toBeNull());
   it('includes output tokens in the credit estimate',()=>expect(calculateCredits(rates,0,100)).toBeCloseTo(0.02));
+  it('rejects invalid rate values',()=>expect(calculateCredits({...rates,input:[{min:0,cost:'invalid'}]},100,0)).toBeNull());
   it('uses the matching context-length rate tier',()=>expect(calculateCredits({...rates,input:[{min:0,max:99,cost:'1'},{min:100,cost:'2'}]},100,0)).toBe(200));
 });
 describe('requested research scope',()=>{
