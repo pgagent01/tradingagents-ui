@@ -23,6 +23,7 @@ import { Route as ApiResearchExecuteRouteImport } from './routes/api/research-ex
 import { Route as AuthenticatedAnalysisIdRouteImport } from './routes/_authenticated/analysis.$id'
 import { Route as AuthenticatedAnalysisNewRouteImport } from './routes/_authenticated/analysis.new'
 import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports_.$id'
+import { Route as AuthenticatedReportsCompareRouteImport } from './routes/_authenticated/reports_.compare'
 import { Route as AuthenticatedStocksTickerRouteImport } from './routes/_authenticated/stocks_.$ticker'
 
 const IndexRoute = IndexRouteImport.update({
@@ -96,6 +97,12 @@ const AuthenticatedReportsIdRoute = AuthenticatedReportsIdRouteImport.update({
   path: '/reports/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsCompareRoute =
+  AuthenticatedReportsCompareRouteImport.update({
+    id: '/reports_/compare',
+    path: '/reports/compare',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStocksTickerRoute =
   AuthenticatedStocksTickerRouteImport.update({
     id: '/stocks_/$ticker',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
+  '/reports/compare': typeof AuthenticatedReportsCompareRoute
   '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRoutesByTo {
@@ -133,6 +141,7 @@ export interface FileRoutesByTo {
   '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/reports/$id': typeof AuthenticatedReportsIdRoute
+  '/reports/compare': typeof AuthenticatedReportsCompareRoute
   '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRoutesById {
@@ -151,6 +160,7 @@ export interface FileRoutesById {
   '/_authenticated/analysis/$id': typeof AuthenticatedAnalysisIdRoute
   '/_authenticated/analysis/new': typeof AuthenticatedAnalysisNewRoute
   '/_authenticated/reports_/$id': typeof AuthenticatedReportsIdRoute
+  '/_authenticated/reports_/compare': typeof AuthenticatedReportsCompareRoute
   '/_authenticated/stocks_/$ticker': typeof AuthenticatedStocksTickerRoute
 }
 export interface FileRouteTypes {
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
+    | '/reports/compare'
     | '/stocks/$ticker'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/analysis/$id'
     | '/analysis/new'
     | '/reports/$id'
+    | '/reports/compare'
     | '/stocks/$ticker'
   id:
     | '__root__'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analysis/$id'
     | '/_authenticated/analysis/new'
     | '/_authenticated/reports_/$id'
+    | '/_authenticated/reports_/compare'
     | '/_authenticated/stocks_/$ticker'
   fileRoutesById: FileRoutesById
 }
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports_/compare': {
+      id: '/_authenticated/reports_/compare'
+      path: '/reports/compare'
+      fullPath: '/reports/compare'
+      preLoaderRoute: typeof AuthenticatedReportsCompareRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/stocks_/$ticker': {
       id: '/_authenticated/stocks_/$ticker'
       path: '/stocks/$ticker'
@@ -333,6 +353,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalysisIdRoute: typeof AuthenticatedAnalysisIdRoute
   AuthenticatedAnalysisNewRoute: typeof AuthenticatedAnalysisNewRoute
   AuthenticatedReportsIdRoute: typeof AuthenticatedReportsIdRoute
+  AuthenticatedReportsCompareRoute: typeof AuthenticatedReportsCompareRoute
   AuthenticatedStocksTickerRoute: typeof AuthenticatedStocksTickerRoute
 }
 
@@ -347,6 +368,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalysisIdRoute: AuthenticatedAnalysisIdRoute,
   AuthenticatedAnalysisNewRoute: AuthenticatedAnalysisNewRoute,
   AuthenticatedReportsIdRoute: AuthenticatedReportsIdRoute,
+  AuthenticatedReportsCompareRoute: AuthenticatedReportsCompareRoute,
   AuthenticatedStocksTickerRoute: AuthenticatedStocksTickerRoute,
 }
 
