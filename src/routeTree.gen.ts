@@ -18,6 +18,8 @@ import { Route as AuthenticatedNewAnalysisRouteImport } from './routes/_authenti
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
+import { Route as AuthenticatedAnalysisIdRouteImport } from './routes/_authenticated/analysis.$id'
+import { Route as AuthenticatedAnalysisNewRouteImport } from './routes/_authenticated/analysis.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +66,17 @@ const AuthenticatedWatchlistsRoute = AuthenticatedWatchlistsRouteImport.update({
   path: '/watchlists',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAnalysisIdRoute = AuthenticatedAnalysisIdRouteImport.update({
+  id: '/analysis/$id',
+  path: '/analysis/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAnalysisNewRoute =
+  AuthenticatedAnalysisNewRouteImport.update({
+    id: '/analysis/new',
+    path: '/analysis/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +87,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
+  '/analysis/new': typeof AuthenticatedAnalysisNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,6 +99,8 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/analysis/$id': typeof AuthenticatedAnalysisIdRoute
+  '/analysis/new': typeof AuthenticatedAnalysisNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,6 +113,8 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
+  '/_authenticated/analysis/$id': typeof AuthenticatedAnalysisIdRoute
+  '/_authenticated/analysis/new': typeof AuthenticatedAnalysisNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,6 +127,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/watchlists'
+    | '/analysis/$id'
+    | '/analysis/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,6 +139,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/watchlists'
+    | '/analysis/$id'
+    | '/analysis/new'
   id:
     | '__root__'
     | '/'
@@ -129,6 +152,8 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/watchlists'
+    | '/_authenticated/analysis/$id'
+    | '/_authenticated/analysis/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -202,6 +227,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWatchlistsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analysis/$id': {
+      id: '/_authenticated/analysis/$id'
+      path: '/analysis/$id'
+      fullPath: '/analysis/$id'
+      preLoaderRoute: typeof AuthenticatedAnalysisIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analysis/new': {
+      id: '/_authenticated/analysis/new'
+      path: '/analysis/new'
+      fullPath: '/analysis/new'
+      preLoaderRoute: typeof AuthenticatedAnalysisNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -212,6 +251,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
+  AuthenticatedAnalysisIdRoute: typeof AuthenticatedAnalysisIdRoute
+  AuthenticatedAnalysisNewRoute: typeof AuthenticatedAnalysisNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -221,6 +262,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
+  AuthenticatedAnalysisIdRoute: AuthenticatedAnalysisIdRoute,
+  AuthenticatedAnalysisNewRoute: AuthenticatedAnalysisNewRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

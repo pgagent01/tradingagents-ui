@@ -17,11 +17,15 @@ import {
   revokeInviteCode,
   saveMyApiKey,
 } from "@/lib/access.functions";
+import { Switch } from "@/components/ui/switch";
+import { getDemoSetting, setDemoSetting } from "@/lib/research.functions";
 import { PROVIDERS } from "@/lib/access-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Settings — TradingAgents AI" },
       { name: "description", content: "Your own LLM API keys, invite codes and research defaults." },
       { property: "og:title", content: "Settings — TradingAgents AI" },
@@ -35,6 +39,7 @@ function SettingsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-base font-semibold tracking-tight">Settings</h1>
+      <DemoPanel />
       <ApiKeysPanel />
       <InviteCodesPanel />
     </div>
@@ -258,4 +263,12 @@ function InviteCodesPanel() {
       </div>
     </Panel>
   );
+}
+
+function DemoPanel() {
+  const qc=useQueryClient();
+  const save=useServerFn(setDemoSetting);
+  const setting=useQuery({queryKey:['demo-setting'],queryFn:() => getDemoSetting()});
+  const mutation=useMutation({mutationFn:(enabled:boolean) => save({data:{enabled}}),onSuccess:() => { void qc.invalidateQueries({queryKey:['demo-setting']}); },onError:(e:Error) => toast.error(e.message)});
+  return <section className="flex items-center justify-between gap-4 border-y border-border py-4"><div><Label htmlFor="demo-mode">Simulate Demo Run</Label><p className="mt-1 text-xs text-muted-foreground">Mock events only · no API key needed · no LLM calls or charges.</p></div><Switch id="demo-mode" checked={setting.data ?? false} disabled={setting.isPending||mutation.isPending} onCheckedChange={enabled => mutation.mutate(enabled)} /></section>;
 }

@@ -9,7 +9,7 @@ import { SidebarAttribution } from "@/components/attribution-note";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "New Analysis", url: "/new-analysis", icon: PlusCircle },
+  { title: "New Analysis", url: "/analysis/new", icon: PlusCircle },
   { title: "Research Reports", url: "/reports", icon: FileText },
   { title: "Watchlists", url: "/watchlists", icon: Star },
   { title: "Token & Cost Analytics", url: "/analytics", icon: BarChart3 },

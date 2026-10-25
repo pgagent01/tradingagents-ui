@@ -1,22 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { ArrowUpRight, Search } from "lucide-react";
+import { useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DashboardAttribution } from "@/components/attribution-note";
 import { cn } from "@/lib/utils";
-
-const SYMBOLS = [
-  { s: "AAPL", n: "Apple Inc." },
-  { s: "NVDA", n: "NVIDIA Corp." },
-  { s: "MSFT", n: "Microsoft Corp." },
-  { s: "TSLA", n: "Tesla Inc." },
-  { s: "AMZN", n: "Amazon.com Inc." },
-  { s: "GOOGL", n: "Alphabet Inc." },
-  { s: "META", n: "Meta Platforms" },
-  { s: "AMD", n: "Advanced Micro Devices" },
-];
+import { CompanyPicker } from "@/components/company-picker";
 
 const dashboardQuery = queryOptions({
   queryKey: ["dashboard"],
@@ -27,7 +17,7 @@ const dashboardQuery = queryOptions({
     const [runs, cache] = await Promise.all([
       supabase
         .from("research_runs")
-        .select("id, ticker, analysis_date, status, total_cost_usd, created_at, research_reports(id, recommendation, conviction_score)")
+        .select("id, ticker, analysis_date, status, total_cost_usd, total_input_tokens, total_output_tokens, is_demo, created_at, research_reports(id, recommendation, conviction_score, total_input_tokens, total_output_tokens, total_cost_usd)")
         .order("created_at", { ascending: false })
         .limit(500),
       supabase.from("research_events").select("event_type").in("event_type", ["cache_hit", "cache_miss"]).limit(1000),
@@ -37,7 +27,7 @@ const dashboardQuery = queryOptions({
     const tickers = new Set(rows.map((r) => r.ticker.toUpperCase())).size;
     const active = rows.filter((r) => r.status === "running" || r.status === "pending").length;
     const mtd = rows
-      .filter((r) => new Date(r.created_at) >= monthStart)
+      .filter((r) => !r.is_demo && new Date(r.created_at) >= monthStart)
       .reduce((a, r) => a + Number(r.total_cost_usd ?? 0), 0);
     const ev = cache.data ?? [];
     const hits = ev.filter((e) => e.event_type === "cache_hit").length;
@@ -49,6 +39,8 @@ const dashboardQuery = queryOptions({
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Dashboard — TradingAgents AI" },
       { name: "description", content: "Overview of research runs, spend and recent AI equity reports." },
       { property: "og:title", content: "Dashboard — TradingAgents AI" },
@@ -83,10 +75,10 @@ function Dashboard() {
             <Link to="/new-analysis" className="text-primary hover:underline">Start a new analysis</Link>
           </div>
         ) : (
-          <table className="w-full text-xs">
+          <div className="overflow-x-auto"><table className="w-full text-xs">
             <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr className="border-b border-border">
-                {["Ticker", "Date", "Status", "Rec.", "Conviction", "Cost", ""].map((h, i) => (
+                {["Ticker", "Date", "Status", "Rec.", "Conviction", "Input", "Output", "Total tokens", "Cost · USD", ""].map((h, i) => (
                   <th key={i} className={cn("px-3 py-2 text-left font-medium", i >= 4 && "text-right")}>{h}</th>
                 ))}
               </tr>
@@ -101,17 +93,20 @@ function Dashboard() {
                     <td className="px-3 py-1.5 text-muted-foreground">{r.status}</td>
                     <td className="px-3 py-1.5"><RecBadge rec={rep?.recommendation ?? null} /></td>
                     <td className="px-3 py-1.5 text-right">{rep?.conviction_score ?? "—"}</td>
-                    <td className="px-3 py-1.5 text-right">${Number(r.total_cost_usd).toFixed(3)}</td>
+                    <td className="px-3 py-1.5 text-right">{(rep?.total_input_tokens ?? r.total_input_tokens).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right">{(rep?.total_output_tokens ?? r.total_output_tokens).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right">{((rep?.total_input_tokens ?? r.total_input_tokens)+(rep?.total_output_tokens ?? r.total_output_tokens)).toLocaleString()}</td>
+                    <td className="px-3 py-1.5 text-right">${Number(rep?.total_cost_usd ?? r.total_cost_usd).toFixed(4)}{r.is_demo && <span className="block text-[9px] text-warning">DEMO · $0 charged</span>}</td>
                     <td className="px-3 py-1.5 text-right">
-                      <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs" disabled={!rep}>
-                        <Link to="/reports">Open <ArrowUpRight className="h-3 w-3" /></Link>
+                      <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs" >
+                        <Link to="/analysis/$id" params={{ id:r.id }}>Open <ArrowUpRight className="h-3 w-3" /></Link>
                       </Button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </section>
       <DashboardAttribution />
@@ -138,36 +133,7 @@ function RecBadge({ rec }: { rec: string | null }) {
 }
 
 function TickerSearch() {
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [q,setQ] = useState('');
   const nav = useNavigate();
-  const matches = useMemo(() => {
-    const u = q.trim().toUpperCase();
-    return u ? SYMBOLS.filter((x) => x.s.startsWith(u) || x.n.toUpperCase().includes(u)) : SYMBOLS.slice(0, 4);
-  }, [q]);
-  const go = (s: string) => { setOpen(false); void s; nav({ to: "/new-analysis" }); };
-  return (
-    <div className="relative w-72">
-      <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-      <input
-        value={q}
-        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
-        onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) go((matches[0]?.s ?? q).toUpperCase()); }}
-        placeholder="Quick ticker search…"
-        className="h-8 w-full rounded-md border border-input bg-secondary pl-8 pr-2 font-mono text-xs outline-none focus:border-ring"
-      />
-      {open && matches.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-lg">
-          {matches.map((m) => (
-            <button key={m.s} onMouseDown={() => go(m.s)} className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-accent">
-              <span className="font-mono font-semibold">{m.s}</span>
-              <span className="text-muted-foreground">{m.n}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <div className="w-full max-w-sm"><CompanyPicker value={q} onChange={setQ} onSelect={ticker => { void nav({ to:'/analysis/new',search:{ticker} }); }} /></div>;
 }
