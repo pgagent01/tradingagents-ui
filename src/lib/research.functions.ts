@@ -6,7 +6,7 @@ import { assertCanRunResearch, normalizeProvider, validateTicker } from '@/lib/a
 import { resolveTicker } from '@/lib/companies';
 
 const roleSchema = z.object({ provider: z.string(), model: z.string().min(1).max(100), inputRate: z.number().min(0).max(1000), outputRate: z.number().min(0).max(1000) });
-const requestSchema = z.object({ ticker: z.string(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), depth: z.enum(['quick','standard','deep']), agents: z.array(z.string()).min(1).max(6), roles: z.record(z.string(),roleSchema) });
+const requestSchema = z.object({ ticker: z.string(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), depth: z.enum(['quick','standard','deep','exhaustive']), lookback:z.union([z.literal(30),z.literal(90),z.literal(365)]).default(90), preset:z.string().max(100).default('Custom'), agents: z.array(z.string()).min(1).max(6), roles: z.record(z.string(),roleSchema) });
 export const createAnalysis = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(input => requestSchema.parse(input)).handler(async ({ data, context }) => {
   const ticker = validateTicker(resolveTicker(data.ticker));
   if (new Date(`${data.date}T00:00:00Z`).toISOString().slice(0,10) !== data.date) throw new Error('Invalid analysis date.');
@@ -18,14 +18,17 @@ export const createAnalysis = createServerFn({ method: 'POST' }).middleware([req
   for(const agent of data.agents) {
     const role = data.roles[agent];
     if(!role) throw new Error('Choose a model for every selected agent.');
-    providers.add(normalizeProvider(role.provider));
+    if(role.provider==='lovable') {
+      const {data:admin,error}=await context.supabase.rpc('has_role',{_user_id:context.userId,_role:'admin'});
+      if(error||!admin) throw new Error('Built-in Lovable AI is reserved for the primary/admin account. Bring your own provider key.');
+    } else providers.add(normalizeProvider(role.provider));
   }
   if (!demo) {
     const { data: keys, error } = await context.supabase.from('user_api_keys').select('provider').eq('user_id',context.userId);
     if(error) throw error;
     for(const provider of providers) assertCanRunResearch({ provider: normalizeProvider(provider), hasOwnApiKey: (keys ?? []).some(k => k.provider === provider) });
   }
-  const { data: run, error } = await context.supabase.from('research_runs').insert({ user_id: context.userId, ticker, analysis_date: data.date, status: 'pending', research_depth: data.depth, selected_agents: data.agents, model_config: { roles: data.roles, pricing_source: 'user_configured_usd_per_million' }, is_demo: demo }).select('id').single();
+  const { data: run, error } = await context.supabase.from('research_runs').insert({ user_id: context.userId, ticker, analysis_date: data.date, status: 'pending', research_depth: data.depth,lookback_days:data.lookback, selected_agents: data.agents, model_config: { roles: data.roles,preset:data.preset, pricing_source: 'user_configured_usd_per_million' }, lovable_credits:demo?0:null,credit_basis:demo?'demo':null,is_demo: demo }).select('id').single();
   if(error) throw error;
   return { id: run.id };
 });
