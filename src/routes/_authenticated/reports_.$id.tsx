@@ -3,6 +3,7 @@ import { queryOptions,useSuspenseQuery } from '@tanstack/react-query';
 import { Download,Printer,ArrowLeft,Activity } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useEffect } from 'react';
 import { CreditMetric } from '@/components/credit-metric';
 import { Button } from '@/components/ui/button';
 import { RecommendationBadge } from '@/components/recommendation-badge';
@@ -16,6 +17,7 @@ function Markdown({text}:{text:string}) {
   return <div className="report-prose break-words text-sm leading-7 text-foreground"><ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown></div>;
 }
 function ReportDetail() {
+  useEffect(()=>{let previouslyClosed:HTMLDetailsElement[]=[];const before=()=>{previouslyClosed=Array.from(document.querySelectorAll<HTMLDetailsElement>('.report-section')).filter(d=>!d.open);previouslyClosed.forEach(d=>{d.open=true;});};const after=()=>{previouslyClosed.forEach(d=>{d.open=false;});};window.addEventListener('beforeprint',before);window.addEventListener('afterprint',after);return()=>{window.removeEventListener('beforeprint',before);window.removeEventListener('afterprint',after);};},[]);
   const {id}=Route.useParams();const {data}=useSuspenseQuery(reportQuery(id));
   const {report:r,run,outputs}=data;const s=sectionObject(r.sections);
   const model=[...new Set(outputs.map(o=>o.model_used).filter(Boolean))].join(', ') || Object.values(sectionObject(sectionObject(run.model_config)['roles'])).map(v=>contentText(sectionObject(v)['model'])).filter(Boolean).join(', ') || 'Not recorded';
