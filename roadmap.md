@@ -1,5 +1,11 @@
 # Roadmap
 
+- [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
+
+- [x] Phase 4 analytics: interactive usage/cost history, total runs, model efficiency, and admin aggregate per-user costs without exposing private research or credentials.
+- [x] Phase 4 live execution: built-in AI verified with six specialists plus synthesis and saved report; BYOK OpenAI, Anthropic, Groq, OpenRouter wired, with real-key verification tracked below.
+- [x] Phase 4 settings: active provider selection, provider-key management/testing, and primary-admin invite management verified.
+
 - [x] Attribution note: sidebar bottom + dashboard footer crediting the open-source TradingAgents framework (link to github.com/TauricResearch/TradingAgents) — verified rendering
 - [x] Invite code required at sign-up (existing logins unaffected); valid codes only
 - [x] Designate gprithvi@gmail.com as primary admin with full access

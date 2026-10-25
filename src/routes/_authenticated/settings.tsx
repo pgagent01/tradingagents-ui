@@ -22,6 +22,7 @@ import { getDemoSetting, setDemoSetting } from "@/lib/research.functions";
 import { testMyApiKey } from '@/lib/credential-test.functions';
 import { resumeMyAiAccess } from '@/lib/ai-access.functions';
 import { analyticsQuery } from '@/lib/analytics-query';
+import { getActiveProvider, setActiveProvider } from '@/lib/provider-settings.functions';
 import { PROVIDERS } from "@/lib/access-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -43,6 +44,7 @@ function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-base font-semibold tracking-tight">Settings</h1>
       <DemoPanel />
+      <ActiveProviderPanel />
       <ApiKeysPanel />
       <InviteCodesPanel />
       <AiResumePanel />
@@ -285,3 +287,5 @@ function DemoPanel() {
 function AiResumePanel(){const resume=useServerFn(resumeMyAiAccess);const m=useMutation({mutationFn:()=>resume(),onSuccess:()=>toast.success('AI access resumed. Start a fresh run.'),onError:(e:Error)=>toast.error(e.message)});return <section className="border-t border-border pt-4"><p className="mb-2 text-xs text-muted-foreground">After restoring credits or provider access, explicitly resume AI.</p><Button size="sm" variant="outline" disabled={m.isPending} onClick={()=>m.mutate()}>Resume AI after access restored</Button></section>;}
 
 function CreditSummary(){const {data}=useQuery(analyticsQuery);return <section className="border-t border-border pt-4"><h2 className="text-sm font-semibold">Cumulative Lovable Credits Used</h2><p className="mt-2 font-mono text-lg text-primary">{data?`${data.credits.toFixed(4)} calculated credits`:'Loading…'}</p><p className="mt-1 text-xs text-muted-foreground">{data?.unknown??0} runs with unrecorded usage · demo runs excluded. Not verified billed deductions. <Link to="/analytics" className="text-primary underline">Usage analytics</Link></p></section>;}
+
+function ActiveProviderPanel(){const qc=useQueryClient();const active=useQuery({queryKey:['active-provider'],queryFn:()=>getActiveProvider()});const role=useQuery({queryKey:['my-role'],queryFn:()=>getMyRole()});const save=useServerFn(setActiveProvider);const mutation=useMutation({mutationFn:(provider:string)=>save({data:{provider}}),onSuccess:()=>{void qc.invalidateQueries({queryKey:['active-provider']});toast.success('Active provider saved.');},onError:(e:Error)=>toast.error(e.message)});return <section className="border-b border-border py-4"><Label htmlFor="active-provider">Active execution provider</Label><Select value={active.data??'openai'} onValueChange={p=>mutation.mutate(p)} disabled={active.isPending||mutation.isPending}><SelectTrigger id="active-provider" className="mt-2 w-64"><SelectValue/></SelectTrigger><SelectContent>{[...(role.data?.isAdmin?['lovable']:[]),...PROVIDERS].map(p=><SelectItem key={p} value={p}>{p==='lovable'?'Lovable AI · Built-in':p}</SelectItem>)}</SelectContent></Select><p className="mt-2 text-xs text-muted-foreground">New analyses use this provider; existing runs keep their saved configuration.</p></section>;}

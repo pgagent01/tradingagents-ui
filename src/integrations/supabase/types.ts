@@ -379,6 +379,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_usage_audit: {
+        Args: never
+        Returns: {
+          account_id: string
+          credits: number
+          day: string
+          input_tokens: number
+          output_tokens: number
+          runs: number
+          unknown_credits: number
+          usd: number
+        }[]
+      }
       advance_demo_run: { Args: { _run_id: string }; Returns: undefined }
       claim_research_execution: { Args: { _run_id: string }; Returns: boolean }
       finalize_research_report: {
