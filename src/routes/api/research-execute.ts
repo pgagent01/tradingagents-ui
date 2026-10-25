@@ -22,7 +22,7 @@ export const Route=createFileRoute('/api/research-execute')({server:{handlers:{P
     const emit=(v:unknown)=>{controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));};
     try{emit({type:'started'});await executeResearch(sb,user.user.id,run,process.env['LOVABLE_API_KEY'],process.env['API_KEY_ENCRYPTION_SECRET'],abort.signal,emit);}
     catch(e){const cancelled=abort.signal.aborted||(e instanceof Error&&e.name==='AbortError');const safe=safeAiFailure(e);
-      if(!cancelled&&(safe.status===402||safe.status===403)) {const {supabaseAdmin}=await import('@/integrations/supabase/client.server');await supabaseAdmin.from('ai_access_state').upsert({user_id:user.user.id,paused:true,reason:safe.message});}
+      if(!cancelled&&(safe.status===402||safe.status===403)) {const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {error:pauseError}=await supabaseAdmin.from('ai_access_state').upsert({user_id:user.user.id,paused:true,reason:safe.message});if(pauseError){console.error('Unable to persist AI access pause.');}}
       await sb.from('research_runs').update({status:cancelled?'cancelled':'failed',error_message:cancelled?null:safe.message,completed_at:new Date().toISOString(),execution_lease_until:null}).eq('id',run.id).in('status',['pending','running']);
       await sb.from('agent_outputs').update({status:cancelled?'cancelled':'failed'}).eq('run_id',run.id).eq('status','running');
       await sb.from('research_events').insert({run_id:run.id,event_type:cancelled?'cancelled':'failed',message:cancelled?'Run cancelled by its owner.':safe.message});

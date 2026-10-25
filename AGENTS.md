@@ -15,3 +15,7 @@
 - Store demo execution progress in Lovable Cloud and advance one atomic locked step per request; demo mode never calls an LLM and costs are labeled hypothetical.
 - Snapshot run token totals and USD cost into each report on insert; report views use the report snapshot rather than account-wide totals.
 - Keep /new-analysis as a compatibility redirect to /analysis/new; /analysis/$id owns execution and redirects completed runs to the report-first /reports/$id viewer.
+
+- Execute AI only through the authenticated streaming research endpoint; claim pending runs once and never reclaim running work, preventing duplicate billed execution.
+- Commit agent usage totals and final reports through owner-scoped transactional database functions so cancellation and usage snapshots remain consistent.
+- Keep gateway catalogs and credit-rate snapshots server-side; displayed credits are calculated token estimates, not verified billed deductions, and unknown usage is not zero.

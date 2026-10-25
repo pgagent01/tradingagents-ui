@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { getDemoSetting, setDemoSetting } from "@/lib/research.functions";
 import { testMyApiKey } from '@/lib/credential-test.functions';
 import { resumeMyAiAccess } from '@/lib/ai-access.functions';
+import { analyticsQuery } from '@/lib/analytics-query';
 import { PROVIDERS } from "@/lib/access-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -45,6 +46,7 @@ function SettingsPage() {
       <ApiKeysPanel />
       <InviteCodesPanel />
       <AiResumePanel />
+      <CreditSummary />
     </div>
   );
 }
@@ -98,7 +100,7 @@ function ApiKeysPanel() {
   return (
     <Panel
       title="AI & Credentials — bring your own"
-      description="Each account stores its own keys, encrypted and visible only to you. Research cannot run without one."
+      description="Each account stores its own keys, encrypted and visible only to you. BYOK providers require your own key; built-in Lovable AI is reserved for admins."
     >
       <p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>
       <div className="flex flex-wrap items-end gap-2">
@@ -281,3 +283,5 @@ function DemoPanel() {
 }
 
 function AiResumePanel(){const resume=useServerFn(resumeMyAiAccess);const role=useQuery({queryKey:['my-role'],queryFn:()=>getMyRole()});const m=useMutation({mutationFn:()=>resume(),onSuccess:()=>toast.success('AI access resumed. Start a fresh run.'),onError:(e:Error)=>toast.error(e.message)});return role.data?.isAdmin?<section className="border-t border-border pt-4"><p className="mb-2 text-xs text-muted-foreground">After restoring credits or provider access, explicitly resume built-in AI.</p><Button size="sm" variant="outline" disabled={m.isPending} onClick={()=>m.mutate()}>Resume AI after access restored</Button></section>:null;}
+
+function CreditSummary(){const {data}=useQuery(analyticsQuery);return <section className="border-t border-border pt-4"><h2 className="text-sm font-semibold">Cumulative Lovable Credits Used</h2><p className="mt-2 font-mono text-lg text-primary">{data?`${data.credits.toFixed(4)} calculated credits`:'Loading…'}</p><p className="mt-1 text-xs text-muted-foreground">{data?.unknown??0} runs with unrecorded usage · demo runs excluded. Not verified billed deductions. <Link to="/analytics" className="text-primary underline">Usage analytics</Link></p></section>;}
