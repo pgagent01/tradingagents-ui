@@ -64,6 +64,13 @@
       "when": 1792969964698,
       "tag": "0008_research_data_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793001924808,
+      "tag": "0009_watchlist_items",
+      "breakpoints": true
     }
   ]
 }

@@ -401,6 +401,36 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist_items: {
+        Row: {
+          created_at: string
+          id: string
+          notify_earnings: boolean
+          notify_sentiment: boolean
+          ticker: string
+          user_id: string
+          valuation_threshold_pct: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notify_earnings?: boolean
+          notify_sentiment?: boolean
+          ticker: string
+          user_id: string
+          valuation_threshold_pct?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notify_earnings?: boolean
+          notify_sentiment?: boolean
+          ticker?: string
+          user_id?: string
+          valuation_threshold_pct?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
