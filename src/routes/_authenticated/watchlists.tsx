@@ -35,7 +35,7 @@ function Watchlist() {
     {q.isLoading ? <p className="py-12 text-muted-foreground">Loading watchlist…</p> : !items.length ? <p className="py-12 text-muted-foreground">No tickers yet. Add one above.</p> :
       <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2">Ticker</th><th>Price</th><th>Latest view / target</th><th>Divergence %</th><th>Sentiment</th><th>Earnings</th><th>Alerts</th><th>Sources</th><th></th></tr></thead>
         <tbody>{items.map(i => <tr key={i.id} className="border-b border-border align-top">
-          <td className="py-2"><Link to="/stocks/$ticker" params={{ ticker: i.ticker }} className="font-mono text-primary">{i.ticker}</Link><div><DataFreshness date={i.insight.fetchedAt} origin={i.insight.quoteSource ?? 'Unavailable'} maxAge={3600000} /></div></td>
+          <td className="py-2"><Link to="/stocks/$ticker" params={{ ticker: i.ticker }} search={{ range: '1M', period: 'annual' }} className="font-mono text-primary">{i.ticker}</Link><div><DataFreshness date={i.insight.fetchedAt} origin={i.insight.quoteSource ?? 'Unavailable'} maxAge={3600000} /></div></td>
           <td className="font-mono">{i.insight.price === null ? '—' : `$${fmt(i.insight.price)}`}</td>
           <td className="text-xs">{i.insight.latestRecommendation ?? 'No research'}{i.insight.latestTarget !== null && ` · $${fmt(i.insight.latestTarget)}`}</td>
           <td><Input aria-label={`${i.ticker} threshold`} type="number" defaultValue={Number(i.valuation_threshold_pct)} className="h-7 w-16" onBlur={e => { const v = Number(e.target.value); if (v && v !== Number(i.valuation_threshold_pct)) void run(() => update({ data: { id: i.id, threshold: v } })); }} /></td>
@@ -43,7 +43,7 @@ function Watchlist() {
           <td><Switch aria-label={`${i.ticker} earnings alerts`} checked={i.notify_earnings} onCheckedChange={v => void run(() => update({ data: { id: i.id, earnings: v } }))} /><div className="text-[10px] text-muted-foreground">{i.insight.lastFiling ? `${i.insight.lastFilingForm} ${i.insight.lastFiling}` : ''}</div></td>
           <td className="text-xs">{i.anomalies.length ? i.anomalies.map(a => <div key={a.kind} className="text-warning">{a.message}</div>) : <span className="text-muted-foreground">None</span>}</td>
           <td><SourceLinks ticker={i.ticker} /></td>
-          <td className="space-x-1 whitespace-nowrap"><Button asChild size="sm" variant="outline"><Link to="/analysis/new" search={{ ticker: i.ticker } as never}>Research</Link></Button><Button size="sm" variant="ghost" onClick={() => void run(() => update({ data: { id: i.id, remove: true } }))}>Remove</Button></td>
+          <td className="space-x-1 whitespace-nowrap"><Button asChild size="sm" variant="outline"><Link to="/analysis/new" search={{ ticker: i.ticker }}>Research</Link></Button><Button size="sm" variant="ghost" onClick={() => void run(() => update({ data: { id: i.id, remove: true } }))}>Remove</Button></td>
         </tr>)}</tbody></table></div>}
     {items.length > 1 && <Button asChild variant="outline" size="sm"><Link to="/compare" search={{ tickers: items.slice(0, 4).map(i => i.ticker).join(',') }}>Compare watchlist side by side</Link></Button>}
   </div>;
