@@ -31,3 +31,4 @@
 
 - Company context prefers cached free SEC filings and dated Wikipedia references before owner-encrypted FMP enrichment; each fact retains its source/effective date, unresolved facts stay unavailable, and retrieval freshness is separate from evidence age.
 - Clear private query caches on account identity transitions so a new session cannot display the previous account’s research.
+- Ticker comparison and watchlist alerts share pure helpers in src/lib/ticker-insights.ts (Piotroski from SEC annual facts, beta vs SPY, consensus from owner's non-demo reports); missing inputs never trigger alerts or estimated values.

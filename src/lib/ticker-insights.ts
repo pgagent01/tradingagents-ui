@@ -65,7 +65,7 @@ export function agentConsensus(recs: (string | null)[]) {
   const counts: Record<string, number> = {};
   recs.forEach(r => { if (r) counts[r] = (counts[r] ?? 0) + 1; });
   const avg = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : null;
-  const label = avg === null ? 'No reports' : avg >= 1.5 ? 'STRONG BUY' : avg >= 0.5 ? 'BUY' : avg > -0.5 ? 'HOLD' : avg > -1.5 ? 'SELL' : 'STRONG SELL';
+  const label = avg === null ? 'No rated reports' : avg >= 1.5 ? 'STRONG BUY' : avg >= 0.5 ? 'BUY' : avg > -0.5 ? 'HOLD' : avg > -1.5 ? 'SELL' : 'STRONG SELL';
   return { reports: scored.length, average: avg, label, counts };
 }
 

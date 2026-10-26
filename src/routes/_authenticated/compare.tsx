@@ -27,7 +27,7 @@ function Compare() {
     ['P/E (FY)', r => fmt(r.pe)], ['P/S (FY)', r => fmt(r.ps)], ['EV / EBITDA', r => fmt(r.evEbitda)], ['Net margin %', r => fmt(r.netMargin, 1)],
     ['Piotroski F-score', r => r.piotroski?.score == null ? 'Unavailable' : <span title={r.piotroski.signals.map(s => `${s.pass === null ? '–' : s.pass ? '✓' : '✗'} ${s.label}`).join('\n')}>{r.piotroski.score}/9 <span className="text-muted-foreground">({r.piotroski.tested} tested · FY {r.piotroski.fiscalYear})</span></span>],
     ['Beta vs S&P 500 (1Y)', r => fmt(r.sensitivity.beta)], ['Correlation to S&P 500', r => fmt(r.sensitivity.correlation)],
-    ['Agent consensus', r => r.consensus.reports ? `${r.consensus.label} · ${r.consensus.reports} report${r.consensus.reports > 1 ? 's' : ''}` : 'No reports'],
+    ['Agent consensus', r => r.consensus.reports ? `${r.consensus.label} · ${r.consensus.reports} report${r.consensus.reports > 1 ? 's' : ''}` : 'No rated reports'],
     ['Latest target', r => r.latestTarget === null ? 'Not recorded' : `$${fmt(r.latestTarget)}`],
     ['Latest SEC filing', r => r.lastFiling ? `${r.lastFilingForm} · ${r.lastFiling}` : 'Unavailable'],
     ['Sources', r => <SourceLinks ticker={r.ticker} />],
