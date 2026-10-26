@@ -44,3 +44,7 @@
 - [ ] Verify production HTTPS/WSS delivery — blocked: app has not been published; preview uses HTTPS and secure cloud connections.
 
 - [ ] Validate real FMP endpoint entitlements — blocked: no working FMP key supplied; encrypted storage, masking, validation and Yahoo→FMP fallback covered by tests.
+- [ ] Side-by-side ticker comparison (valuation, Piotroski, macro sensitivity, agent consensus)
+- [ ] Watchlist with anomaly triggers (sentiment shift, valuation divergence, earnings)
+- [ ] Branded PDF and Markdown report exports
+- [ ] Store FRED and FMP keys encrypted for gprithvi@gmail.com
