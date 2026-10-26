@@ -137,4 +137,7 @@
   .report-section > :not(summary) { display: block !important; }
   .report-section p, .report-document tr { break-inside: avoid; }
   .report-document h2 { break-after: avoid; }
+  .print-brand { display: flex !important; }
+  @page { size: A4; margin: 14mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

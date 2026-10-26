@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Activity, BarChart3, FileText, LayoutDashboard, LogOut, PlusCircle, Settings, Star } from "lucide-react";
+import { Activity, BarChart3, FileText, LayoutDashboard, LogOut, PlusCircle, Settings, GitCompare, Star } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
@@ -10,6 +10,7 @@ import { SidebarAttribution } from "@/components/attribution-note";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Stocks", url: "/stocks", icon: Activity },
+  { title: "Compare Tickers", url: "/compare", icon: GitCompare },
   { title: "New Analysis", url: "/analysis/new", icon: PlusCircle },
   { title: "Research Reports", url: "/reports", icon: FileText },
   { title: "Watchlists", url: "/watchlists", icon: Star },

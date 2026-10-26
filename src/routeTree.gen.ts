@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedCompareRouteImport } from './routes/_authenticated/compare'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNewAnalysisRouteImport } from './routes/_authenticated/new-analysis'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -43,6 +44,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCompareRoute = AuthenticatedCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/compare': typeof AuthenticatedCompareRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/analytics'
+    | '/compare'
     | '/dashboard'
     | '/new-analysis'
     | '/reports'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/analytics'
+    | '/compare'
     | '/dashboard'
     | '/new-analysis'
     | '/reports'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/analytics'
+    | '/_authenticated/compare'
     | '/_authenticated/dashboard'
     | '/_authenticated/new-analysis'
     | '/_authenticated/reports'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/compare': {
+      id: '/_authenticated/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof AuthenticatedCompareRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -344,6 +363,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedCompareRoute: typeof AuthenticatedCompareRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNewAnalysisRoute: typeof AuthenticatedNewAnalysisRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -359,6 +379,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedCompareRoute: AuthenticatedCompareRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNewAnalysisRoute: AuthenticatedNewAnalysisRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
