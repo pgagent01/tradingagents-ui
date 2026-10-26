@@ -7,9 +7,12 @@ import { piotroskiScore, marketSensitivity, agentConsensus, latestPeriodicFiling
 export async function tickerInsights(sb: SupabaseClient<Database>, userId: string, tickers: string[]) {
   const [bench, reports] = await Promise.all([
     cachedStockData(sb, userId, 'SPY', '1Y', 'annual').catch(() => null),
-    sb.from('research_reports').select('ticker,recommendation,price_target,created_at,research_runs!inner(user_id,is_demo)').eq('research_runs.user_id', userId).in('ticker', tickers).order('created_at', { ascending: false }),
+    sb.from('research_runs').select('id').eq('user_id', userId).eq('is_demo', false).eq('status', 'completed').in('ticker', tickers),
   ]);
-  const rows = (reports.data ?? []).filter(r => !(r.research_runs as unknown as { is_demo: boolean }).is_demo);
+  const runIds = (reports.data ?? []).map(r => r.id);
+  const { data: reportRows, error } = runIds.length ? await sb.from('research_reports').select('ticker,recommendation,price_target,created_at').in('run_id', runIds).order('created_at', { ascending: false }) : { data: [], error: null };
+  if (error) console.warn('Watchlist report lookup failed');
+  const rows = reportRows ?? [];
   return Promise.all(tickers.map(async ticker => {
     const [stock, facts] = await Promise.all([
       cachedStockData(sb, userId, ticker, '1Y', 'annual').catch(() => null),
