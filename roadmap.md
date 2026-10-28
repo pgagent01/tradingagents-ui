@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Explain the difference between visible Lovable credits and the AI-spendable balance using current billing evidence.
+- [x] Explain visible versus AI-spendable credits: current balance shows 3.70 daily credits, but the AI Gateway applicability balance is 0.00.
 
 - [x] Add regression coverage for required live report ratings, conviction and risk classification while preserving unavailable targets and legacy reports.
 - [ ] Verify a fresh rated live report through execution and saved report view — blocked: AI Gateway spendable balance is zero on October 28, 2026; do not resume paused execution until credits are restored.
