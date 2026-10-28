@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { streamText,Output } from 'ai';
-import { z } from 'zod';
+import { resultSchema, type ResearchResult } from '@/lib/research-result';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { createLovableAiGatewayRunIdFetch } from './run-id.server.ts';
@@ -16,7 +16,6 @@ import { evidenceContext } from '@/lib/data-evidence';
 import { createLovableAiGatewayProvider } from './gateway-helpers.server.ts';
 import { cachedStockData } from '@/lib/stock-service.server';
 import { snapshotAllowed,stockPrompt } from '@/lib/stock-snapshot';
-const resultSchema=z.object({recommendation:z.enum(['STRONG BUY','BUY','HOLD','SELL','STRONG SELL']),price_target:z.number().nullable(),conviction_score:z.number(),risk_level:z.enum(['Low','Moderate','High','Very High']),executive_summary:z.string(),fundamental_analysis:z.string(),technical_analysis:z.string(),sentiment_news:z.string(),risk_debate:z.string(),catalysts:z.array(z.string()),upside_risks:z.array(z.string()),downside_risks:z.array(z.string()),financial_snapshot:z.array(z.object({metric:z.string(),value:z.string()})),final_synthesis:z.string()});
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -69,7 +68,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     requestId=geminiGateway?.getRunId() ?? gateway.getRunId() ?? requestId;
     const cost=usage(input,output,Number(role['inputRate']??0),Number(role['outputRate']??0)).cost;
     const credit=provider==='lovable'&&built?(u.inputTokens===undefined||u.outputTokens===undefined?null:calculateCredits(built.rates,input,output,u.inputTokenDetails?.cacheReadTokens??0,u.inputTokenDetails?.cacheWriteTokens??0)):0;
-    let object:z.infer<typeof resultSchema>|null=null;
+    let object:ResearchResult|null=null;
     if(synthesis){if(geminiSynthesis){try{object=resultSchema.parse(JSON.parse(text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')));}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
     return {text,input,output,cost,credit,model:modelId,object};
   }
