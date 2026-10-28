@@ -15,7 +15,7 @@ export const Route=createFileRoute('/api/research-execute')({server:{handlers:{P
   const roleConfig=(run.model_config as {roles?:Record<string,unknown>})?.roles??{};
   if(!validExecutionRoles(team.filter((a):a is string=>typeof a==='string'),roleConfig)||('synthesis' in roleConfig&&!validExecutionRoles(['synthesis'],roleConfig)))return Response.json({error:'Every analyst needs a supported provider and valid model configuration.'},{status:400});
   const roles=Object.values((run.model_config as {roles?:Record<string,{provider?:string}>})?.roles??{});
-  if(roles.some(r=>!r.provider||!['lovable','openai','anthropic','google','groq','openrouter','xai','deepseek'].includes(r.provider)))return Response.json({error:'Invalid execution provider.'},{status:400});
+  if(roles.some(r=>!r.provider||!['lovable','openai','anthropic','google','groq','openrouter','xai','deepseek','nvidia'].includes(r.provider)))return Response.json({error:'Invalid execution provider.'},{status:400});
   const built=roles.some(r=>r.provider==='lovable');
   if(built){const {data:admin}=await sb.rpc('has_role',{_user_id:user.user.id,_role:'admin'});if(!admin) return Response.json({error:'Built-in AI is reserved for the primary/admin account.'},{status:403});}
   const {data:paused,error:pauseReadError}=await sb.from('ai_access_state').select('paused,reason').eq('user_id',user.user.id).maybeSingle();if(pauseReadError)return Response.json({error:'AI access cannot be verified.'},{status:503});if(paused?.paused) return Response.json({error:paused.reason??'AI access is paused. Restore access before a fresh request.'},{status:403});

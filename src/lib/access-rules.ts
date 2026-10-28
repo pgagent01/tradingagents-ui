@@ -1,7 +1,7 @@
 // Pure access rules shared by the server functions and the UI, so the shipped
 // guards are the same ones the tests exercise.
 
-export const PROVIDERS = ["openai", "anthropic", "google", "groq", "openrouter", "xai", "deepseek"] as const;
+export const PROVIDERS = ["openai", "anthropic", "google", "groq", "openrouter", "xai", "deepseek", "nvidia"] as const;
 export type Provider = (typeof PROVIDERS)[number];
 export const DATA_PROVIDERS = ['fred','fmp'] as const;
 export type CredentialProvider = Provider | (typeof DATA_PROVIDERS)[number];
