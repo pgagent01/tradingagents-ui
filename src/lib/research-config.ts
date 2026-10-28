@@ -57,6 +57,8 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'anthropic',model:'claude-opus-5-5',inputRate:5,outputRate:25 },
   { provider:'groq',model:'llama-3.3-70b-versatile',inputRate:0.59,outputRate:0.79 },
   { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
+  { provider:'nvidia',model:'nvidia/nemotron-3.5-super-vl-120b-a12b',inputRate:0.3,outputRate:0.9 },
+  { provider:'nvidia',model:'nvidia/nemotron-3-ultra-550b-a55b',inputRate:1.2,outputRate:3.6 },
 ];
 export function providerDefault(provider:string):RoleModel {
   return provider==='lovable'?{provider,model:'openai/gpt-6-luna',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
@@ -65,7 +67,7 @@ export function validExecutionRoles(agents:string[],roles:Record<string,unknown>
   return agents.every(id=>{
     const r=roles[id];if(!r||typeof r!=='object')return false;
     const role=r as Partial<RoleModel>;
-    if(typeof role.provider!=='string'||!['lovable','openai','anthropic','google','groq','openrouter','xai','deepseek'].includes(role.provider)||typeof role.model!=='string'||!role.model.trim()||role.model.length>100)return false;
+    if(typeof role.provider!=='string'||!['lovable','openai','anthropic','google','groq','openrouter','xai','deepseek','nvidia'].includes(role.provider)||typeof role.model!=='string'||!role.model.trim()||role.model.length>100)return false;
     if(typeof role.inputRate!=='number'||typeof role.outputRate!=='number'||!Number.isFinite(role.inputRate)||!Number.isFinite(role.outputRate)||role.inputRate<0||role.outputRate<0)return false;
     const known=MODEL_OPTIONS.find(m=>m.model===role.model);
     return !known||known.provider===role.provider||role.provider==='lovable';

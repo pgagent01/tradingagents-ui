@@ -19,7 +19,8 @@ import {
 } from "@/lib/access.functions";
 import { Switch } from "@/components/ui/switch";
 import { getDemoSetting, setDemoSetting } from "@/lib/research.functions";
-import { testMyApiKey } from '@/lib/credential-test.functions';
+import { pingMyModel, testMyApiKey } from '@/lib/credential-test.functions';
+import { MODEL_OPTIONS } from '@/lib/research-config';
 import { resumeMyAiAccess } from '@/lib/ai-access.functions';
 import { analyticsQuery } from '@/lib/analytics-query';
 import { getActiveProvider, setActiveProvider } from '@/lib/provider-settings.functions';
@@ -46,6 +47,7 @@ function SettingsPage() {
       <DemoPanel />
       <ActiveProviderPanel />
       <ApiKeysPanel />
+      <ModelPingPanel />
       <ApiKeysPanel dataOnly />
       <InviteCodesPanel />
       <AiResumePanel />
@@ -291,3 +293,33 @@ function AiResumePanel(){const resume=useServerFn(resumeMyAiAccess);const m=useM
 function CreditSummary(){const {data}=useQuery(analyticsQuery);return <section className="border-t border-border pt-4"><h2 className="text-sm font-semibold">Cumulative Lovable Credits Used</h2><p className="mt-2 font-mono text-lg text-primary">{data?`${data.credits.toFixed(4)} calculated credits`:'Loading…'}</p><p className="mt-1 text-xs text-muted-foreground">{data?.unknown??0} runs with unrecorded usage · demo runs excluded. Not verified billed deductions. <Link to="/analytics" className="text-primary underline">Usage analytics</Link></p></section>;}
 
 function ActiveProviderPanel(){const qc=useQueryClient();const active=useQuery({queryKey:['active-provider'],queryFn:()=>getActiveProvider()});const role=useQuery({queryKey:['my-role'],queryFn:()=>getMyRole()});const save=useServerFn(setActiveProvider);const mutation=useMutation({mutationFn:(provider:string)=>save({data:{provider}}),onSuccess:()=>{void qc.invalidateQueries({queryKey:['active-provider']});toast.success('Active provider saved.');},onError:(e:Error)=>toast.error(e.message)});return <section className="border-b border-border py-4"><Label htmlFor="active-provider">Active execution provider</Label><Select value={active.data??'openai'} onValueChange={p=>mutation.mutate(p)} disabled={active.isPending||mutation.isPending}><SelectTrigger id="active-provider" className="mt-2 w-64"><SelectValue/></SelectTrigger><SelectContent>{[...(role.data?.isAdmin?['lovable']:[]),...PROVIDERS].map(p=><SelectItem key={p} value={p}>{p==='lovable'?'Lovable AI · Built-in':p}</SelectItem>)}</SelectContent></Select><p className="mt-2 text-xs text-muted-foreground">New analyses use this provider; existing runs keep their saved configuration.</p></section>;}
+
+type PingResult={ok:boolean;latencyMs:number;message:string};
+function ModelPingPanel() {
+  const keys=useQuery({queryKey:["my-api-keys"],queryFn:()=>listMyApiKeys()});
+  const ping=useServerFn(pingMyModel);
+  const [results,setResults]=useState<Record<string,PingResult|'pending'>>({});
+  const saved=new Set(keys.data?.map(k=>k.provider)??[]);
+  const models=MODEL_OPTIONS.filter(m=>saved.has(m.provider));
+  const run=async(provider:string,model:string)=>{
+    const id=`${provider}:${model}`;setResults(r=>({...r,[id]:'pending'}));
+    try{const res=await ping({data:{provider,model}});setResults(r=>({...r,[id]:res}));}
+    catch(e){setResults(r=>({...r,[id]:{ok:false,latencyMs:0,message:(e as Error).message}}));}
+  };
+  return (
+    <Panel title="Model Ping" description="Send one tiny test message to each model using your own saved keys. Each ping uses a few tokens from your provider account.">
+      {models.length===0?<p className="text-xs text-muted-foreground">Save a provider key above to ping its models.</p>:<>
+        <Button size="sm" variant="outline" className="mb-2 h-7 text-xs" onClick={()=>models.forEach(m=>run(m.provider,m.model))}>Ping all</Button>
+        <div className="divide-y divide-border rounded-md border border-border bg-card">
+          {models.map(m=>{const id=`${m.provider}:${m.model}`;const r=results[id];return (
+            <div key={id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-xs">
+              <span className="font-mono"><span className="uppercase text-muted-foreground">{m.provider}</span> · {m.model}</span>
+              <div className="flex items-center gap-2">
+                {r==='pending'?<span className="text-muted-foreground">Pinging…</span>:r?<span className={r.ok?'text-positive':'text-negative'}>{r.ok?'● Working':'● Failed'} · {r.message}{r.latencyMs?` · ${(r.latencyMs/1000).toFixed(1)}s`:''}</span>:null}
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" disabled={r==='pending'} onClick={()=>run(m.provider,m.model)}>Ping</Button>
+              </div>
+            </div>);})}
+        </div></>}
+    </Panel>
+  );
+}
