@@ -299,7 +299,7 @@ function ModelPingPanel() {
   const keys=useQuery({queryKey:["my-api-keys"],queryFn:()=>listMyApiKeys()});
   const ping=useServerFn(pingMyModel);
   const [results,setResults]=useState<Record<string,PingResult|'pending'>>({});
-  const saved=new Set(keys.data?.map(k=>k.provider)??[]);
+  const saved=new Set<string>(keys.data?.map(k=>k.provider)??[]);
   const models=MODEL_OPTIONS.filter(m=>saved.has(m.provider));
   const run=async(provider:string,model:string)=>{
     const id=`${provider}:${model}`;setResults(r=>({...r,[id]:'pending'}));
