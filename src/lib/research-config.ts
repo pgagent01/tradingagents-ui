@@ -59,6 +59,7 @@ export const MODEL_OPTIONS: RoleModel[] = [
   { provider:'openrouter',model:'openai/gpt-4o-mini',inputRate:0.15,outputRate:0.6 },
   { provider:'nvidia',model:'nvidia/nemotron-3.5-super-vl-120b-a12b',inputRate:0.3,outputRate:0.9 },
   { provider:'nvidia',model:'nvidia/nemotron-3-ultra-550b-a55b',inputRate:1.2,outputRate:3.6 },
+  { provider:'nvidia',model:'mistralai/mistral-large-4-1t-a52b',inputRate:2,outputRate:6 },
 ];
 export function providerDefault(provider:string):RoleModel {
   return provider==='lovable'?{provider,model:'openai/gpt-6-luna',inputRate:0,outputRate:0}:{...(MODEL_OPTIONS.find(m=>m.provider===provider)??{provider,model:'',inputRate:0,outputRate:0})};
