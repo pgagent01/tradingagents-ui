@@ -22,7 +22,7 @@ export function createNvidiaFailoverFetch(selected: string, onFallback: (model: 
         if (!candidate) break;
         model = candidate;
         const body = typeof init?.body === 'string' ? JSON.stringify({ ...JSON.parse(init.body), model }) : init?.body;
-        const response = await upstream(input, { ...init, body });
+        const response = await upstream(input, { ...init, ...(body !== undefined ? { body } : {}) });
         if (!canFailoverNvidia(response.status) || attempt === candidates.length - 1) return response;
         await response.body?.cancel();
         await wait(1000 * 2 ** attempt, init?.signal);
