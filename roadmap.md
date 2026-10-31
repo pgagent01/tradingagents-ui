@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add NVIDIA transient-outage model backups with regression coverage and live verification.
-- [ ] Add encrypted NVIDIA backup-key management and test each authorized key; quota exhaustion must stop rather than bypass provider limits.
+- [x] Add NVIDIA transient-outage model backups: simulated 503→502→success coverage, terminal-status safeguards, actual-model accounting; all three models returned live replies.
+- [x] Add encrypted NVIDIA backup-key management: all three account-owned keys returned live replies, explicit selection persisted after reload; quota exhaustion stops rather than bypassing provider limits. 110 tests passed and build OK. No natural provider outage was induced and no new full report was run in this verification.
 
 - [x] Explain visible versus AI-spendable credits: current balance shows 3.70 daily credits, but the AI Gateway applicability balance is 0.00.
 
