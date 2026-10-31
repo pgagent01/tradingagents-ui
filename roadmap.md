@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Add NVIDIA transient-outage model backups with regression coverage and live verification.
+- [ ] Add encrypted NVIDIA backup-key management and test each authorized key; quota exhaustion must stop rather than bypass provider limits.
+
 - [x] Explain visible versus AI-spendable credits: current balance shows 3.70 daily credits, but the AI Gateway applicability balance is 0.00.
 
 - [x] Add regression coverage for required live report ratings, conviction and risk classification while preserving unavailable targets and legacy reports.
