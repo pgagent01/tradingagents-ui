@@ -25,6 +25,7 @@ import { resumeMyAiAccess } from '@/lib/ai-access.functions';
 import { analyticsQuery } from '@/lib/analytics-query';
 import { getActiveProvider, setActiveProvider } from '@/lib/provider-settings.functions';
 import { PROVIDERS,DATA_PROVIDERS } from "@/lib/access-rules";
+import { getNvidiaKeys, updateNvidiaKeys } from '@/lib/nvidia-credentials.functions';
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -47,6 +48,7 @@ function SettingsPage() {
       <DemoPanel />
       <ActiveProviderPanel />
       <ApiKeysPanel />
+      <NvidiaKeysPanel />
       <ModelPingPanel />
       <ApiKeysPanel dataOnly />
       <InviteCodesPanel />
@@ -294,7 +296,18 @@ function CreditSummary(){const {data}=useQuery(analyticsQuery);return <section c
 
 function ActiveProviderPanel(){const qc=useQueryClient();const active=useQuery({queryKey:['active-provider'],queryFn:()=>getActiveProvider()});const role=useQuery({queryKey:['my-role'],queryFn:()=>getMyRole()});const save=useServerFn(setActiveProvider);const mutation=useMutation({mutationFn:(provider:string)=>save({data:{provider}}),onSuccess:()=>{void qc.invalidateQueries({queryKey:['active-provider']});toast.success('Active provider saved.');},onError:(e:Error)=>toast.error(e.message)});return <section className="border-b border-border py-4"><Label htmlFor="active-provider">Active execution provider</Label><Select value={active.data??'openai'} onValueChange={p=>mutation.mutate(p)} disabled={active.isPending||mutation.isPending}><SelectTrigger id="active-provider" className="mt-2 w-64"><SelectValue/></SelectTrigger><SelectContent>{[...(role.data?.isAdmin?['lovable']:[]),...PROVIDERS].map(p=><SelectItem key={p} value={p}>{p==='lovable'?'Lovable AI · Built-in':p}</SelectItem>)}</SelectContent></Select><p className="mt-2 text-xs text-muted-foreground">New analyses use this provider; existing runs keep their saved configuration.</p></section>;}
 
-type PingResult={ok:boolean;latencyMs:number;message:string};
+function NvidiaKeysPanel() {
+  const qc=useQueryClient();
+  const pool=useQuery({queryKey:['nvidia-keys'],queryFn:()=>getNvidiaKeys()});
+  const update=useServerFn(updateNvidiaKeys),ping=useServerFn(pingMyModel);
+  const [apiKey,setApiKey]=useState('');
+  const [results,setResults]=useState<Record<number,string>>({});
+  const mutation=useMutation({mutationFn:(data:{apiKey?:string;active?:number})=>update({data}),onSuccess:()=>{setApiKey('');void qc.invalidateQueries({queryKey:['nvidia-keys']});void qc.invalidateQueries({queryKey:['my-api-keys']});toast.success('NVIDIA keys updated.');},onError:(e:Error)=>toast.error(e.message)});
+  const test=useMutation({mutationFn:(keySlot:number)=>ping({data:{provider:'nvidia',model:'nvidia/nemotron-3.5-super-vl-120b-a12b',keySlot}}),onSuccess:(r,slot)=>setResults(v=>({...v,[slot]:`${r.ok?'Working':'Failed'} · ${r.message}`})),onError:(e:Error)=>toast.error(e.message)});
+  return <section className="space-y-3 border-y border-border py-4"><h2 className="text-sm font-semibold">NVIDIA backup keys & model failover</h2><p className="text-xs text-muted-foreground">Models switch only during temporary server outages, before any output. Quota limits, rejected keys and denied access stop execution. Keys never rotate automatically to bypass quota.</p><p className="text-xs text-muted-foreground"><a className="text-primary underline" href="https://docs.api.nvidia.com/nim/docs/deployment" target="_blank" rel="noopener noreferrer">NVIDIA API guidance</a> · Backup order: selected model, then remaining NVIDIA models in the model list.</p><div className="flex flex-wrap items-end gap-2"><div className="min-w-48 flex-1 space-y-1"><Label htmlFor="nvidia-backup-key">Additional NVIDIA key</Label><Input id="nvidia-backup-key" type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} /></div><Button size="sm" disabled={!apiKey.trim()||mutation.isPending||(pool.data?.count??0)>=3} onClick={()=>mutation.mutate({apiKey})}><Plus className="h-3.5 w-3.5"/>Add key</Button></div><div className="divide-y divide-border">{Array.from({length:pool.data?.count??0},(_,slot)=><div key={slot} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs"><span>Key {slot+1} · {pool.data?.active===slot?'Active':'Standby'} · configured</span><div className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground">{results[slot]}</span><Button variant="outline" size="sm" disabled={test.isPending} onClick={()=>test.mutate(slot)}>Test key {slot+1}</Button><Button variant="ghost" size="sm" disabled={pool.data?.active===slot||mutation.isPending} onClick={()=>mutation.mutate({active:slot})}>Use key {slot+1}</Button></div></div>)}</div></section>;
+}
+
+type PingResult={ok:boolean;latencyMs:number;message:string;terminal?:boolean};
 function ModelPingPanel() {
   const keys=useQuery({queryKey:["my-api-keys"],queryFn:()=>listMyApiKeys()});
   const ping=useServerFn(pingMyModel);
@@ -303,13 +316,13 @@ function ModelPingPanel() {
   const models=MODEL_OPTIONS.filter(m=>saved.has(m.provider));
   const run=async(provider:string,model:string)=>{
     const id=`${provider}:${model}`;setResults(r=>({...r,[id]:'pending'}));
-    try{const res=await ping({data:{provider,model}});setResults(r=>({...r,[id]:res}));}
-    catch(e){setResults(r=>({...r,[id]:{ok:false,latencyMs:0,message:(e as Error).message}}));}
+    try{const res=await ping({data:{provider,model}});setResults(r=>({...r,[id]:res}));return res;}
+    catch(e){setResults(r=>({...r,[id]:{ok:false,latencyMs:0,message:(e as Error).message}}));return {ok:false,terminal:true};}
   };
   return (
     <Panel title="Model Ping" description="Send one tiny test message to each model using your own saved keys. Each ping uses a few tokens from your provider account.">
       {models.length===0?<p className="text-xs text-muted-foreground">Save a provider key above to ping its models.</p>:<>
-        <Button size="sm" variant="outline" className="mb-2 h-7 text-xs" onClick={()=>models.forEach(m=>run(m.provider,m.model))}>Ping all</Button>
+        <Button size="sm" variant="outline" className="mb-2 h-7 text-xs" disabled={Object.values(results).includes('pending')} onClick={async()=>{for(const m of models){const result=await run(m.provider,m.model);if(result?.terminal)break;}}}>Ping all</Button>
         <div className="divide-y divide-border rounded-md border border-border bg-card">
           {models.map(m=>{const id=`${m.provider}:${m.model}`;const r=results[id];return (
             <div key={id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-xs">
