@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Diagnose NVIDIA key rejection and unify Settings management for up to three keys without overwriting backups.
+- [ ] Set NVIDIA NIM as the requesting account's default and verify saved settings and key/model testing.
+
 - [x] Add NVIDIA transient-outage model backups: simulated 503→502→success coverage, terminal-status safeguards, actual-model accounting; all three models returned live replies.
 - [x] Add encrypted NVIDIA backup-key management: all three account-owned keys returned live replies, explicit selection persisted after reload; quota exhaustion stops rather than bypassing provider limits. 110 tests passed and build OK. No natural provider outage was induced and no new full report was run in this verification.
 
