@@ -43,6 +43,17 @@ export const saveMyApiKey = createServerFn({ method: "POST" })
     const provider = normalizeCredentialProvider(data.provider);
     const apiKey = data.apiKey.trim();
     if (apiKey.length < 8) throw new Error("That API key looks too short.");
+    if (provider === 'nvidia') {
+      const { data: row, error: readError } = await context.supabase.from('user_api_keys').select('key_ciphertext').eq('user_id', context.userId).eq('provider', provider).maybeSingle();
+      if (readError) throw new Error('NVIDIA credentials unavailable.');
+      const { openNvidiaCredentials, sealNvidiaCredentials, changeNvidiaCredentials } = await import('@/lib/nvidia-credentials.server');
+      const secret = process.env['API_KEY_ENCRYPTION_SECRET'];
+      const existing = row ? await openNvidiaCredentials(row.key_ciphertext, secret) : { version: 1 as const, active: 0, keys: [] as string[] };
+      const pool = changeNvidiaCredentials(existing, { apiKey, ...(row ? { replaceSlot: existing.active } : {}) });
+      const { error } = await context.supabase.from('user_api_keys').upsert({ user_id: context.userId, provider, key_ciphertext: await sealNvidiaCredentials(pool, secret), key_hint: 'Configured', updated_at: new Date().toISOString() }, { onConflict: 'user_id,provider' });
+      if (error) throw new Error('NVIDIA key could not be saved.');
+      return { provider, hint: 'Configured' };
+    }
     const { error } = await context.supabase.from("user_api_keys").upsert(
       {
         user_id: context.userId,

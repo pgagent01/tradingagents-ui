@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Diagnose NVIDIA key rejection and unify Settings management for up to three keys without overwriting backups. Latest META run recorded rejection; live rechecks returned temporary 503 then successful replies for key 1, and successful replies for keys 2/3. Dedicated add/replace/test/select controls and backup-preservation tests added; 112 tests passed, build OK.
+- [x] Set NVIDIA NIM as the requesting account's default and verify saved settings and key/model testing. Preference persisted after reload and all seven wizard roles initialized to NVIDIA. No failed billed run was automatically retried.
+- [x] Recheck active key 1 and replace with the supplied credential only if rejection persists, not to bypass quota. Key 1 returned successful replies on two rechecks; no replacement needed and supplied fourth key was not stored.
+
 - [x] Add NVIDIA transient-outage model backups: simulated 503→502→success coverage, terminal-status safeguards, actual-model accounting; all three models returned live replies.
 - [x] Add encrypted NVIDIA backup-key management: all three account-owned keys returned live replies, explicit selection persisted after reload; quota exhaustion stops rather than bypassing provider limits. 110 tests passed and build OK. No natural provider outage was induced and no new full report was run in this verification.
 

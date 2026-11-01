@@ -120,7 +120,7 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(dataOnly?DATA_PROVIDERS:PROVIDERS).map((p) => (
+              {(dataOnly?DATA_PROVIDERS:PROVIDERS.filter(p=>p!=='nvidia')).map((p) => (
                 <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
               ))}
             </SelectContent>
@@ -146,12 +146,12 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
 
       <div className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
         {keys.isPending && <div className="px-3 py-2 text-xs text-muted-foreground">Loading…</div>}
-        {keys.data?.filter(k=>(k.provider==='fred'||k.provider==='fmp')===dataOnly).length === 0 && (
+        {keys.data?.filter(k=>k.provider!=='nvidia'&&(k.provider==='fred'||k.provider==='fmp')===dataOnly).length === 0 && (
           <div className="px-3 py-2 text-xs text-muted-foreground">
             {dataOnly?'No optional data keys configured. Yahoo and SEC remain available without FMP.':<>No keys yet. Add your own key to run research — <Link to="/new-analysis" className="text-primary hover:underline">New Analysis</Link> will ask for one.</>}
           </div>
         )}
-        {keys.data?.filter(k=>(k.provider==='fred'||k.provider==='fmp')===dataOnly).map((k) => (
+        {keys.data?.filter(k=>k.provider!=='nvidia'&&(k.provider==='fred'||k.provider==='fmp')===dataOnly).map((k) => (
           <div key={k.provider} className="flex items-center justify-between gap-3 px-3 py-1.5">
             <div className="flex items-center gap-2 text-xs">
               <span className="font-mono font-semibold uppercase">{k.provider}</span>
@@ -301,10 +301,11 @@ function NvidiaKeysPanel() {
   const pool=useQuery({queryKey:['nvidia-keys'],queryFn:()=>getNvidiaKeys()});
   const update=useServerFn(updateNvidiaKeys),ping=useServerFn(pingMyModel);
   const [apiKey,setApiKey]=useState('');
+  const [replaceSlot,setReplaceSlot]=useState<number|undefined>();
   const [results,setResults]=useState<Record<number,string>>({});
-  const mutation=useMutation({mutationFn:(data:{apiKey?:string;active?:number})=>update({data}),onSuccess:()=>{setApiKey('');void qc.invalidateQueries({queryKey:['nvidia-keys']});void qc.invalidateQueries({queryKey:['my-api-keys']});toast.success('NVIDIA keys updated.');},onError:(e:Error)=>toast.error(e.message)});
+  const mutation=useMutation({mutationFn:(data:{apiKey?:string;active?:number;replaceSlot?:number})=>update({data}),onSuccess:()=>{setApiKey('');setReplaceSlot(undefined);setResults({});void qc.invalidateQueries({queryKey:['nvidia-keys']});void qc.invalidateQueries({queryKey:['my-api-keys']});toast.success('NVIDIA keys updated.');},onError:(e:Error)=>toast.error(e.message)});
   const test=useMutation({mutationFn:(keySlot:number)=>ping({data:{provider:'nvidia',model:'nvidia/nemotron-3.5-super-vl-120b-a12b',keySlot}}),onSuccess:(r,slot)=>setResults(v=>({...v,[slot]:`${r.ok?'Working':'Failed'} · ${r.message}`})),onError:(e:Error)=>toast.error(e.message)});
-  return <section className="space-y-3 border-y border-border py-4"><h2 className="text-sm font-semibold">NVIDIA backup keys & model failover</h2><p className="text-xs text-muted-foreground">Models switch only during temporary server outages, before any output. Quota limits, rejected keys and denied access stop execution. Keys never rotate automatically to bypass quota.</p><p className="text-xs text-muted-foreground"><a className="text-primary underline" href="https://docs.api.nvidia.com/nim/docs/deployment" target="_blank" rel="noopener noreferrer">NVIDIA API guidance</a> · Backup order: selected model, then remaining NVIDIA models in the model list.</p><div className="flex flex-wrap items-end gap-2"><div className="min-w-48 flex-1 space-y-1"><Label htmlFor="nvidia-backup-key">Additional NVIDIA key</Label><Input id="nvidia-backup-key" type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} /></div><Button size="sm" disabled={!apiKey.trim()||mutation.isPending||(pool.data?.count??0)>=3} onClick={()=>mutation.mutate({apiKey})}><Plus className="h-3.5 w-3.5"/>Add key</Button></div><div className="divide-y divide-border">{Array.from({length:pool.data?.count??0},(_,slot)=><div key={slot} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs"><span>Key {slot+1} · {pool.data?.active===slot?'Active':'Standby'} · configured</span><div className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground">{results[slot]}</span><Button variant="outline" size="sm" disabled={test.isPending} onClick={()=>test.mutate(slot)}>Test key {slot+1}</Button><Button variant="ghost" size="sm" disabled={pool.data?.active===slot||mutation.isPending} onClick={()=>mutation.mutate({active:slot})}>Use key {slot+1}</Button></div></div>)}</div></section>;
+  return <section className="space-y-3 border-y border-border py-4"><h2 className="text-sm font-semibold">NVIDIA backup keys & model failover</h2><p className="text-xs text-muted-foreground">Models switch only during temporary server outages, before any output. Quota limits, rejected keys and denied access stop execution. Keys never rotate automatically to bypass quota.</p><p className="text-xs text-muted-foreground"><a className="text-primary underline" href="https://docs.api.nvidia.com/nim/docs/deployment" target="_blank" rel="noopener noreferrer">NVIDIA API guidance</a> · Backup order: selected model, then remaining NVIDIA models in the model list.</p><div className="flex flex-wrap items-end gap-2"><div className="min-w-48 flex-1 space-y-1"><Label htmlFor="nvidia-backup-key">{replaceSlot===undefined?`NVIDIA key · ${(pool.data?.count??0)}/3 configured`:`Replacement for key ${replaceSlot+1}`}</Label><Input id="nvidia-backup-key" type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} /></div><Button size="sm" disabled={!apiKey.trim()||mutation.isPending||pool.isPending||(replaceSlot===undefined&&(pool.data?.count??0)>=3)} onClick={()=>mutation.mutate({apiKey,...(replaceSlot===undefined?{}:{replaceSlot})})}><Plus className="h-3.5 w-3.5"/>{replaceSlot===undefined?'Add key':'Save replacement'}</Button></div><div className="divide-y divide-border">{pool.isPending?<p className="text-xs text-muted-foreground">Loading NVIDIA keys…</p>:pool.isError?<p className="text-xs text-negative">NVIDIA keys could not be loaded. Refresh and try again.</p>:null}{Array.from({length:pool.data?.count??0},(_,slot)=><div key={slot} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs"><span>Key {slot+1} · {pool.data?.active===slot?'Active':'Standby'} · configured</span><div className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground">{results[slot]}</span><Button variant="outline" size="sm" disabled={test.isPending} onClick={()=>test.mutate(slot)}>Test key {slot+1}</Button><Button variant="ghost" size="sm" disabled={pool.data?.active===slot||mutation.isPending} onClick={()=>mutation.mutate({active:slot})}>Use key {slot+1}</Button><Button variant="ghost" size="sm" disabled={mutation.isPending} onClick={()=>{setReplaceSlot(slot);setApiKey('');}}>Replace key {slot+1}</Button></div></div>)}</div></section>;
 }
 
 type PingResult={ok:boolean;latencyMs:number;message:string;terminal?:boolean};

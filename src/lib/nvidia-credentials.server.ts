@@ -17,3 +17,22 @@ export function activeNvidiaKey(pool: NvidiaCredentials) {
   if (!key) throw new Error('Select a configured NVIDIA key.');
   return key;
 }
+
+export function changeNvidiaCredentials(pool: NvidiaCredentials, input: { apiKey?: string; active?: number; replaceSlot?: number }): NvidiaCredentials {
+  const updated: NvidiaCredentials = { version: 1, active: pool.active, keys: [...pool.keys] };
+  if (input.apiKey !== undefined) {
+    const key = input.apiKey.trim();
+    if (!key.startsWith('nvapi-') || key.length < 8) throw new Error('Enter a NVIDIA API key.');
+    if (updated.keys.some((existing, slot) => existing === key && slot !== input.replaceSlot)) throw new Error('That key is already configured.');
+    if (input.replaceSlot !== undefined) {
+      if (!Number.isInteger(input.replaceSlot) || !updated.keys[input.replaceSlot]) throw new Error('Select a configured key to replace.');
+      updated.keys[input.replaceSlot] = key;
+    } else {
+      if (updated.keys.length >= 3) throw new Error('Three NVIDIA keys are already configured.');
+      updated.keys.push(key);
+    }
+  } else if (input.replaceSlot !== undefined) throw new Error('Enter a replacement key.');
+  if (input.active !== undefined) updated.active = input.active;
+  if (!Number.isInteger(updated.active) || !updated.keys[updated.active]) throw new Error('Select a configured key.');
+  return updated;
+}
