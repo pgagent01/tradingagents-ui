@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createNvidiaFailoverFetch, nvidiaModelOrder } from '@/lib/ai/nvidia-failover.server';
-import { openNvidiaCredentials, sealNvidiaCredentials, activeNvidiaKey } from '@/lib/nvidia-credentials.server';
+import { openNvidiaCredentials, sealNvidiaCredentials, activeNvidiaKey, changeNvidiaCredentials } from '@/lib/nvidia-credentials.server';
 import { encryptSecret } from '@/lib/crypto.server';
 const selected='nvidia/nemotron-3.5-super-vl-120b-a12b';
 describe('NVIDIA fallback',()=>{
@@ -26,6 +26,16 @@ describe('NVIDIA fallback',()=>{
   });
 });
 describe('NVIDIA encrypted key selection',()=>{
+  it('replaces only the chosen key and preserves all three slots and active selection',async()=>{
+    const original={version:1 as const,active:1,keys:['nvapi-first','nvapi-second','nvapi-third']};
+    const changed=changeNvidiaCredentials(original,{apiKey:'nvapi-replacement',replaceSlot:0});
+    const reopened=await openNvidiaCredentials(await sealNvidiaCredentials(changed,'test-encryption'),'test-encryption');
+    expect(reopened.keys).toEqual(['nvapi-replacement','nvapi-second','nvapi-third']);
+    expect(reopened.active).toBe(1);expect(original.keys[0]).toBe('nvapi-first');
+  });
+  it('never adds a fourth key',()=>{
+    expect(()=>changeNvidiaCredentials({version:1,active:0,keys:['nvapi-first','nvapi-second','nvapi-third']},{apiKey:'nvapi-fourth'})).toThrow('Three NVIDIA keys');
+  });
   it('encrypts all three keys and rotates only to the explicitly selected slot',async()=>{
     const keys=['synthetic-first','synthetic-second','synthetic-third'];
     const cipher=await sealNvidiaCredentials({version:1,active:2,keys},'test-encryption');
