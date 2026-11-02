@@ -2,6 +2,20 @@ import { describe,it,expect } from 'vitest';
 import { findCompanies,resolveTicker } from '@/lib/companies';
 import { usage,estimateUsage,PRESETS,DEFAULT_MODEL,providerDefault,validExecutionRoles, rankModelChoices, blendedTokenCost, catalogBlendedCost } from '@/lib/research-config';
 describe('company-to-ticker matching',() => {
+  it('resolves Lumentum to LITE in company search and submission',()=>{
+    expect(resolveTicker('LUMENTUM')).toBe('LITE');
+    expect(resolveTicker('Lumentum Holdings Inc.')).toBe('LITE');
+    expect(findCompanies('Lumentum')[0]?.ticker).toBe('LITE');
+    expect(findCompanies('LITE')[0]?.name).toBe('Lumentum Holdings Inc.');
+  });
+  it('resolves other SEC-listed companies outside the curated suggestions',()=>{
+    expect(resolveTicker('Coherent Corp.')).toBe('COHR');
+    expect(findCompanies('Coherent')[0]?.ticker).toBe('COHR');
+  });
+  it('never resolves an ambiguous fragment to an arbitrary company',()=>{
+    expect(resolveTicker('bank')).toBe('BANK');
+    expect(resolveTicker('xyzunknown')).toBe('XYZUNKNOWN');
+  });
   for(const [company,ticker] of [['Apple','AAPL'],['Nvidia','NVDA'],['Tesla','TSLA'],['Microsoft','MSFT'],['Amazon','AMZN'],['Google','GOOGL'],['Alphabet','GOOGL'],['Meta','META']]) {
     it(`${company} populates ${ticker}`,() => { expect(resolveTicker(company ?? '')).toBe(ticker);expect(findCompanies(company ?? '')[0]?.ticker).toBe(ticker); });
   }
