@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Verify additional symbols (LITE, COHR, PLTR, CRM, ADBE), add five-minute cached free Yahoo backup with secondary endpoint and saved SEC fallback, and explicit direct-ticker entry in the shared selector. Live Siemens backup → SIE.DE and direct COHR navigation/LITE wizard persistence verified; 123 tests passed, build OK.
+
 - [x] Fix company-name submission as a ticker using the dated SEC company catalog; verified dashboard Enter and wizard Continue resolve Lumentum → LITE. Authenticated LITE page returned Yahoo quote/history and SEC filings. Existing LUMENTUM run was not changed or replayed.
 
 - [x] Diagnose NVIDIA key rejection and unify Settings management for up to three keys without overwriting backups. Latest META run recorded rejection; live rechecks returned temporary 503 then successful replies for key 1, and successful replies for keys 2/3. Dedicated add/replace/test/select controls and backup-preservation tests added; 112 tests passed, build OK.
