@@ -28,6 +28,7 @@ export function CompanyPicker({ value, onChange, onSelect }: { value: string; on
       <ToggleGroupItem value="company" className="h-7 text-xs">Company search</ToggleGroupItem>
       <ToggleGroupItem value="ticker" className="h-7 text-xs">Enter ticker</ToggleGroupItem>
     </ToggleGroup>
+    {mode==='company'&&<div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground"><a href={lookup.data&&lookup.variables===value.trim()&&lookup.data.source==='Yahoo Finance'?`https://finance.yahoo.com/lookup/?s=${encodeURIComponent(value)}`:COMPANY_CATALOG_SOURCE} target="_blank" rel="noopener noreferrer" className="underline">{lookup.data&&lookup.variables===value.trim()?`${lookup.data.source} · ${lookup.data.cached?'Cached':'Fetched'} ${new Date(lookup.data.fetchedAt).toLocaleDateString()}`:`SEC catalog · Saved ${new Date(COMPANY_CATALOG_RETRIEVED_AT).toLocaleDateString()}`}</a><Button size="sm" variant="ghost" className="h-6 px-1 text-[10px]" disabled={value.trim().length<2||lookup.isPending} onMouseDown={e=>e.preventDefault()} onClick={()=>{setOpen(true);lookup.mutate(value.trim());}}><RefreshCw className="h-3 w-3"/>{lookup.isPending?'Searching…':'Backup search'}</Button></div>}
     <div className="relative min-w-0">
     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
     <Input aria-label={mode==='ticker'?'Ticker symbol':'Company or ticker'} aria-expanded={mode==='company'&&open} aria-controls={id} role={mode==='company'?'combobox':undefined} autoComplete="off" placeholder={mode==='ticker'?'LITE, NVDA, SIE.DE…':'Company or ticker…'} className="pl-9 pr-9 text-sm" value={value}
@@ -41,7 +42,7 @@ export function CompanyPicker({ value, onChange, onSelect }: { value: string; on
       </Button>)}
     </div>}
     </div>
-    {mode==='company'&&<div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground"><a href={lookup.data&&lookup.variables===value.trim()&&lookup.data.source==='Yahoo Finance'?`https://finance.yahoo.com/lookup/?s=${encodeURIComponent(value)}`:COMPANY_CATALOG_SOURCE} target="_blank" rel="noopener noreferrer" className="underline">{lookup.data&&lookup.variables===value.trim()?`${lookup.data.source} · ${lookup.data.cached?'Cached':'Fetched'} ${new Date(lookup.data.fetchedAt).toLocaleDateString()}`:`SEC catalog · Saved ${new Date(COMPANY_CATALOG_RETRIEVED_AT).toLocaleDateString()}`}</a><Button size="sm" variant="ghost" className="h-6 px-1 text-[10px]" disabled={value.trim().length<2||lookup.isPending} onMouseDown={e=>e.preventDefault()} onClick={()=>{setOpen(true);lookup.mutate(value.trim());}}><RefreshCw className="h-3 w-3"/>{lookup.isPending?'Searching…':'Backup search'}</Button></div>}
+
     {mode==='company'&&lookup.isError&&<p className="text-[10px] text-muted-foreground">Backup search unavailable. Saved company matches remain available.</p>}
     {mode==='company'&&open&&!matches.length&&!lookup.isPending&&value.trim().length>1&&<p className="text-[10px] text-muted-foreground">No company match.</p>}
     {mode==='ticker'&&value.trim()&&!directValid&&<p className="text-[10px] text-negative">Enter a ticker symbol, not a company name.</p>}
