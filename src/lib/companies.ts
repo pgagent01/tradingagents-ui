@@ -1,5 +1,7 @@
+import catalog from './company-catalog.json';
+
 export type Company = { ticker: string; name: string; exchange: string; aliases: string[] };
-export const COMPANIES: Company[] = [
+const curated: Company[] = [
   { ticker: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', aliases: ['apple'] },
   { ticker: 'NVDA', name: 'NVIDIA Corporation', exchange: 'NASDAQ', aliases: ['nvidia'] },
   { ticker: 'TSLA', name: 'Tesla Inc.', exchange: 'NASDAQ', aliases: ['tesla'] },
@@ -12,7 +14,15 @@ export const COMPANIES: Company[] = [
   { ticker: 'AVGO', name: 'Broadcom Inc.', exchange: 'NASDAQ', aliases: ['broadcom'] },
   { ticker: 'JPM', name: 'JPMorgan Chase & Co.', exchange: 'NYSE', aliases: ['jpmorgan', 'jp morgan'] },
   { ticker: 'BRK.B', name: 'Berkshire Hathaway · Class B', exchange: 'NYSE', aliases: ['berkshire', 'buffett'] },
+  { ticker: 'LITE', name: 'Lumentum Holdings Inc.', exchange: 'NASDAQ', aliases: ['lumentum', 'lumentum holdings'] },
 ];
+const curatedTickers = new Set(curated.map(c => c.ticker));
+export const COMPANY_CATALOG_SOURCE = catalog.source;
+export const COMPANY_CATALOG_RETRIEVED_AT = catalog.retrievedAt;
+export const COMPANIES: Company[] = [...curated, ...catalog.companies.filter(c => !curatedTickers.has(c.ticker)).map(c => ({ ...c, exchange: 'SEC listed', aliases: [] }))];
+function companyName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\b(incorporated|inc|corporation|corp|holdings|holding|limited|ltd|plc|co)\b/g, '').replace(/\s+/g, ' ').trim();
+}
 export function findCompanies(query: string) {
   const q = query.trim().toLowerCase();
   return COMPANIES.filter(c => !q || [c.ticker, c.name, c.exchange, ...c.aliases].some(v => v.toLowerCase().includes(q)))
@@ -20,5 +30,9 @@ export function findCompanies(query: string) {
 }
 export function resolveTicker(query: string) {
   const q = query.trim().toLowerCase();
-  return COMPANIES.find(c => c.ticker.toLowerCase() === q || c.aliases.includes(q) || c.name.toLowerCase() === q)?.ticker ?? query.trim().toUpperCase();
+  const exact = COMPANIES.find(c => c.ticker.toLowerCase() === q || c.aliases.includes(q) || c.name.toLowerCase() === q);
+  if (exact) return exact.ticker;
+  const normalized = companyName(q);
+  const candidates = normalized ? COMPANIES.filter(c => companyName(c.name) === normalized) : [];
+  return candidates.length === 1 ? candidates[0]?.ticker ?? query.trim().toUpperCase() : query.trim().toUpperCase();
 }
