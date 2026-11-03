@@ -2,7 +2,11 @@ import {DataFreshness} from '@/components/data-freshness';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { deleteIncompleteRun } from "@/lib/research.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DashboardAttribution } from "@/components/attribution-note";
@@ -107,6 +111,7 @@ function Dashboard() {
                       <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs" >
                         {rep ? <Link to="/reports/$id" params={{id:rep.id}}>Report <ArrowUpRight className="h-3 w-3" /></Link> : <Link to="/analysis/$id" params={{id:r.id}}>Run <ArrowUpRight className="h-3 w-3" /></Link>}
                       </Button>
+                      {r.status !== "completed" && <DeleteRunButton id={r.id} ticker={r.ticker} />}
                     </td>
                   </tr>
                 );
@@ -142,4 +147,21 @@ function TickerSearch() {
   const [q,setQ] = useState('');
   const nav = useNavigate();
   return <div className="w-full max-w-sm"><CompanyPicker value={q} onChange={setQ} onSelect={ticker => { void nav({ to:'/analysis/new',search:{ticker} }); }} /></div>;
+}
+
+function DeleteRunButton({ id, ticker }: { id: string; ticker: string }) {
+  const del = useServerFn(deleteIncompleteRun);
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button size="sm" variant="ghost" aria-label={`Delete ${ticker} run`} className="h-6 px-2 text-xs text-destructive" disabled={busy}
+      onClick={async () => {
+        if (!window.confirm(`Delete this unfinished ${ticker} run? This cannot be undone.`)) return;
+        setBusy(true);
+        try { const r = await del({ data: { id } }); toast[r.deleted ? "success" : "error"](r.deleted ? "Run deleted" : "Run could not be deleted"); await qc.invalidateQueries(); }
+        catch { toast.error("Run could not be deleted"); } finally { setBusy(false); }
+      }}>
+      <Trash2 className="h-3 w-3" />
+    </Button>
+  );
 }
