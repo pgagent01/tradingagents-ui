@@ -26,3 +26,14 @@ describe('live research rating contract', () => {
     expect(resultSchema.safeParse({ ...report, [field]: null }).success).toBe(false);
   });
 });
+import { parseResearchJson } from '@/lib/research-result';
+describe('parseResearchJson', () => {
+  const base = { executive_summary: 'x', fundamental_analysis: 'x', technical_analysis: 'x', sentiment_news: 'x', risk_debate: 'x', final_synthesis: 'x', catalysts: [], upside_risks: [], downside_risks: [], financial_snapshot: [] };
+  it('normalizes casing, string numbers, fences and think blocks', () => {
+    const r = parseResearchJson('<think>{x}</think>```json\n' + JSON.stringify({ ...base, recommendation: 'Strong_Buy', conviction_score: '72', risk_level: 'medium', price_target: '$120.5' }) + '\n```');
+    expect(r.recommendation).toBe('STRONG BUY'); expect(r.conviction_score).toBe(72); expect(r.risk_level).toBe('Moderate'); expect(r.price_target).toBe(120.5);
+  });
+  it('still rejects a missing rating', () => {
+    expect(() => parseResearchJson(JSON.stringify({ ...base, conviction_score: 50, risk_level: 'High' }))).toThrow();
+  });
+});

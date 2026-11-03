@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { streamText,Output } from 'ai';
-import { resultSchema, type ResearchResult } from '@/lib/research-result';
+import { resultSchema, parseResearchJson, type ResearchResult } from '@/lib/research-result';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { createLovableAiGatewayRunIdFetch } from './run-id.server.ts';

@@ -31,10 +31,10 @@ export function parseResearchJson(text: string): ResearchResult {
   const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
   if (start < 0 || end <= start) throw new Error('No JSON object');
   const raw = JSON.parse(cleaned.slice(start, end + 1));
-  const o = (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.report && typeof raw.report === 'object' ? raw.report : raw) as Record<string, unknown>;
+  const o = (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.report && typeof raw.report === 'object' ? raw.report : raw) as Partial<Record<keyof ResearchResult, unknown>>;
   const rec = str(o.recommendation).toUpperCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
   const conviction = num(o.conviction_score);
-  const snapshot = Array.isArray(o.financial_snapshot) ? o.financial_snapshot.map(r => r && typeof r === 'object' ? { metric: str((r as Record<string, unknown>).metric), value: str((r as Record<string, unknown>).value) } : null).filter((r): r is { metric: string; value: string } => !!r && !!r.metric) : o.financial_snapshot && typeof o.financial_snapshot === 'object' ? Object.entries(o.financial_snapshot).map(([metric, value]) => ({ metric, value: str(value) })) : [];
+  const snapshot = Array.isArray(o.financial_snapshot) ? o.financial_snapshot.map(r => r && typeof r === 'object' ? { metric: str((r as { metric?: unknown }).metric), value: str((r as { value?: unknown }).value) } : null).filter((r): r is { metric: string; value: string } => !!r && !!r.metric) : o.financial_snapshot && typeof o.financial_snapshot === 'object' ? Object.entries(o.financial_snapshot).map(([metric, value]) => ({ metric, value: str(value) })) : [];
   return resultSchema.parse({
     recommendation: (RECS as readonly string[]).includes(rec) ? rec : o.recommendation,
     price_target: num(o.price_target),
