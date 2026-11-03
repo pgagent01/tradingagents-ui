@@ -69,4 +69,9 @@ export const cancelAnalysis = createServerFn({ method:'POST' }).middleware([requ
     if(logError) throw logError;
   }
   return { cancelled:Boolean(run) };
+});export const deleteIncompleteRun = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
+  // Completed runs keep their saved report; only unfinished/failed runs may be deleted. Related events/outputs cascade.
+  const { data:run,error } = await context.supabase.from('research_runs').delete().eq('id',data.id).eq('user_id',context.userId).neq('status','completed').select('id').maybeSingle();
+  if(error) throw error;
+  return { deleted:Boolean(run) };
 });
