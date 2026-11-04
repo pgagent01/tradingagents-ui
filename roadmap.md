@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Add missing-key warnings throughout analysis setup, key acquisition/replacement guidance in Settings, and verify the requesting account's data-key coverage and private setup for other users.
+- [ ] Assess free fundamental-data enrichment and add an optional account-owned provider key with real research data integration.
 
 - [x] Verify additional symbols (LITE, COHR, PLTR, CRM, ADBE), add five-minute cached free Yahoo backup with secondary endpoint and saved SEC fallback, and explicit direct-ticker entry in the shared selector. Live Siemens backup → SIE.DE and direct COHR navigation/LITE wizard persistence verified; 123 tests passed, build OK.
 
