@@ -110,12 +110,13 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
 
   return (
     <Panel
-      title={dataOnly?"Data & Credentials — FRED / FMP":"AI & Credentials — bring your own"}
+      title={dataOnly?"Data & Credentials — FRED / FMP / Alpha Vantage":"AI & Credentials — bring your own"}
       description={dataOnly?"Optional · encrypted for your account only. FRED macroeconomic evidence and Financial Modeling Prep stock data.":"Each account stores its own keys, encrypted and visible only to you. BYOK providers require your own key; built-in Lovable AI is reserved for admins."}
     >
       {dataOnly?<p className="mb-3 text-xs text-muted-foreground"><a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get a FRED API key</a> · <a href="https://financialmodelingprep.com/developer/docs" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get an FMP API key</a> · FMP endpoint access depends on your plan. Without FMP, stocks use Yahoo and SEC. Missing macro data stays unavailable; Polymarket requires no key.</p>:<p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>}
       <div className="mb-3 space-y-2 text-xs text-muted-foreground">
-        <p>{dataOnly ? 'Supported optional data keys: FRED for macroeconomic evidence; FMP for additional quotes, statements and ratios. No other data-source key is currently required or supported in Settings.' : 'Choose an AI provider below, get a key from that provider, paste it here, then Save key and Test key. Select it as your active execution provider for new analyses. NVIDIA keys have their own section below.'}</p>
+        <p>{dataOnly ? 'Optional data keys: FRED for macroeconomic evidence; FMP for quotes, statements and ratios; Alpha Vantage for quote/daily-history fallback and additional TTM valuation ratios. Every signed-in user adds their own keys here, isolated from other accounts.' : 'Choose an AI provider below, get a key from that provider, paste it here, then Save key and Test key. Select it as your active execution provider for new analyses. NVIDIA keys have their own section below.'}</p>
+        {dataOnly && <p>SEC filings provide free annual/quarterly revenue, earnings, assets, liabilities and cash flow. Alpha Vantage overview enrichment is cached for 24 hours; its standard free limit is 25 requests per day, with endpoint access depending on your plan. <a href="https://www.alphavantage.co/premium/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Provider limits</a>. Agents receive available stock data for current-date research; historical runs do not use current snapshots.</p>}
         <p><a href={CREDENTIAL_HELP[provider]?.url} target="_blank" rel="noopener noreferrer" className="text-primary underline">Get your {CREDENTIAL_HELP[provider]?.name ?? provider} key</a> · To replace a rejected or expired key, select the same provider and save the replacement, then test it. Saved does not mean validated or funded.</p>
         {dataOnly && <p>No key needed: <a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Yahoo Finance</a>, <a href="https://www.sec.gov/edgar" target="_blank" rel="noopener noreferrer" className="text-primary underline">SEC EDGAR</a>, <a href="https://www.wikipedia.org" target="_blank" rel="noopener noreferrer" className="text-primary underline">Wikipedia</a> and <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Polymarket</a>. Availability and provider limits still apply.</p>}
       </div>
@@ -154,12 +155,12 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
       <div className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
         {keys.isPending && <div className="px-3 py-2 text-xs text-muted-foreground">Loading…</div>}
         {keys.isError && <div role="alert" className="px-3 py-2 text-xs text-negative">Saved keys could not be loaded. <Button size="sm" variant="outline" onClick={() => void keys.refetch()}>Check again</Button></div>}
-        {keys.data?.filter(k=>k.provider!=='nvidia'&&(k.provider==='fred'||k.provider==='fmp')===dataOnly).length === 0 && (
+        {keys.data?.filter(k=>k.provider!=='nvidia'&&DATA_PROVIDERS.some(p=>p===k.provider)===dataOnly).length === 0 && (
           <div className="px-3 py-2 text-xs text-muted-foreground">
             {dataOnly?'No optional data keys configured. Yahoo and SEC remain available without FMP.':<>No keys yet. Add your own key to run research — <Link to="/new-analysis" className="text-primary hover:underline">New Analysis</Link> will ask for one.</>}
           </div>
         )}
-        {keys.data?.filter(k=>k.provider!=='nvidia'&&(k.provider==='fred'||k.provider==='fmp')===dataOnly).map((k) => (
+        {keys.data?.filter(k=>k.provider!=='nvidia'&&DATA_PROVIDERS.some(p=>p===k.provider)===dataOnly).map((k) => (
           <div key={k.provider} className="flex items-center justify-between gap-3 px-3 py-1.5">
             <div className="flex items-center gap-2 text-xs">
               <span className="font-mono font-semibold uppercase">{k.provider}</span>
