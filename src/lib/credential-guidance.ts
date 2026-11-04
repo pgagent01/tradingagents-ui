@@ -11,6 +11,7 @@ export const CREDENTIAL_HELP: Record<string, { name: string; url: string }> = {
   nvidia: { name: 'NVIDIA NIM', url: 'https://build.nvidia.com' },
   fred: { name: 'FRED', url: 'https://fred.stlouisfed.org/docs/api/api_key.html' },
   fmp: { name: 'Financial Modeling Prep', url: 'https://financialmodelingprep.com/developer/docs' },
+  alphavantage: { name: 'Alpha Vantage', url: 'https://www.alphavantage.co/support/#api-key' },
 };
 
 /** Data keys enrich evidence but never block execution; synthesis needs its own provider key too. */
