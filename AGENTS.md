@@ -11,6 +11,7 @@
 
 - Authenticate every account mutation with requireSupabaseAuth and scope queries to context.userId; roles never grant access to another user's credentials or research.
 - API keys are encrypted with Web Crypto AES-GCM and decrypted only in server helpers; server functions never return plaintext keys.
+- Use shared browser-safe credential guidance for provider setup links and selected-role missing-key checks; optional data credentials never block AI research, and saved status never implies validation.
 - NVIDIA stores up to three keys in a versioned encrypted envelope in the existing owner-only credential row; all credential writes preserve unrelated slots and Settings uses dedicated slot controls. Active-key selection is explicit, never quota-driven. NVIDIA model fallback is bounded to pre-stream transient HTTP failures, records actual models, and never replays quotas, denials, refusals or partial output to avoid bypassing limits or duplicate billing.
 - Use shared company matching with a dated SEC catalog snapshot for dashboard/wizard/server submission; resolve exact or unique normalized names, never arbitrary ambiguous fragments. The shared selector offers direct symbols and authenticated, bounded, cached Yahoo backup search; saved SEC matches survive remote failures. Research configuration stays shared for role-specific USD estimates.
 - Use the shared RankedModelSelect and research-config ranking helpers for model dropdowns; compare equal uncached input/output weights within each provider/currency and leave unknown prices unranked.
