@@ -1,7 +1,8 @@
 # Roadmap
 
-- [ ] Add missing-key warnings throughout analysis setup, key acquisition/replacement guidance in Settings, and verify the requesting account's data-key coverage and private setup for other users.
-- [ ] Assess free fundamental-data enrichment and add an optional account-owned provider key with real research data integration.
+- [x] Add missing-key warnings throughout analysis setup, provider acquisition/update guidance and retry controls in Settings. Confirmed requesting account has FRED/FMP/NVIDIA saved; authenticated warning→Settings flow verified at desktop/mobile sizes without runtime errors.
+- [x] Assess free fundamentals and add owner-encrypted Alpha Vantage key controls, validation, quote/daily-history fallback and separately labeled TTM enrichment through stock/research snapshots. Owner/version-scoped overview caching and quota/error safeguards tested; 137 tests passed, build OK, authenticated LITE stock page verified.
+- [ ] Validate Alpha Vantage with a real account key and a live enriched research report — blocked: no Alpha Vantage credential supplied; mocked integration and authenticated Settings controls verified.
 
 - [x] Verify additional symbols (LITE, COHR, PLTR, CRM, ADBE), add five-minute cached free Yahoo backup with secondary endpoint and saved SEC fallback, and explicit direct-ticker entry in the shared selector. Live Siemens backup → SIE.DE and direct COHR navigation/LITE wizard persistence verified; 123 tests passed, build OK.
 
