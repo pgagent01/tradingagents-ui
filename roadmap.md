@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Fix technical research evidence: selected-lookback OHLCV history, calculated indicators, dated source/cache metadata and regression/live verification; never replay existing billed runs.
+
 - [x] Add missing-key warnings throughout analysis setup, provider acquisition/update guidance and retry controls in Settings. Confirmed requesting account has FRED/FMP/NVIDIA saved; authenticated warning→Settings flow verified at desktop/mobile sizes without runtime errors.
 - [x] Assess free fundamentals and add owner-encrypted Alpha Vantage key controls, validation, quote/daily-history fallback and separately labeled TTM enrichment through stock/research snapshots. Owner/version-scoped overview caching and quota/error safeguards tested; 137 tests passed, build OK, authenticated LITE stock page verified.
 - [ ] Validate Alpha Vantage with a real account key and a live enriched research report — blocked: no Alpha Vantage credential supplied; mocked integration and authenticated Settings controls verified.
