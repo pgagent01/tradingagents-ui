@@ -36,3 +36,4 @@
 - Clear private query caches on account identity transitions so a new session cannot display the previous account’s research.
 - Ticker comparison and watchlist alerts share pure helpers in src/lib/ticker-insights.ts (Piotroski from SEC annual facts, beta vs SPY, consensus from owner's non-demo reports); missing inputs never trigger alerts or estimated values.
 - Keep live synthesis validation in the shared research-result schema so structured and JSON-only providers enforce the same required rating contract under regression tests; legacy and demo reports may remain unrated.
+- Technical research uses cached daily history with lookback-filtered OHLCV and technicalindicators warm-up calculations; persist dated evidence and omit unavailable values rather than inventing signals. Current stock snapshots remain excluded from historical research.
