@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Fix technical research evidence: selected-lookback OHLCV history, calculated indicators, dated source/cache metadata and regression/live verification; never replay existing billed runs.
+- [x] Fix current-date technical research evidence: daily year retrieval, selected-lookback OHLCV, moving averages/RSI/MACD/Bollinger/ATR, dated source/cache metadata and persisted evidence. Missing-history regression reproduced then passed; 144 tests/build OK. Fresh NVIDIA LITE report completed with 63 daily bars and verified saved indicators. Existing runs untouched; historical-date stock retrieval remains unavailable by design.
 
 - [x] Add missing-key warnings throughout analysis setup, provider acquisition/update guidance and retry controls in Settings. Confirmed requesting account has FRED/FMP/NVIDIA saved; authenticated warning→Settings flow verified at desktop/mobile sizes without runtime errors.
 - [x] Assess free fundamentals and add owner-encrypted Alpha Vantage key controls, validation, quote/daily-history fallback and separately labeled TTM enrichment through stock/research snapshots. Owner/version-scoped overview caching and quota/error safeguards tested; 137 tests passed, build OK, authenticated LITE stock page verified.
@@ -20,7 +20,7 @@
 - [x] Explain visible versus AI-spendable credits: current balance shows 3.70 daily credits, but the AI Gateway applicability balance is 0.00.
 
 - [x] Add regression coverage for required live report ratings, conviction and risk classification while preserving unavailable targets and legacy reports.
-- [ ] Verify a fresh rated live report through execution and saved report view — blocked: AI Gateway spendable balance is zero on October 28, 2026; do not resume paused execution until credits are restored.
+- [x] Verify a fresh rated live report through execution and saved report view — NVIDIA LITE report completed November 6 with SELL, 55 conviction, High risk and saved technical evidence; no old run replayed. Built-in AI Gateway balance not rechecked.
 
 - [x] Add Stock Info routes, cached multi-source market data, interactive charts/financial statements, sidebar integration and regression/live verification.
 - [x] Add encrypted owner-only FMP credentials, validation, owner-key market fallbacks and annual/quarterly statements; verify masking and fallback tests.
@@ -34,7 +34,7 @@
 - [x] Integrate encrypted FRED credential management, dated/cache-aware macro ingestion and public Polymarket context/report evidence; authenticated live report verified with cached prediction evidence and explicit missing-FRED-key state.
 - [x] Apply final requested OpenAI/Lovable GPT-6 Luna defaults, retain GPT-5.4 Mini and low-cost Claude/Gemini choices; 55 tests passed and a live Luna/Gemini report saved.
 - [x] Make Claude Haiku 4.5 and current Gemini 3.1 Flash-Lite selectable per role; verified dropdowns and provider-specific execution protocols.
-- [ ] Validate live FRED observations with a real key — blocked: no FRED credential supplied; encrypted settings and unavailable-data path verified.
+- [x] Validate live FRED observations with saved owner key — fresh November 6 LITE report displayed dated macro observations through the authenticated research flow.
 
 - [x] Correct reported wizard navigation and analytics string-state errors; confirmed clean build.
 
