@@ -1,8 +1,8 @@
 # Roadmap
 
-- [ ] Improve financial evidence consistency and add regression coverage.
-- [ ] Identify verified free evidence sources and their limitations.
-- [ ] Document safe TradingAgents upstream monitoring and update review.
+- [x] Improve financial evidence consistency: withhold non-positive P/E and contradictory SEC gross profit, preserve losses, bound annual durations, refresh evidence cache versions and add regression coverage. Exact per-fact provenance/cross-provider reconciliation remain future work.
+- [x] Identify verified free evidence sources and limitations: SEC full text, GDELT, World Bank, OECD, FINRA; documented as candidates, not connected feeds.
+- [x] Document safe TradingAgents upstream review and add weekly/manual GitHub issue monitor. Activation/execution waits for an app-owned GitHub repository with Actions/Issues enabled; no automatic Python imports or deployments.
 
 - [x] Configure the remixed account's three encrypted NVIDIA slots and FRED, FMP, Alpha Vantage credentials; NVIDIA slots, FRED and FMP passed live tests. Alpha Vantage saved but access unconfirmed (tracked below).
 - [x] Grant gprithvi@gmail.com admin access; keep all supplied credentials scoped only to that account. Role and authenticated admin controls verified.
