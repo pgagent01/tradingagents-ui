@@ -63,7 +63,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
     const netIncome = pick(TAGS.netIncome, end, duration);
     return {
       qualityWarnings: gross.warning ? [gross.warning] : [],
-      start: typeof anchor['start'] === 'string' ? anchor['start'] : null, provenance,
+      start: provenance[REVENUE[0] ?? 'unknown']?.start ?? (typeof anchor['start'] === 'string' ? anchor['start'] : null), provenance,
       end, form: String(anchor['form']), filed: String(anchor['filed']), accession,
       filingUrl: accession && cik ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/` : null,
       revenue, grossProfit: gross.value, grossProfitDerived: gross.derived,
