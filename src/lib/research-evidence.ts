@@ -1,9 +1,10 @@
+import { checkedGrossProfit } from '@/lib/financial-quality';
 import { numeric, object } from '@/lib/stock-data';
 
 /** Point-in-time SEC fundamentals: only facts filed on or before the cutoff are used. */
 export type FundamentalPeriod = {
   end: string; form: string; filed: string; accession: string | null; filingUrl: string | null;
-  revenue: number | null; grossProfit: number | null; grossProfitDerived: boolean; operatingIncome: number | null; netIncome: number | null; dilutedEps: number | null;
+  qualityWarnings?: string[]; revenue: number | null; grossProfit: number | null; grossProfitDerived: boolean; operatingIncome: number | null; netIncome: number | null; dilutedEps: number | null;
   operatingCashFlow: number | null; capex: number | null; freeCashFlow: number | null;
   assets: number | null; liabilities: number | null; liabilitiesDerived: boolean; equity: number | null; cash: number | null; longTermDebt: number | null;
   revenueGrowthPct: number | null; netIncomeGrowthPct: number | null;
@@ -53,14 +54,16 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
     const end = String(anchor['end']);
     const revenue = pick(REVENUE, end, duration); const cost = pick(TAGS.costOfRevenue, end, duration);
     const reportedGross = pick(TAGS.grossProfit, end, duration);
+    const gross = checkedGrossProfit(revenue, cost, reportedGross);
     const equity = pick(TAGS.equity, end, null); const reportedLiabilities = pick(TAGS.liabilities, end, null); const total = pick(TAGS.liabilitiesAndEquity, end, null);
     const ocf = pick(TAGS.operatingCashFlow, end, duration); const capex = pick(TAGS.capex, end, duration);
     const accession = typeof anchor['accn'] === 'string' ? anchor['accn'] : null;
     const netIncome = pick(TAGS.netIncome, end, duration);
     return {
+      qualityWarnings: gross.warning ? [gross.warning] : [],
       end, form: String(anchor['form']), filed: String(anchor['filed']), accession,
       filingUrl: accession && cik ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/` : null,
-      revenue, grossProfit: reportedGross ?? (revenue !== null && cost !== null ? revenue - cost : null), grossProfitDerived: reportedGross === null && revenue !== null && cost !== null,
+      revenue, grossProfit: gross.value, grossProfitDerived: gross.derived,
       operatingIncome: pick(TAGS.operatingIncome, end, duration), netIncome,
       dilutedEps: pick(['EarningsPerShareDiluted'], end, duration, 'USD/shares'),
       operatingCashFlow: ocf, capex, freeCashFlow: ocf !== null && capex !== null ? ocf - capex : null,

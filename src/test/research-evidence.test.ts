@@ -35,6 +35,14 @@ describe('point-in-time SEC fundamentals', () => {
   it('is unavailable when nothing was filed by the cutoff', () => {
     expect(fundamentalEvidence(facts, '2020-01-01').status).toBe('unavailable');
   });
+  it('withholds inconsistent SEC gross profit in dated analyst evidence', () => {
+    const conflicting = structuredClone(facts);
+    const raw = { ...conflicting, facts: { 'us-gaap': { ...conflicting.facts['us-gaap'], GrossProfit: { units: { USD: [fy('2025-06-30', '2024-07-01', 100, '2025-08-20')] } } } } };
+    const annual = fundamentalEvidence(raw, '2026-01-01').annual[1];
+    expect(annual?.grossProfit).toBeNull();
+    expect(annual?.qualityWarnings?.length).toBe(1);
+    expect(annual?.netIncome).toBe(20);
+  });
 });
 
 describe('dated news and filing events', () => {
