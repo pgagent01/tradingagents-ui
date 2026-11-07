@@ -33,7 +33,8 @@ describe('real execution analyst handoffs', () => {
   it('passes all fresh specialist findings to risk, debate and saved synthesis with dated evidence', async () => {
     calls.length = 0;
     const agents = ['fundamentals', 'technical', 'sentiment', 'news', 'risk', 'debate'];
-    const rpc = vi.fn(async (name: string) => ({ data: name === 'finalize_research_report' ? 'report-test' : null, error: null }));
+    let storedReport: Record<string, unknown> = {};
+    const rpc = vi.fn(async (name: string,args?:Record<string,unknown>) => {if(name==='finalize_research_report')storedReport=args?.['_report'] as Record<string,unknown>;return { data: name === 'finalize_research_report' ? 'report-test' : null, error: null };});
     const sb = {
       from: (table: string) => {
         let inserted = false;
@@ -61,5 +62,7 @@ describe('real execution analyst handoffs', () => {
     expect(calls[2]).toContain('No social feed');
     const saved = rpc.mock.calls.find(([name]) => name === 'finalize_research_report');
     expect(saved).toBeDefined();
+    expect(storedReport['storage_version']).toBe(2);
+    expect(storedReport['analyst_outputs']).toMatchObject({fundamentals:{content:'fundamentals verified finding',model:'test-model'},risk:{content:'risk verified finding'}});
   });
 });
