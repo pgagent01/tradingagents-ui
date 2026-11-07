@@ -1,0 +1,8 @@
+{
+  "repository": "TauricResearch/TradingAgents",
+  "branch": "main",
+  "lastReviewedCommit": "9fa1196fffbcfd9de5146d2dd2869df84ab99838",
+  "checkedOn": "2026-11-07",
+  "relationship": "Independent TypeScript adaptation; monitoring baseline, not a claim that this revision has been ported",
+  "license": "Apache-2.0"
+}

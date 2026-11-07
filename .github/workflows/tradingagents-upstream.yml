@@ -1,0 +1,29 @@
+name: Review TradingAgents upstream
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check upstream and open a review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$APP_REPOSITORY/contents/upstream/tradingagents.json" --jq '.content' | base64 --decode > /tmp/baseline.json
+          repo=$(jq -r .repository /tmp/baseline.json)
+          branch=$(jq -r .branch /tmp/baseline.json)
+          baseline=$(jq -r .lastReviewedCommit /tmp/baseline.json)
+          latest=$(gh api "repos/$repo/commits/$branch" --jq .sha)
+          if [ "$baseline" = "$latest" ]; then exit 0; fi
+          title="TradingAgents upstream review: $latest"
+          existing=$(gh issue list --repo "$APP_REPOSITORY" --state all --search "$title in:title" --json title --jq '.[].title')
+          if printf '%s\n' "$existing" | grep -Fxq "$title"; then exit 0; fi
+          printf 'New upstream revision: https://github.com/%s/commit/%s\n\nCompare: https://github.com/%s/compare/%s...%s\n\n- [ ] Review prompts, evidence routing, provider changes and license notices.\n- [ ] Port only compatible changes; never overwrite this independent TypeScript app with Python upstream code.\n- [ ] Run regression tests and authenticated live research, cancellation, historical-date and account-isolation checks.\n- [ ] Update lastReviewedCommit after review (including an explicit no-port decision).\n\nThis monitor does not apply changes or deploy code.\n' "$repo" "$latest" "$repo" "$baseline" "$latest" > /tmp/review.md
+          gh issue create --repo "$APP_REPOSITORY" --title "$title" --body-file /tmp/review.md
