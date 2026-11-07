@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatReportText, reportGlossary } from '@/lib/report-format';
+import { reportMarkdown, visibleReportText, type Report } from '@/lib/report-content';
 
 describe('report formatting', () => {
   it('splits a long blob into multiple paragraphs without dropping text', () => {
@@ -17,5 +18,19 @@ describe('report formatting', () => {
     expect(terms).toContain('MACD');
     expect(terms).toContain('RSI (Relative Strength Index)');
     expect(terms).not.toContain('Beta');
+  });
+  it('builds the glossary from visible fallback analyst text, not invisible metadata keys', () => {
+    const report={sections:{rsi_metadata:'not displayed'},executive_summary:'Revenue increased.'} as unknown as Report;
+    const text=visibleReportText(report,[{agent_id:'technical',content:'MACD crossed above signal.',model_used:'test',status:'completed'}]);
+    expect(reportGlossary(text).map(g=>g.term)).toContain('MACD');
+    expect(reportGlossary(text).map(g=>g.term)).not.toContain('RSI (Relative Strength Index)');
+  });
+  it('exports the glossary and saved technical evidence alongside research', () => {
+    const report={ticker:'AVGO',created_at:'2026-11-07',sections:{technical_analysis:'MACD crossed above signal.',technical_evidence:{indicators:{sma200:145}}},executive_summary:'RSI is 72.',total_input_tokens:10,total_output_tokens:5,total_cost_usd:0,lovable_credits:null} as unknown as Report;
+    const markdown=reportMarkdown(report,[],false);
+    expect(markdown).toContain('## Appendix · Glossary of Key Terms');
+    expect(markdown).toContain('### RSI (Relative Strength Index)');
+    expect(markdown).toContain('Moving Average Convergence Divergence');
+    expect(markdown).toContain('145');
   });
 });
