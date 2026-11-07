@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis.
+- [ ] Audit new free-source date semantics and analyst routing; fix confirmed data errors.
+- [ ] Run one authorized fresh NVIDIA LITE report and verify saved evidence, analyst handoffs and same-ticker comparison.
+
 - [x] Validate SEC duration alignment and derive compatible same-filing YTD quarters with per-fact provenance; refresh parsed caches. Missing compatible comparative facts stay unavailable rather than subtracting across restatements.
 - [x] Add bounded indicator-availability/annual-financial-age claim checks before synthesis, preserve warnings in new reports, and show limited-scope review on saved reports. This is not a full factual audit; old report content remains unchanged.
 - [x] Align visible glossary and Markdown export, include saved technical evidence, repair invalid comparison selections and distinguish same-day saves. Authenticated saved report, section shortcuts, Markdown download, PDF glossary and invalid comparison warning verified without runtime errors; 190 automated tests passed.

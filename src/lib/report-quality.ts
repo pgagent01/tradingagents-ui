@@ -1,5 +1,16 @@
 import { sectionObject } from '@/lib/report-content';
 export type ClaimWarning = { code: string; section: string; message: string; evidence: string };
+/** Withhold unsupported targets without discarding paid research or inventing replacements. */
+export function reviewPriceTarget(target: number | null, price: unknown): { target: number | null; warnings: ClaimWarning[] } {
+  const quoted = typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;
+  let message = '';
+  let code = '';
+  if (target !== null && (!Number.isFinite(target) || target <= 0)) { code = 'invalid_price_target'; message = 'The model target was non-positive or invalid and has been withheld.'; }
+  else if (target !== null && quoted === null) { code = 'unanchored_price_target'; message = 'No usable current price was supplied; the model target has been withheld.'; }
+  else if (target !== null && quoted !== null && Math.round(target * 100) === Math.round(quoted * 100)) { code = 'spot_price_target'; message = 'The model target duplicates the current quote to the cent. It has been withheld pending valuation review; an unchanged valuation may be legitimate but is not independently established.'; }
+  else if (target === null && quoted !== null) { code = 'missing_price_target'; message = 'A current quote was available, but the model did not establish a price target. No estimate was invented.'; }
+  return { target: code && code !== 'missing_price_target' ? null : target, warnings: code ? [{ code, section: 'final_synthesis', message, evidence: `Current quote: ${quoted ?? 'unavailable'}; model target: ${target ?? 'unavailable'}. Price targets are model estimates, not verified prices.` }] : [] };
+}
 /** Limited checks, never a full audit or a rewrite of saved conclusions. */
 export function reviewReportClaims(texts: Record<string,string>, technical: unknown, fundamentals: unknown, analysisDate: string): ClaimWarning[] {
   const indicators=sectionObject(sectionObject(technical)['indicators']);
