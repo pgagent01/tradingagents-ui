@@ -92,6 +92,11 @@ describe('analyst evidence routing', () => {
     expect(prompt).toContain('[truncated]');
     expect(priorFindingsPrompt([])).toContain('independent');
   });
+  it('makes missing SEC facts explicit rather than silently omitting the fundamental feed', () => {
+    const context = evidenceContext('fundamentals', { ...evidence, fundamentals: null });
+    expect(context).toContain('"sec_fundamentals":{"status":"unavailable"');
+    expect(context).toContain('do not invent historical figures');
+  });
 });
 
 describe('stock snapshot SEC gaps', () => {
