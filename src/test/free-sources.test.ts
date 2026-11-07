@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { averageTone, earningsFilings, exhibitName, parseGdeltArticles, parseShortInterest, parseWorldBank } from '@/lib/sources/free-sources';
+import { averageTone, earningsFilings, exhibitName, isEarningsExcerpt, currentRevisionAllowed, parseGdeltArticles, parseShortInterest, parseWorldBank } from '@/lib/sources/free-sources';
 import { evidenceContext } from '@/lib/data-evidence';
 
 describe('free sources', () => {
@@ -12,9 +12,23 @@ describe('free sources', () => {
     ] }, '2026-11-05');
     expect(a.map(x => x.url)).toEqual(['https://a.com/1']);
   });
-  it('excludes zero-coverage days from average tone', () => {
-    expect(averageTone([{ value: 0 }, { value: -2 }, { value: 4 }])).toBe(1);
-    expect(averageTone([{ value: 0 }])).toBeNull();
+  it('does not mistake neutral zero tone for absent coverage', () => {
+    expect(averageTone([{ value: 0 }, { value: -2 }, { value: 4 }])).toBe(0.67);
+    expect(averageTone([{ value: 0 }])).toBe(0);
+    expect(averageTone([])).toBeNull();
+  });
+  it('excludes current revised feeds from historical dates',()=>{
+    expect(currentRevisionAllowed('2026-11-06','2026-11-07')).toBe(false);
+    expect(currentRevisionAllowed('2026-11-07','2026-11-07')).toBe(true);
+  });
+  it('does not select arbitrary exhibits or unrelated release excerpts',()=>{
+    expect(exhibitName({directory:{item:[{name:'ex991.htm'},{name:'ex992.htm'}]}})).toBeNull();
+    expect(isEarningsExcerpt('Agreement to appoint a director')).toBe(false);
+    expect(isEarningsExcerpt('Financial results for the quarter ended: revenue and net loss')).toBe(true);
+  });
+  it('rejects negative short shares and invalid days-to-cover inputs',()=>{
+    const rows=parseShortInterest([{symbolCode:'LITE',settlementDate:'2026-10-15',currentShortPositionQuantity:-100},{symbolCode:'LITE',settlementDate:'2026-10-31',currentShortPositionQuantity:100,averageDailyVolumeQuantity:0,daysToCoverQuantity:2}],'LITE','2026-11-07');
+    expect(rows).toHaveLength(1); expect(rows[0]?.daysToCover).toBeNull();
   });
   it('keeps only FINRA rows on or before the cutoff, newest first', () => {
     const r = parseShortInterest([

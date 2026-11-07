@@ -34,22 +34,23 @@ export function parseGdeltTone(raw: unknown, cutoff: string): { date: string; va
   const series = arr(obj(raw)['timeline']).map(obj)[0];
   return arr(series?.['data']).map(obj).map(d => ({ date: (gdeltDate(String(d['date'] ?? '')) ?? '').slice(0, 10), value: num(d['value']) })).filter((d): d is { date: string; value: number } => !!d.date && d.date <= cutoff && d.value !== null);
 }
-/** Days with zero coverage report tone 0; exclude them so silence is not counted as neutral sentiment. */
+/** A zero tone can be neutral coverage; without coverage counts do not discard it. */
 export function averageTone(points: { value: number }[]): number | null {
-  const v = points.filter(p => p.value !== 0); return v.length ? Math.round(v.reduce((s, p) => s + p.value, 0) / v.length * 100) / 100 : null;
+  const v = points.filter(p => Number.isFinite(p.value)); return v.length ? Math.round(v.reduce((s, p) => s + p.value, 0) / v.length * 100) / 100 : null;
 }
 export function parseShortInterest(raw: unknown, ticker: string, cutoff: string, limit = 6): ShortInterest[] {
   return arr(raw).map(obj).filter(r => String(r['symbolCode'] ?? '').toUpperCase() === ticker.toUpperCase()).map(r => ({
     settlementDate: String(r['settlementDate'] ?? ''), shortShares: num(r['currentShortPositionQuantity']) ?? NaN, previousShortShares: num(r['previousShortPositionQuantity']),
     changePct: num(r['changePercent']), avgDailyVolume: num(r['averageDailyVolumeQuantity']), daysToCover: num(r['daysToCoverQuantity']),
-  })).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.settlementDate) && r.settlementDate <= cutoff && Number.isFinite(r.shortShares))
+  })).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.settlementDate) && r.settlementDate <= cutoff && Number.isFinite(r.shortShares) && r.shortShares >= 0)
+    .map(r => ({...r, previousShortShares:r.previousShortShares !== null && r.previousShortShares >= 0 ? r.previousShortShares : null, avgDailyVolume:r.avgDailyVolume !== null && r.avgDailyVolume > 0 ? r.avgDailyVolume : null, daysToCover:r.avgDailyVolume !== null && r.avgDailyVolume > 0 && r.daysToCover !== null && r.daysToCover >= 0 ? r.daysToCover : null}))
     .sort((a, b) => b.settlementDate.localeCompare(a.settlementDate)).slice(0, limit);
 }
 export const WORLD_BANK_INDICATORS = [
   { id: 'NY.GDP.MKTP.KD.ZG', name: 'GDP growth (annual %)' },
   { id: 'FP.CPI.TOTL.ZG', name: 'Inflation, consumer prices (annual %)' },
 ] as const;
-/** World Bank data is revised without vintages, so historical runs keep only years completed before the cutoff year. */
+/** Current-revision context only; the server excludes this feed from historical runs. */
 export function parseWorldBank(raw: unknown, name: string, cutoff: string): { lastUpdated: string | null; rows: MacroIndicator[] } {
   const body = arr(raw); const meta = obj(body[0]); const maxYear = Number(cutoff.slice(0, 4)) - 1;
   const rows = arr(body[1]).map(obj).map(r => ({ country: String(obj(r['country'])['value'] ?? ''), indicator: String(obj(r['indicator'])['id'] ?? ''), name, year: String(r['date'] ?? ''), value: num(r['value']) }))
@@ -66,12 +67,15 @@ export function earningsFilings(submissions: unknown, cutoff: string, windowStar
     const filed = String(c('filingDate')[i] ?? ''); const items = String(c('items')[i] ?? '');
     if (String(f).replace(/\/A$/, '') === '8-K' && items.split(',').map(s => s.trim()).includes('2.02') && filed <= cutoff && filed >= windowStart) out.push({ filed, accession: String(c('accessionNumber')[i] ?? '') });
   });
-  return out.filter(o => o.accession).slice(0, limit);
+  return out.filter(o => o.accession).sort((a,b)=>b.filed.localeCompare(a.filed)).slice(0, limit);
 }
 export function exhibitName(index: unknown): string | null {
   const names = arr(obj(obj(index)['directory'])['item']).map(i => String(obj(i)['name'] ?? ''));
-  return names.find(n => /ex[-_]?99[-_.]?1?.*\.html?$/i.test(n)) ?? names.find(n => /ex[-_]?99.*\.html?$/i.test(n)) ?? null;
+  const candidates=names.filter(n => /ex[-_]?99.*\.html?$/i.test(n) && /^[a-z0-9_.-]+$/i.test(n));
+  return candidates.length===1 ? candidates[0] ?? null : null;
 }
+export function isEarningsExcerpt(text:string) { return /(?:financial results|results for|quarter ended|fiscal (?:year|quarter))/i.test(text) && /(?:revenue|net (?:income|loss)|earnings per share)/i.test(text); }
+export function currentRevisionAllowed(cutoff:string,today:string) { return cutoff===today; }
 export function htmlText(html: string, max = 2500): string {
   return html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, "'").replace(/&#\d+;|&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 }
