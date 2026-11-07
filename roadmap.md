@@ -100,3 +100,4 @@
 
 - [ ] Review all saved reports for accuracy and data collation (after data-source integration)
 - [ ] Integrate GDELT, FINRA short interest, Bluesky, World Bank, SEC earnings releases into reports
+- [x] Answered: no new agents needed; existing analysts consume new sources
