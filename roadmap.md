@@ -97,3 +97,6 @@
 - [x] Fix analyst evidence gaps: SEC filings/headlines for news, point-in-time SEC fundamentals, historical daily bars, prior findings for risk/debate
 - [x] Remix setup: update API_KEY_ENCRYPTION_SECRET
 - [x] Remix setup: clear copied migrations and rescaffold for new database
+
+- [ ] Review all saved reports for accuracy and data collation (after data-source integration)
+- [ ] Integrate GDELT, FINRA short interest, Bluesky, World Bank, SEC earnings releases into reports
