@@ -25,12 +25,54 @@ const num = (v: unknown) => { if (typeof v === 'number') return Number.isFinite(
 const str = (v: unknown) => typeof v === 'string' ? v : Array.isArray(v) ? v.map(String).join('\n') : v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
 const list = (v: unknown) => Array.isArray(v) ? v.map(x => typeof x === 'string' ? x : str(x)).filter(Boolean) : typeof v === 'string' && v.trim() ? [v] : [];
 
+/** Escapes raw control characters inside JSON strings (models often emit literal newlines). */
+function escapeControlChars(src: string): string {
+  let out = '', inStr = false, esc = false;
+  for (const ch of src) {
+    if (inStr) {
+      if (esc) { esc = false; out += ch; continue; }
+      if (ch === '\\') { esc = true; out += ch; continue; }
+      if (ch === '"') inStr = false;
+      else if (ch === '\n') { out += '\\n'; continue; }
+      else if (ch === '\r') { out += '\\r'; continue; }
+      else if (ch === '\t') { out += '\\t'; continue; }
+    } else if (ch === '"') inStr = true;
+    out += ch;
+  }
+  return out;
+}
+
+/** Balanced top-level {...} spans, ignoring braces inside strings. */
+function objectSpans(src: string): string[] {
+  const spans: string[] = []; let depth = 0, start = -1, inStr = false, esc = false;
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') { if (depth > 0) inStr = true; continue; }
+    if (ch === '{') { if (depth === 0) start = i; depth++; }
+    else if (ch === '}' && depth > 0) { depth--; if (depth === 0) spans.push(src.slice(start, i + 1)); }
+  }
+  return spans;
+}
+
+export class ReportFormatError extends Error { constructor(public reason: 'no_json' | 'truncated' | 'malformed') { super(reason); } }
+
+/** Finds the report object among reasoning text, fences and stray braces; prefers objects carrying a recommendation. */
+export function extractJsonObject(text: string): unknown {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^[\s\S]*?<\/think>/i, '').replace(/```(?:json)?/gi, '');
+  const spans = objectSpans(escapeControlChars(cleaned));
+  const parsed: unknown[] = [];
+  for (const span of spans) { try { parsed.push(JSON.parse(span)); } catch { /* try next */ } }
+  const has = (v: unknown) => !!v && typeof v === 'object' && ('recommendation' in v || ('report' in v && !!(v as { report?: unknown }).report));
+  const best = [...parsed].reverse().find(has) ?? parsed.at(-1);
+  if (best !== undefined) return best;
+  if (cleaned.indexOf('{') < 0) throw new ReportFormatError('no_json');
+  throw new ReportFormatError(spans.length === 0 ? 'truncated' : 'malformed');
+}
+
 /** Extracts and normalizes JSON-only model output; still rejects missing/invalid ratings. */
 export function parseResearchJson(text: string): ResearchResult {
-  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
-  const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('No JSON object');
-  const raw = JSON.parse(cleaned.slice(start, end + 1));
+  const raw = extractJsonObject(text);
   const o = (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.report && typeof raw.report === 'object' ? raw.report : raw) as Partial<Record<keyof ResearchResult, unknown>>;
   const rec = str(o.recommendation).toUpperCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
   const conviction = num(o.conviction_score);
