@@ -1,8 +1,8 @@
 # Roadmap
 
-- [ ] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis.
-- [ ] Audit new free-source date semantics and analyst routing; fix confirmed data errors.
-- [ ] Run one authorized fresh NVIDIA LITE report and verify saved evidence, analyst handoffs and same-ticker comparison.
+- [x] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis; regression tests pass.
+- [x] Audit new free-source date semantics and analyst routing: withhold unverified OTC-only FINRA coverage, exclude revised/publication-unknown feeds from historical runs, verify unambiguous earnings excerpts and retain neutral GDELT tone. 206 tests passed; final focused 20 tests passed; build OK.
+- [ ] Verify fresh final synthesis and same-ticker comparison — blocked: authorized LITE run completed four analysts but the test browser disconnected at ~8 minutes, cancelling the risk stage. No final report/pair exists; no billed retry was started. Evidence ingestion and completed-agent storage verified; recorded completed-stage estimate USD $0.0488, excluding unrecorded interrupted-stage usage.
 
 - [x] Validate SEC duration alignment and derive compatible same-filing YTD quarters with per-fact provenance; refresh parsed caches. Missing compatible comparative facts stay unavailable rather than subtracting across restatements.
 - [x] Add bounded indicator-availability/annual-financial-age claim checks before synthesis, preserve warnings in new reports, and show limited-scope review on saved reports. This is not a full factual audit; old report content remains unchanged.
