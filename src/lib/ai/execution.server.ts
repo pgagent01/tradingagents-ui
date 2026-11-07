@@ -1,3 +1,4 @@
+import type { ResearchProgress } from '@/lib/research-diagnostics';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
@@ -37,7 +38,7 @@ export function safeAiFailure(e:unknown) {
   return new SafeAiError(status,status===401?'The selected provider rejected the API key. Update it in Settings.':status===402?'AI credits are unavailable. Add credits in Lovable Settings → Plans & credits, then start a fresh run.':status===403?'The selected provider denied access. Restore access before starting a fresh run.':status===404?'The requested model or documented endpoint is unavailable.':status===429?'The provider is rate limited. Wait before starting a fresh run.':'AI execution stopped. No automatic retry was made.');
 }
 type Run=Database['public']['Tables']['research_runs']['Row'];
-export async function executeResearch(sb:SupabaseClient<Database>,userId:string,run:Run,key:string|undefined,encryption:string|undefined,signal:AbortSignal,emit:(v:unknown)=>void) {
+export async function executeResearch(sb:SupabaseClient<Database>,userId:string,run:Run,key:string|undefined,encryption:string|undefined,signal:AbortSignal,emit:(v:unknown)=>void,progress:ResearchProgress={stage:'initialization',agent:null}) {
   const roles=sectionObject(sectionObject(run.model_config)['roles']);const agents=Array.isArray(run.selected_agents)?run.selected_agents.filter((a):a is string=>typeof a==='string'):[];
   const previous=await sb.from('agent_outputs').select('*').eq('run_id',run.id);if(previous.error) throw previous.error;
   const completed=new Map((previous.data??[]).filter(o=>o.status==='completed').map(o=>[o.agent_id,o]));
@@ -47,6 +48,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(hasBuiltIn){if(!key) throw new SafeAiError(401,'Built-in AI is not configured.');const response=await fetch('https://ai.gateway.lovable.dev/v1/models',{headers:{Authorization:`Bearer ${key}`}});if(!response.ok) throw new SafeAiError(response.status,'Built-in model availability could not be verified.');catalog=readCatalog(await response.json());}
   const ownKeys=new Map<string,string>();
   // Run these sequentially: each ingestion batch uses up to five outbound slots.
+  progress.stage='evidence';
   const macro=await getFredEvidence(sb,userId,run.analysis_date,encryption,signal);
   const predictions=await getPredictionEvidence(sb,userId,run.ticker,run.analysis_date,signal);
   const news=await getNewsEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
@@ -64,6 +66,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(evidenceEvent.error)throw evidenceEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status,news:news.status,fundamentals:fundamentals?.status??'unavailable'});
   async function call(agent:string,prompt:string,synthesis=false,streamAgent=agent) {
+    progress.stage='model_stream';progress.agent=streamAgent;
     const role=sectionObject(roles[agent]);const provider=String(role['provider']);const modelId=String(role['model']);let credential=key;
     if(provider!=='lovable') {credential=ownKeys.get(provider);if(!credential){const {data,error}=await sb.from('user_api_keys').select('key_ciphertext').eq('user_id',userId).eq('provider',provider).single();if(error) throw new SafeAiError(401,'Add your own provider key in Settings.');credential=provider==='nvidia'?activeNvidiaKey(await openNvidiaCredentials(data.key_ciphertext,encryption)):await decryptSecret(data.key_ciphertext,encryption);ownKeys.set(provider,credential);}}
     if(!credential) throw new SafeAiError(401,'AI is not configured.');
@@ -101,17 +104,21 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   // Risk and debate run after the specialists so they can challenge actual findings.
   const ordered=[...agents.filter(a=>a!=='risk'&&a!=='debate'),...(['risk','debate'] as const).filter(a=>agents.includes(a))];
   const ROLE_GUIDE:Record<string,string>={fundamentals:' Use the supplied point-in-time SEC fundamentals for multi-year revenue, margin, cash-flow and balance-sheet trends; keep annual and quarterly periods separate and cite period end and filing date.',news:' Use the supplied SEC filing events and dated headlines as catalysts; cite date and link for each; headlines are titles only.',sentiment:' Assess sentiment only from supplied dated headlines, filings and prediction markets; do not infer unseen social-media sentiment.',risk:' Review the prior analyst findings below: test their assumptions, flag uncited claims and quantify downside where evidence allows.',debate:' Stage a bull versus bear debate grounded in the prior analyst findings below; resolve conflicts explicitly.'};
+  const storedAnalysts:Record<string,{content:string;model:string;status:string}>={};
   for(const agent of ordered) {
+    progress.stage='agent_start';progress.agent=agent;
     if(signal.aborted) throw new DOMException('Cancelled','AbortError');
     const {data:state,error:stateError}=await sb.from('research_runs').select('status').eq('id',run.id).eq('user_id',userId).single();if(stateError)throw new SafeAiError(503,'Run status could not be verified.');if(state?.status!=='running') throw new DOMException('Cancelled','AbortError');
     const done=completed.get(agent);
-    if(done){summaries.push(`${agent}: ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
+    if(done){storedAnalysts[agent]={content:done.content??'',model:done.model_used??'',status:'completed'};summaries.push(`${agent}: ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
     const {data:started,error:startError}=await sb.from('agent_outputs').insert({run_id:run.id,agent_id:agent,status:'running',model_used:contentText(sectionObject(roles[agent])['model'])}).select('id').single();if(startError) throw startError;
     const startEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'running',message:`${agent} analyst started.`});if(startEvent.error)throw startEvent.error;emit({type:'agent',agent,status:'running'});
     const prior=agent==='risk'||agent==='debate'?priorFindingsPrompt([...summaries,...(technical?[`Calculated technical evidence: ${JSON.stringify({...technical,candles:undefined})}`]:[])]):'';
     const out=await call(agent,`${scope}${agent==='technical'?technicalPrompt(technical):''}${prior}\nYour role: ${agent}.${ROLE_GUIDE[agent]??''} Produce an evidence-based assessment with catalysts, risks and an explicit evidence limitations paragraph.${agent==='technical'?' Use supplied daily OHLCV and calculated indicators to assess trend, momentum and volatility. Cite chart source, observation dates and coverage. Null indicators are unavailable. Do not claim full lookback coverage when partial.':''}`);
+    progress.stage='result_save';
     const {error}=await sb.rpc('save_agent_result',{_output_id:started.id,_result:{...out,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===out.model)?.rates??null,source_status:'Model-provided citations, not independently verified'}}});if(error)throw error;
     if(out.model!==contentText(sectionObject(roles[agent])['model'])){const fix=await sb.from('agent_outputs').update({model_used:out.model}).eq('id',started.id);if(fix.error)throw fix.error;}
+    storedAnalysts[agent]={content:out.text,model:out.model,status:'completed'};
     summaries.push(`${agent}: ${out.text}`);totalIn+=out.input;totalOut+=out.output;totalCost+=out.cost;if(out.credit===null) creditsKnown=false;else credits+=out.credit;
     const endEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'completed',message:`${agent} analyst completed.`});if(endEvent.error)throw endEvent.error;emit({type:'agent',agent,status:'completed'});
   }
@@ -122,11 +129,14 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const final=await call(synthesisRole,`${scope}\nSynthesize this research into the required JSON report schema. You MUST always give a recommendation (STRONG BUY/BUY/HOLD/SELL/STRONG SELL), a conviction_score from 0-100 and a risk_level, as the team's judgement on the supplied evidence; when evidence is thin choose HOLD with low conviction and say why. Give a 12-month price_target only when a current price is supplied in the evidence, derived from it and the analysts' views; otherwise null. Never invent financial figures; missing financial data stays empty. Include analyst outputs and final synthesis.\n${summaries.join('\n\n')}`,true,'synthesis');
   if(!final.object) throw new SafeAiError(422,'No structured report was returned.');
   totalIn+=final.input;totalOut+=final.output;totalCost+=final.cost;if(final.credit===null) creditsKnown=false;else credits+=final.credit;
+  progress.stage='result_save';progress.agent='synthesis';
   const {error:usageError}=await sb.rpc('save_agent_result',{_output_id:synthesisOutput.id,_result:{...final,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===final.model)?.rates??null}}});if(usageError)throw usageError;
   if(final.model!==String(sectionObject(roles[synthesisRole])['model'])){const fix=await sb.from('agent_outputs').update({model_used:final.model}).eq('id',synthesisOutput.id);if(fix.error)throw fix.error;}
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
-  const f={...final.object,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
+  const f={...final.object,storage_version:2,analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
+  progress.stage='report_finalize';
   const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;
+  progress.stage='completed';
   emit({type:'completed',reportId});
 }

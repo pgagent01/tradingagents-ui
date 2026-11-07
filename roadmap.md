@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Fix same-company comparison: honor explicit right selection, retain both selections, read stored risk/metadata and actual models, refresh history. Authenticated LITE one-report state verified; two-real-report browser comparison unavailable because remix has one report. Distinct-report selection covered by tests.
+- [x] Add safe staged execution diagnostics and immutable specialist content/model snapshots in new reports; report rendering falls back to stored content. 171 tests passed and build OK. Existing reports unchanged; no new billed run started. Atomic report/run finalization confirmed in database; cleanup writes remain separate and future live failure verification is pending.
+
 - [x] Improve financial evidence consistency: withhold non-positive P/E and contradictory SEC gross profit, preserve losses, bound annual durations, refresh evidence cache versions and add regression coverage. Exact per-fact provenance/cross-provider reconciliation remain future work.
 - [x] Identify verified free evidence sources and limitations: SEC full text, GDELT, World Bank, OECD, FINRA; documented as candidates, not connected feeds.
 - [x] Document safe TradingAgents upstream review and add weekly/manual GitHub issue monitor. Activation/execution waits for an app-owned GitHub repository with Actions/Issues enabled; no automatic Python imports or deployments.

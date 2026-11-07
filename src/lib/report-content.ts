@@ -22,7 +22,9 @@ export function analystContent(sections:unknown,outputs:AnalystOutput[],group:ty
   const s=sectionObject(sections);
   const structured=group.keys.map(k=>contentText(s[k])).filter(Boolean).join('\n\n');
   if(structured) return structured;
-  return outputs.filter(o=>group.agents.some(a=>a===o.agent_id)&&o.content).map(o=>`### ${o.agent_id.replace(/_/g,' ')}\n\n${o.content}`).join('\n\n');
+  const stored=sectionObject(s['analyst_outputs']);
+  const immutable=Object.entries(stored).filter(([agent])=>group.agents.some(a=>a===agent)).map(([agent,value])=>`### ${agent.replace(/_/g,' ')}\n\n${contentText(sectionObject(value)['content'])}`).join('\n\n');
+  return immutable||outputs.filter(o=>group.agents.some(a=>a===o.agent_id)&&o.content).map(o=>`### ${o.agent_id.replace(/_/g,' ')}\n\n${o.content}`).join('\n\n');
 }
 export function financialRows(value:unknown):{metric:string;value:string}[] {
   if(Array.isArray(value)) return value.map((v,i)=>{
