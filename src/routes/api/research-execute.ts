@@ -1,3 +1,4 @@
+import { failureDiagnostic, type ResearchProgress } from '@/lib/research-diagnostics';
 import { createFileRoute } from '@tanstack/react-router';
 export const Route=createFileRoute('/api/research-execute')({server:{handlers:{POST:async({request})=>{
   const {createClient}=await import('@supabase/supabase-js');
@@ -22,16 +23,17 @@ export const Route=createFileRoute('/api/research-execute')({server:{handlers:{P
   const {data:claimed,error:claimError}=await sb.rpc('claim_research_execution',{_run_id:run.id});if(claimError||!claimed) return Response.json({error:'This run is already executing or finished.'},{status:409});
   const abort=new AbortController();request.signal.addEventListener('abort',()=>abort.abort(),{once:true});
   const encoder=new TextEncoder();
+  const progress:ResearchProgress={stage:'initialization',agent:null};
   const stream=new ReadableStream({async start(controller){
     const emit=(v:unknown)=>{controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));};
-    try{emit({type:'started'});await executeResearch(sb,user.user.id,run,process.env['LOVABLE_API_KEY'],process.env['API_KEY_ENCRYPTION_SECRET'],abort.signal,emit);}
-    catch(e){const cancelled=abort.signal.aborted||(e instanceof Error&&e.name==='AbortError');const safe=safeAiFailure(e);console.error('research-execute failure',safe.status,safe.message);
+    try{emit({type:'started'});await executeResearch(sb,user.user.id,run,process.env['LOVABLE_API_KEY'],process.env['API_KEY_ENCRYPTION_SECRET'],abort.signal,emit,progress);}
+    catch(e){const cancelled=abort.signal.aborted||(e instanceof Error&&e.name==='AbortError');const safe=safeAiFailure(e);const diagnostic=failureDiagnostic(run.id,progress,safe.status,cancelled);console.error('research-execute failure',JSON.stringify(diagnostic));
       if(!cancelled&&(safe.status===402||safe.status===403)) {const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {error:pauseError}=await supabaseAdmin.from('ai_access_state').upsert({user_id:user.user.id,paused:true,reason:safe.message});if(pauseError){console.error('Unable to persist AI access pause.');}}
       const stopped=await sb.from('research_runs').update({status:cancelled?'cancelled':'failed',error_message:cancelled?null:safe.message,completed_at:new Date().toISOString(),execution_lease_until:null}).eq('id',run.id).eq('user_id',user.user.id).in('status',['pending','running']);
       const stoppedOutputs=await sb.from('agent_outputs').update({status:cancelled?'cancelled':'failed'}).eq('run_id',run.id).eq('status','running');
-      const stoppedEvent=await sb.from('research_events').insert({run_id:run.id,event_type:cancelled?'cancelled':'failed',message:cancelled?'Run cancelled by its owner.':safe.message});
+      const stoppedEvent=await sb.from('research_events').insert({run_id:run.id,event_type:cancelled?'cancelled':'failed',agent_id:progress.agent,data:diagnostic,message:cancelled?'Run cancelled by its owner.':safe.message});
       if(stopped.error||stoppedOutputs.error||stoppedEvent.error)console.error('Execution cleanup could not be fully persisted.');
-      try{emit({type:'error',status:cancelled?499:safe.status,message:cancelled?'Run cancelled.':safe.message});}catch{}
+      try{emit({type:'error',status:cancelled?499:safe.status,message:cancelled?'Run cancelled.':safe.message,diagnostic});}catch{}
     }finally{try{controller.close();}catch{}}
   },cancel(){abort.abort();}});
   return new Response(stream,{headers:{'Content-Type':'application/x-ndjson','Cache-Control':'no-store'}});
