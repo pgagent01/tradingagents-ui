@@ -23,6 +23,32 @@ These are researched candidates, not newly connected feeds. Do not invent creden
 
 ## TradingAgents is a reference, not an installed dependency
 
+## Social evidence candidates
+
+- [Bluesky public API](https://docs.bsky.app/docs/api/app-bsky-feed-search-posts): practical public-post pilot; bounded ticker matching, sample sizes, timestamps, source links and deletion/retention policies are required. Search is not a complete historical investor archive.
+- [Reddit API access guidance](https://support.reddithelp.com/hc/en-us/articles/16160319875092-Reddit-Data-API-Wiki): genuine discussions, but OAuth, approval and commercial-use terms must be confirmed. Do not assume unrestricted free access.
+- [Stocktwits](https://api.stocktwits.com/developers): strong finance focus; new API registrations were closed at the November 7 review. Partner access and redistribution rights are unconfirmed.
+- [Mastodon search](https://docs.joinmastodon.org/methods/search/): instance-dependent coverage, authentication and limits; not a global representative sample.
+- GDELT remains news discovery, not social posts. No new social feed was integrated in this task.
+
+## Storage, caching and freshness
+
+- Owner-scoped records contain run configuration/status, analyst outputs and usage, events with sanitized diagnostics, immutable reports with specialist/model/market/evidence snapshots, settings, encrypted provider credentials and watchlists. Roles and invite codes are separate protected access records. No plaintext keys are returned to the browser.
+- External evidence caches are stored in `research_data_cache`, keyed by owner/provider and relevant credential version. Stock snapshots have a 60-second durable/hot cache; SEC company facts have a six-hour server cache. Other evidence sources have their own expiry rules. Provider outages may display a explicitly labeled prior snapshot.
+- Refreshing Stock Info retrieves through these caches; it is not an unconditional cache bypass. Quarterly and annual periods stay separate. A fetch timestamp is not the financial period end or filing publication date.
+- Saved reports are intentionally unchanged. Current Stock Info → Quarterly and [SEC filings](https://www.sec.gov/search-filings) show newer available periods. FMP coverage depends on the owner's plan; Alpha Vantage overview ratios are separate TTM evidence, not newer filing statements. SEC 8-K earnings exhibits and company investor-relations releases can precede the next 10-Q/10-K, but their full bodies are not yet integrated.
+
+## Next quality and usability priorities
+
+1. Validate every duration-based SEC quarter against start/end dates; distinguish standalone quarters from year-to-date facts and derive quarters only from compatible filings. Preserve exact accession/tag/units for each fact.
+2. Add deterministic checks of model claims against stored evidence: the AVGO report incorrectly said SMA200 was unavailable even though the warm-up calculation stored it, and incorrectly described the FY2025 financial period as more than a year old. No saved report was rewritten.
+3. Bound specialist handoff summaries and separate provider reasoning tokens from visible output where available. The AVGO run took about 7.5 minutes and recorded 153,022 tokens; configured USD is an estimate, not a verified invoice.
+4. Full filing/exhibit retrieval, segment guidance and reconciliation before valuation; auditable forecast assumptions rather than invented targets.
+5. Source-level freshness and missing-evidence panel, report-to-report changes, watchlist update alerts and an evidence-linked claim review.
+6. Dashboard activity filters, saved research queues and report coverage alerts. Current recent/frequent lists count completed non-demo runs within the latest 500 records, not a whole-account aggregate.
+
+## Upstream relationship
+
 This app independently implements its research flow in TypeScript. The public [TradingAgents](https://github.com/TauricResearch/TradingAgents) core is Python; pulling it into this checkout would not upgrade the app and could destroy custom work. Keep Apache-2.0 attribution and any copied-material notices; review third-party licenses when porting code or prompts.
 
 The monitoring baseline in `upstream/tradingagents.json` was verified against GitHub's API on 2026-11-07: `9fa1196fffbcfd9de5146d2dd2869df84ab99838` (commit dated 2026-11-04). It is a starting comparison point, not proof that upstream changes were ported.

@@ -1,5 +1,11 @@
 # Roadmap
 
+- [x] Show snapshot-based agents in dashboard report rows and accessible financial/technical explanations, including saved RSI/MACD indicators; hover and keyboard checks passed.
+- [x] Run one real AVGO six-analyst NVIDIA report: saved HOLD / 45 conviction / High risk, all seven model stages completed, 153,022 tokens, estimated USD $0.0883. Authenticated report/dashboard/stock flow verified without runtime errors. Model claim inconsistencies remain documented future quality work, not silently corrected in the saved report.
+- [x] Identify social source candidates and access/retention limitations: Bluesky public pilot, approved Reddit, Stocktwits partner access, instance-based Mastodon; no new feed connected.
+- [x] Add persistent stream errors, quota/credit guidance and 90-second inactivity warning without declaring a model dead or restarting billed work. Add dashboard recent/frequent completed stocks and links to quarterly Stock Info. 176 tests/build passed; mobile and desktop links/tooltips verified. No natural quota outage induced.
+- [x] Explain stored data, owner-scoped caching, latest financial sources and prioritized quality/usability improvements; document cache semantics and model-claim validation gaps.
+
 - [x] Fix same-company comparison: honor explicit right selection, retain both selections, read stored risk/metadata and actual models, refresh history. Authenticated LITE one-report state verified; two-real-report browser comparison unavailable because remix has one report. Distinct-report selection covered by tests.
 - [x] Add safe staged execution diagnostics and immutable specialist content/model snapshots in new reports; report rendering falls back to stored content. 171 tests passed and build OK. Existing reports unchanged; no new billed run started. Atomic report/run finalization confirmed in database; cleanup writes remain separate and future live failure verification is pending.
 
