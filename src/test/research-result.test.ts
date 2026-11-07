@@ -37,3 +37,18 @@ describe('parseResearchJson', () => {
     expect(() => parseResearchJson(JSON.stringify({ ...base, conviction_score: 50, risk_level: 'High' }))).toThrow();
   });
 });
+
+describe('synthesis JSON recovery', () => {
+  const body = '"recommendation":"BUY","price_target":250,"conviction_score":70,"risk_level":"Moderate","executive_summary":"line one\nline two","fundamental_analysis":"a {b}","technical_analysis":"","sentiment_news":"","risk_debate":"","final_synthesis":"","catalysts":[],"upside_risks":[],"downside_risks":[],"financial_snapshot":[]';
+  it('ignores reasoning braces and accepts literal newlines in strings', async () => {
+    const { parseResearchJson } = await import('@/lib/research-result');
+    const r = parseResearchJson(`Thinking about {growth} first...\n{${body}}\nDone {x}`);
+    expect(r.recommendation).toBe('BUY');
+    expect(r.executive_summary).toBe('line one\nline two');
+  });
+  it('reports truncated output distinctly', async () => {
+    const { extractJsonObject, ReportFormatError } = await import('@/lib/research-result');
+    expect(() => extractJsonObject(`{${body.slice(0, 80)}`)).toThrow(ReportFormatError);
+    try { extractJsonObject(`{${body.slice(0, 80)}`); } catch (e) { expect((e as { reason: string }).reason).toBe('truncated'); }
+  });
+});
