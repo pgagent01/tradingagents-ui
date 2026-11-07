@@ -2,7 +2,7 @@
 
 - [x] Configure the remixed account's three encrypted NVIDIA slots and FRED, FMP, Alpha Vantage credentials; NVIDIA slots, FRED and FMP passed live tests. Alpha Vantage saved but access unconfirmed (tracked below).
 - [x] Grant gprithvi@gmail.com admin access; keep all supplied credentials scoped only to that account. Role and authenticated admin controls verified.
-- [ ] Audit imported analyst evidence routing, fix remaining delivery gaps with regressions, and verify a fresh multi-agent report through the saved viewer.
+- [x] Audit imported analyst evidence routing and fix handoffs with regressions; 162 tests and build passed. Fresh NVIDIA LITE six-agent report saved and viewed with HOLD, conviction 45, High risk, 64 daily bars, SEC fundamentals and linked filings/headlines. Social posts remain unavailable and labeled; headline/prediction proxies are not measured social sentiment.
 
 - [x] Fix current-date technical research evidence: daily year retrieval, selected-lookback OHLCV, moving averages/RSI/MACD/Bollinger/ATR, dated source/cache metadata and persisted evidence. Missing-history regression reproduced then passed; 144 tests/build OK. Fresh NVIDIA LITE report completed with 63 daily bars and verified saved indicators. Existing runs untouched; historical-date stock retrieval remains unavailable by design.
 
