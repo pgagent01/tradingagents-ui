@@ -30,7 +30,7 @@ describe('point-in-time SEC fundamentals', () => {
   });
   it('keeps the latest quarter separate and links the filing', () => {
     expect(f.latestQuarter).toMatchObject({ end: '2025-09-30', revenue: 50, form: '10-Q' });
-    expect(f.annual[1]?.filingUrl).toBe('https://www.sec.gov/Archives/edgar/data/1633978/00012025-06-30/');
+    expect(f.annual[1]?.filingUrl).toBe('https://www.sec.gov/Archives/edgar/data/1633978/000120250630/');
   });
   it('is unavailable when nothing was filed by the cutoff', () => {
     expect(fundamentalEvidence(facts, '2020-01-01').status).toBe('unavailable');
