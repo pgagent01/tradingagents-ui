@@ -4,7 +4,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { streamText,Output } from 'ai';
-import { resultSchema, parseResearchJson, type ResearchResult } from '@/lib/research-result';
+import { resultSchema, parseResearchJson, ReportFormatError, type ResearchResult } from '@/lib/research-result';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { createLovableAiGatewayRunIdFetch } from './run-id.server.ts';
@@ -90,8 +90,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     const geminiSynthesis=synthesis&&(geminiGateway!==null||['google','nvidia','deepseek','xai'].includes(provider));
     const schemaInstruction='\nReturn ONLY a JSON object with exactly these keys: recommendation (exactly one of STRONG BUY/BUY/HOLD/SELL/STRONG SELL, required), price_target (number or null), conviction_score (integer 0-100, required), risk_level (exactly one of Low/Moderate/High/Very High, required), executive_summary, fundamental_analysis, technical_analysis, sentiment_news, risk_debate, final_synthesis (all strings), catalysts, upside_risks, downside_risks (arrays of strings), financial_snapshot (array of objects with metric and value strings). No other keys or nesting.';
     const {output:structuredOutput,...plainOptions}=common;
-    const result=geminiSynthesis?streamText({...plainOptions,messages:[{role:'user',content:prompt+evidenceContext('synthesis',evidence)+schemaInstruction}]}):streamText({...plainOptions,...(structuredOutput?{output:structuredOutput}:{})});let refused=false;
-    for await(const part of result.fullStream){if(signal.aborted)throw new DOMException('Cancelled','AbortError');if(part.type==='error') throw part.error;if(part.type==='text-delta') emit({type:'delta',agent:streamAgent,text:part.text});if(part.type==='finish'&&part.finishReason==='content-filter') refused=true;}
+    const result=geminiSynthesis?streamText({...plainOptions,messages:[{role:'user',content:prompt+evidenceContext('synthesis',evidence)+schemaInstruction}]}):streamText({...plainOptions,...(structuredOutput?{output:structuredOutput}:{})});let refused=false;let finishReason='';
+    for await(const part of result.fullStream){if(signal.aborted)throw new DOMException('Cancelled','AbortError');if(part.type==='error') throw part.error;if(part.type==='text-delta') emit({type:'delta',agent:streamAgent,text:part.text});if(part.type==='finish'){finishReason=part.finishReason;if(part.finishReason==='content-filter') refused=true;}}
     if(refused) throw new SafeAiError(422,'The model refused this request. Start new work only through a fresh action.');
     const u=await result.totalUsage;const input=u.inputTokens??0,output=u.outputTokens??0;const text=await result.text;if(!text.trim()) throw new SafeAiError(422,'The model returned no usable output.');
     requestId=geminiGateway?.getRunId() ?? gateway.getRunId() ?? requestId;
@@ -100,7 +100,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     const cost=usage(input,output,actualRates?.inputRate??Number(role['inputRate']??0),actualRates?.outputRate??Number(role['outputRate']??0)).cost;
     const credit=provider==='lovable'&&built?(u.inputTokens===undefined||u.outputTokens===undefined?null:calculateCredits(built.rates,input,output,u.inputTokenDetails?.cacheReadTokens??0,u.inputTokenDetails?.cacheWriteTokens??0)):0;
     let object:ResearchResult|null=null;
-    if(synthesis){if(geminiSynthesis){try{object=parseResearchJson(text);}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
+    if(synthesis){if(geminiSynthesis){try{object=parseResearchJson(text);}catch(e){const reason=e instanceof ReportFormatError?e.reason:'missing_fields';throw new SafeAiError(422,reason==='truncated'||finishReason==='length'?'The model stopped before finishing the report (output cut off). No automatic retry was made; try a fresh run or a different synthesis model.':reason==='missing_fields'?'The model\'s report was missing a required rating field (recommendation, conviction or risk). No automatic retry was made.':'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
     return {text,input,output,cost,credit,model:actualModel,object};
   }
   const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`+stockPrompt(stockSnapshot?{...stockSnapshot,candles:[]}:null)+claimReviewPrompt(technical,fundamentals,run.analysis_date);

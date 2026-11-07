@@ -11,7 +11,8 @@ export function formatReportText(text: string): string {
       out.push(boldLead(line, inCode));
       continue;
     }
-    const sentences = line.match(/[^.!?]+(?:[.!?]+(?=\s+[A-Z(]|$)|$)/g)?.map(s => s.trim()).filter(Boolean) ?? [line];
+    // Split only at sentence ends followed by space + capital, so decimals like 54.22 or $716.924B stay intact and no text is dropped.
+    const sentences = line.split(/(?<=[.!?])\s+(?=[A-Z(])/).map(s => s.trim()).filter(Boolean);
     const chunks: string[] = [];
     for (let i = 0; i < sentences.length; i += 3) chunks.push(sentences.slice(i, i + 3).join(' '));
     out.push(chunks.map(c => boldLead(c, false)).join('\n\n'));
