@@ -98,6 +98,8 @@
 - [x] Remix setup: update API_KEY_ENCRYPTION_SECRET
 - [x] Remix setup: clear copied migrations and rescaffold for new database
 
-- [ ] Review all saved reports for accuracy and data collation (after data-source integration)
-- [ ] Integrate GDELT, FINRA short interest, Bluesky, World Bank, SEC earnings releases into reports
+- [x] Reviewed 4 saved reports: SEC figures match filings; LITE target equals price, AVGO missing target, AVGO SMA200 claim (pre-fix)
+- [x] Integrated SEC earnings releases, FINRA short interest, World Bank, GDELT into reports
+- [ ] Bluesky social feed — blocked: search needs an authenticated account (user to supply app password)
+- [ ] OECD indicators — deferred
 - [x] Answered: no new agents needed; existing analysts consume new sources
