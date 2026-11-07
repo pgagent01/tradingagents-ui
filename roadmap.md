@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Improve financial evidence consistency and add regression coverage.
+- [ ] Identify verified free evidence sources and their limitations.
+- [ ] Document safe TradingAgents upstream monitoring and update review.
+
 - [x] Configure the remixed account's three encrypted NVIDIA slots and FRED, FMP, Alpha Vantage credentials; NVIDIA slots, FRED and FMP passed live tests. Alpha Vantage saved but access unconfirmed (tracked below).
 - [x] Grant gprithvi@gmail.com admin access; keep all supplied credentials scoped only to that account. Role and authenticated admin controls verified.
 - [x] Audit imported analyst evidence routing and fix handoffs with regressions; 162 tests and build passed. Fresh NVIDIA LITE six-agent report saved and viewed with HOLD, conviction 45, High risk, 64 daily bars, SEC fundamentals and linked filings/headlines. Social posts remain unavailable and labeled; headline/prediction proxies are not measured social sentiment.
