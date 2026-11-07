@@ -57,7 +57,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   // Historical runs exclude current quotes/filings but may use daily bars dated on or before the analysis date.
   const pastBars=stockData?null:await historicalDailyCandles(run.ticker,run.analysis_date).catch(()=>null);
   const pastStock=pastBars?{...emptyStock(run.ticker,run.ticker),candles:pastBars.candles,chartSource:pastBars.source,warnings:['Historical daily bars ending on the analysis date. Yahoo prices are split-adjusted retrospectively; no current quote or filing snapshot is included.']}:null;
-  const technical=stockData||pastStock?technicalEvidence((stockData??pastStock)!,run.analysis_date,run.lookback_days):null;
+  const technicalStock=stockData??pastStock;
+  const technical=technicalStock?technicalEvidence(technicalStock,run.analysis_date,run.lookback_days):null;
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}).`});
   if(evidenceEvent.error)throw evidenceEvent.error;

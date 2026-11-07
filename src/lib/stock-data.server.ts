@@ -18,7 +18,13 @@ export async function secCik(ticker:string){
   return match?String(match['cik_str']).padStart(10,'0'):null;
 }
 export async function secSubmissions(cik:string){return json(`https://data.sec.gov/submissions/CIK${cik}.json`,true);}
-export async function yahooNewsSearch(ticker:string){return json(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(ticker)}&newsCount=15&quotesCount=0`);}
+export async function yahooNewsSearch(ticker:string){
+  const feed=await firstAvailable(['query1','query2'].map(host=>({source:host,load:async()=>{
+    const raw=await json(`https://${host}.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(ticker)}&newsCount=15&quotesCount=0`);
+    return Array.isArray(object(raw)['news'])&& (object(raw)['news'] as unknown[]).length?raw:null;
+  }})));
+  return feed?.data??{news:[]};
+}
 /** Daily bars ending on a past analysis date; Yahoo prices are split-adjusted retrospectively. */
 export async function historicalDailyCandles(ticker:string,analysisDate:string){
   const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-400*86400;const symbol=encodeURIComponent(ticker.replace('.','-'));

@@ -1,10 +1,14 @@
 # Roadmap
 
+- [x] Configure the remixed account's three encrypted NVIDIA slots and FRED, FMP, Alpha Vantage credentials; NVIDIA slots, FRED and FMP passed live tests. Alpha Vantage saved but access unconfirmed (tracked below).
+- [x] Grant gprithvi@gmail.com admin access; keep all supplied credentials scoped only to that account. Role and authenticated admin controls verified.
+- [x] Audit imported analyst evidence routing and fix handoffs with regressions; 162 tests and build passed. Fresh NVIDIA LITE six-agent report saved and viewed with HOLD, conviction 45, High risk, 64 daily bars, SEC fundamentals and linked filings/headlines. Social posts remain unavailable and labeled; headline/prediction proxies are not measured social sentiment.
+
 - [x] Fix current-date technical research evidence: daily year retrieval, selected-lookback OHLCV, moving averages/RSI/MACD/Bollinger/ATR, dated source/cache metadata and persisted evidence. Missing-history regression reproduced then passed; 144 tests/build OK. Fresh NVIDIA LITE report completed with 63 daily bars and verified saved indicators. Existing runs untouched; historical-date stock retrieval remains unavailable by design.
 
 - [x] Add missing-key warnings throughout analysis setup, provider acquisition/update guidance and retry controls in Settings. Confirmed requesting account has FRED/FMP/NVIDIA saved; authenticated warning→Settings flow verified at desktop/mobile sizes without runtime errors.
 - [x] Assess free fundamentals and add owner-encrypted Alpha Vantage key controls, validation, quote/daily-history fallback and separately labeled TTM enrichment through stock/research snapshots. Owner/version-scoped overview caching and quota/error safeguards tested; 137 tests passed, build OK, authenticated LITE stock page verified.
-- [ ] Validate Alpha Vantage with a real account key and a live enriched research report — blocked: no Alpha Vantage credential supplied; mocked integration and authenticated Settings controls verified.
+- [ ] Validate Alpha Vantage live enrichment — blocked: supplied key saved, but provider did not confirm endpoint access; quota or entitlement may be responsible. Free SEC/Yahoo evidence remains usable.
 
 - [x] Verify additional symbols (LITE, COHR, PLTR, CRM, ADBE), add five-minute cached free Yahoo backup with secondary endpoint and saved SEC fallback, and explicit direct-ticker entry in the shared selector. Live Siemens backup → SIE.DE and direct COHR navigation/LITE wizard persistence verified; 123 tests passed, build OK.
 
@@ -62,10 +66,10 @@
 - [x] Settings AI & Credentials: OpenAI API key link/subscription note and explicit provider-key validation
 - [x] Verify AES-GCM key storage, owner-only RLS, HTTPS/WSS and sanitized errors/events for all execution paths
 
-- [ ] Validate real BYOK provider credentials — blocked: no user-supplied working provider key was available for a real key test. Model-list validation is implemented.
+- [x] Validate real BYOK NVIDIA credentials — all three account-owned slots returned test replies; live fundamental and technical analysts completed.
 - [ ] Verify production HTTPS/WSS delivery — blocked: app has not been published; preview uses HTTPS and secure cloud connections.
 
-- [ ] Validate real FMP endpoint entitlements — blocked: no working FMP key supplied; encrypted storage, masking, validation and Yahoo→FMP fallback covered by tests.
+- [x] Validate real FMP basic access — supplied owner key accepted; statement/history coverage remains provider-plan dependent, with free SEC/Yahoo fallback.
 - [x] Side-by-side ticker comparison (valuation, Piotroski, macro sensitivity, agent consensus)
 - [x] Watchlist with anomaly triggers (sentiment shift, valuation divergence, earnings)
 - [x] Branded PDF and Markdown report exports

@@ -7,7 +7,7 @@ function windowStart(analysisDate: string, lookbackDays: number) {
 }
 /** SEC filings work for any date; Yahoo headlines are current-only to avoid look-ahead and unverifiable history. */
 export async function getNewsEvidence(sb: EvidenceClient, userId: string, ticker: string, analysisDate: string, lookbackDays: number, today = new Date().toISOString().slice(0, 10)): Promise<NewsEvidence> {
-  const start = windowStart(analysisDate, lookbackDays); const key = `v1:${ticker}:${analysisDate}:${lookbackDays}`;
+  const start = windowStart(analysisDate, lookbackDays); const key = `v2:${ticker}:${analysisDate}:${lookbackDays}`;
   const cached = await readDataCache(sb, userId, 'news-evidence', key); const saved = cached?.payload as NewsEvidence | undefined;
   if (cached?.fresh && saved?.cutoff) return { ...saved, cached: true };
   const notes: string[] = []; let filings: NewsEvidence['filings'] = []; let filingsSource: string | null = null; let headlines: NewsEvidence['headlines'] = []; let headlinesSource: string | null = null;
@@ -18,6 +18,7 @@ export async function getNewsEvidence(sb: EvidenceClient, userId: string, ticker
     catch { notes.push('Yahoo Finance headline search temporarily unavailable.'); }
   } else notes.push('Headline search omitted for a historical analysis date: the free Yahoo feed only returns current headlines. SEC filings are filtered by filing date.');
   notes.push('Yahoo returns a bounded recent set of headlines, not an exhaustive news census; article bodies were not retrieved.');
+  notes.push('Direct social-media posts and sentiment scores are unavailable: no licensed social feed is connected. Headlines and Polymarket are proxies, not measured social sentiment.');
   const feed: NewsEvidence = { status: filings.length && headlines.length ? 'available' : filings.length || headlines.length ? 'partial' : 'unavailable', cutoff: analysisDate, windowStart: start, fetchedAt: new Date().toISOString(), cached: false, filings, filingsSource, headlines, headlinesSource, notes };
   if (feed.status !== 'unavailable') await writeDataCache(sb, userId, 'news-evidence', key, feed, analysisDate === today ? 30 * 60 * 1000 : 7 * 86400000);
   else if (saved?.cutoff) return { ...saved, cached: true, notes: [...saved.notes, `Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`] };
