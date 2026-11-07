@@ -1,10 +1,14 @@
 # Roadmap
 
+- [x] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis; regression tests pass.
+- [x] Audit new free-source date semantics and analyst routing: withhold unverified OTC-only FINRA coverage, exclude revised/publication-unknown feeds from historical runs, verify unambiguous earnings excerpts and retain neutral GDELT tone. 206 tests passed; final focused 20 tests passed; build OK.
+- [ ] Verify fresh final synthesis and same-ticker comparison — blocked: authorized LITE run completed four analysts but the test browser disconnected at ~8 minutes, cancelling the risk stage. No final report/pair exists; no billed retry was started. Evidence ingestion and completed-agent storage verified; recorded completed-stage estimate USD $0.0488, excluding unrecorded interrupted-stage usage.
+
 - [x] Validate SEC duration alignment and derive compatible same-filing YTD quarters with per-fact provenance; refresh parsed caches. Missing compatible comparative facts stay unavailable rather than subtracting across restatements.
 - [x] Add bounded indicator-availability/annual-financial-age claim checks before synthesis, preserve warnings in new reports, and show limited-scope review on saved reports. This is not a full factual audit; old report content remains unchanged.
 - [x] Align visible glossary and Markdown export, include saved technical evidence, repair invalid comparison selections and distinguish same-day saves. Authenticated saved report, section shortcuts, Markdown download, PDF glossary and invalid comparison warning verified without runtime errors; 190 automated tests passed.
-- [ ] Verify comparison using two real reports for one ticker — blocked: four saved reports belong to four distinct tickers; no second billed run started in this task.
-- [ ] Verify new claim checks in a fresh live LLM report — pending a fresh user-started analysis; simulated execution-to-persistence tests passed, but no new billed run was started here.
+- [ ] Verify comparison using two real reports for one ticker — blocked: the fresh LITE attempt was cancelled by test-browser disconnection before saving a second report.
+- [ ] Verify new claim checks in a fresh final LLM report — blocked: live LITE specialist evidence was verified, but the test browser disconnected before synthesis; no automatic retry was started.
 
 - [x] Show snapshot-based agents in dashboard report rows and accessible financial/technical explanations, including saved RSI/MACD indicators; hover and keyboard checks passed.
 - [x] Run one real AVGO six-analyst NVIDIA report: saved HOLD / 45 conviction / High risk, all seven model stages completed, 153,022 tokens, estimated USD $0.0883. Authenticated report/dashboard/stock flow verified without runtime errors. Model claim inconsistencies remain documented future quality work, not silently corrected in the saved report.

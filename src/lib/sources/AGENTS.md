@@ -1,0 +1,3 @@
+- Keep revised World Bank and publication-unknown short-interest feeds out of historical runs; completed observation periods do not prove public availability.
+- Withhold FINRA positioning until dataset coverage matches the instrument; OTC dataset metadata cannot establish listed-equity short interest.
+- Use only unambiguous, content-checked earnings exhibits as partial prose evidence, never as complete structured financial statements.

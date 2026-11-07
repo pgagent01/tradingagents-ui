@@ -1,7 +1,7 @@
 import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-cache.server';
 import { secCik, secSubmissions } from '@/lib/stock-data.server';
 import { COMPANIES } from '@/lib/companies';
-import { averageTone, earningsFilings, exhibitName, htmlText, parseGdeltArticles, parseGdeltTone, parseShortInterest, parseWorldBank, SOCIAL_UNAVAILABLE, WORLD_BANK_INDICATORS, type FreeSourcesEvidence, type SourceFeed } from '@/lib/sources/free-sources';
+import { averageTone, earningsFilings, exhibitName, htmlText, isEarningsExcerpt, currentRevisionAllowed, parseGdeltArticles, parseGdeltTone, parseShortInterest, parseWorldBank, SOCIAL_UNAVAILABLE, WORLD_BANK_INDICATORS, type FreeSourcesEvidence, type SourceFeed } from '@/lib/sources/free-sources';
 
 const SEC_UA = () => process.env['SEC_USER_AGENT'] ?? 'TradingAgentsAI gprithvi@gmail.com';
 async function get(url: string, init: RequestInit = {}, ms = 12000) {
@@ -34,16 +34,13 @@ async function gdelt(ticker: string, cutoff: string, start: string): Promise<Fre
     const items = parseGdeltArticles(await call('artlist&maxrecords=40&sort=datedesc'), cutoff);
     await wait(5500);
     const tone = parseGdeltTone(await call('timelinetone'), cutoff);
-    return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, items, 'Machine-coded global news; titles and tone only, article bodies not retrieved. Tone ranges roughly −10 (negative) to +10 (positive); zero-coverage days are excluded from the average.'), tone, averageTone: averageTone(tone) };
+    return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, items, 'Machine-coded global news; titles and tone only, article bodies not retrieved. Tone is a news proxy, not measured social sentiment. Average is unweighted; coverage counts are unavailable and zero tone is retained.'), tone, averageTone: averageTone(tone) };
   } catch { return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, [], 'GDELT temporarily unavailable or rate-limited.'), tone: [], averageTone: null }; }
 }
 async function finra(ticker: string, cutoff: string): Promise<FreeSourcesEvidence['shortInterest']> {
-  const src = 'FINRA consolidated short interest'; const url = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data';
-  try {
-    const r = await get('https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ limit: 24, compareFilters: [{ compareType: 'EQUAL', fieldName: 'symbolCode', fieldValue: ticker.toUpperCase() }], dateRangeFilters: [{ fieldName: 'settlementDate', startDate: new Date(Date.parse(`${cutoff}T00:00:00Z`) - 200 * 86400000).toISOString().slice(0, 10), endDate: cutoff }] }) });
-    const items = parseShortInterest(await r.json(), ticker, cutoff);
-    return feed(src, url, cutoff, items, items.length ? 'Twice-monthly settlement data, published about 7 business days after settlement. Days to cover = short shares ÷ average daily volume.' : 'FINRA returned no short-interest records for this symbol before the cutoff.');
-  } catch { return feed(src, url, cutoff, [], 'FINRA short-interest API temporarily unavailable.'); }
+  // The previously used endpoint is described by FINRA metadata as OTC-only.
+  // Do not give listed-stock figures credibility until a matching coverage source is verified.
+  return feed('FINRA short interest', 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data', cutoff, [], `Short-interest coverage for ${ticker} is unverified: the available FINRA dataset is described as OTC-only. Figures are withheld until an appropriate listed-equity source is verified. Short sale volume is not short interest.`);
 }
 async function worldBank(cutoff: string): Promise<FreeSourcesEvidence['globalMacro']> {
   const year = Number(cutoff.slice(0, 4)); let lastUpdated: string | null = null; const items = [];
@@ -53,7 +50,7 @@ async function worldBank(cutoff: string): Promise<FreeSourcesEvidence['globalMac
       lastUpdated = p.lastUpdated ?? lastUpdated; items.push(...p.rows);
     }
   } catch { return { ...feed('World Bank Open Data', 'https://data.worldbank.org/', cutoff, [], 'World Bank API temporarily unavailable.'), lastUpdated: null }; }
-  return { ...feed('World Bank Open Data', 'https://data.worldbank.org/', cutoff, items, `Annual values for completed years before the analysis year. The World Bank revises data without vintages, so historical runs may include later revisions. Dataset last updated ${lastUpdated ?? 'unknown'}.`), lastUpdated };
+  return { ...feed('World Bank Open Data', 'https://data.worldbank.org/', cutoff, items, `Current-revision annual context for completed years, not point-in-time historical evidence. Dataset last updated ${lastUpdated ?? 'unknown'}. Publication dates for individual observations are unavailable.`), lastUpdated };
 }
 async function earnings(ticker: string, cutoff: string, start: string): Promise<FreeSourcesEvidence['earningsReleases']> {
   const src = 'SEC EDGAR 8-K Item 2.02 exhibits';
@@ -64,9 +61,10 @@ async function earnings(ticker: string, cutoff: string, start: string): Promise<
       const folder = `https://www.sec.gov/Archives/edgar/data/${cikNum}/${f.accession.replace(/-/g, '')}`;
       const name = exhibitName(await (await get(`${folder}/index.json`, { headers: { 'User-Agent': SEC_UA() } })).json()); if (!name) continue;
       const url = `${folder}/${name}`; const html = await (await get(url, { headers: { 'User-Agent': SEC_UA() } }, 20000)).text();
-      items.push({ filed: f.filed, accession: f.accession, url, excerpt: htmlText(html) });
+      const excerpt=htmlText(html,6000); if(!isEarningsExcerpt(excerpt))continue;
+      items.push({ filed: f.filed, accession: f.accession, url, excerpt });
     }
-    return feed(src, `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=8-K`, cutoff, items, items.length ? 'Opening excerpt of the company-issued earnings press release (Exhibit 99), filed on or before the cutoff. Company statements are unaudited and may include non-GAAP figures.' : 'No earnings-release 8-K (Item 2.02) was filed inside the lookback window.');
+    return feed(src, `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=8-K`, cutoff, items, items.length ? 'Partial opening excerpt of an unambiguous Exhibit 99 with earnings terminology; not a complete release or structured financial table. Company statements may include non-GAAP figures. Historical date cutoffs mean end of that UTC day; current-day filings are limited to those already retrieved.' : 'No unambiguous earnings excerpt could be verified inside the release window; ambiguous exhibits are omitted.');
   } catch { return feed(src, null, cutoff, [], 'SEC earnings-release retrieval temporarily unavailable.'); }
 }
 
@@ -74,10 +72,11 @@ async function earnings(ticker: string, cutoff: string, start: string): Promise<
 export async function getFreeSourcesEvidence(sb: EvidenceClient, userId: string, ticker: string, cutoff: string, lookbackDays: number): Promise<FreeSourcesEvidence> {
   const start = new Date(Date.parse(`${cutoff}T00:00:00Z`) - Math.max(lookbackDays, 30) * 86400000).toISOString().slice(0, 10);
   const releaseStart = new Date(Date.parse(`${cutoff}T00:00:00Z`) - 120 * 86400000).toISOString().slice(0, 10);
-  const day = 86400000; const k = `v1:${ticker}:${cutoff}`;
+  const day = 86400000; const k = `v2:${ticker}:${cutoff}`;
+  const current=currentRevisionAllowed(cutoff,new Date().toISOString().slice(0,10));
   const earningsReleases = await cached(sb, userId, 'sec-earnings', k, day, () => earnings(ticker, cutoff, releaseStart));
-  const shortInterest = await cached(sb, userId, 'finra-short', k, 12 * 3600000, () => finra(ticker, cutoff));
-  const globalMacro = await cached(sb, userId, 'worldbank', `v1:${cutoff.slice(0, 4)}`, 7 * day, () => worldBank(cutoff));
+  const shortInterest = current ? await cached(sb, userId, 'finra-short', k, 12 * 3600000, () => finra(ticker, cutoff)) : feed<FreeSourcesEvidence['shortInterest']['items'][number]>('FINRA consolidated short interest','https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data',cutoff,[],'Historical feed omitted: settlement dates do not establish public availability and publication vintages are not available.','historical_unavailable');
+  const globalMacro = current ? await cached(sb, userId, 'worldbank', `v2:${cutoff}`, 7 * day, () => worldBank(cutoff)) : {...feed<FreeSourcesEvidence['globalMacro']['items'][number]>('World Bank Open Data','https://data.worldbank.org/',cutoff,[],'Historical feed omitted: current revised data has no point-in-time vintages. FRED vintage evidence remains separate.','historical_unavailable'),lastUpdated:null};
   const gdeltNews = await cached(sb, userId, 'gdelt', `${k}:${lookbackDays}`, 3 * 3600000, () => gdelt(ticker, cutoff, start));
   const social = feed<never>('Social media', null, cutoff, [], SOCIAL_UNAVAILABLE);
   return { gdelt: gdeltNews, shortInterest, globalMacro, earningsReleases, social };
