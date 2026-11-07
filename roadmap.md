@@ -3,6 +3,8 @@
 - [ ] Show saved agents in dashboard report rows and add financial/technical metric explanations.
 - [ ] Run one real AVGO six-analyst NVIDIA report and verify saved results through the app.
 - [ ] Identify practical social data sources, access requirements and limitations.
+- [ ] Add research inactivity/quota guidance and useful dashboard stock links/recent and frequent stocks.
+- [ ] Explain stored data, caching, financial freshness and prioritized report/usability improvements.
 
 - [x] Fix same-company comparison: honor explicit right selection, retain both selections, read stored risk/metadata and actual models, refresh history. Authenticated LITE one-report state verified; two-real-report browser comparison unavailable because remix has one report. Distinct-report selection covered by tests.
 - [x] Add safe staged execution diagnostics and immutable specialist content/model snapshots in new reports; report rendering falls back to stored content. 171 tests passed and build OK. Existing reports unchanged; no new billed run started. Atomic report/run finalization confirmed in database; cleanup writes remain separate and future live failure verification is pending.
