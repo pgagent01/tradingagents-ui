@@ -18,7 +18,7 @@ export async function getNewsEvidence(sb: EvidenceClient, userId: string, ticker
     catch { notes.push('Yahoo Finance headline search temporarily unavailable.'); }
   } else notes.push('Headline search omitted for a historical analysis date: the free Yahoo feed only returns current headlines. SEC filings are filtered by filing date.');
   notes.push('Yahoo returns a bounded recent set of headlines, not an exhaustive news census; article bodies were not retrieved.');
-  notes.push('Direct social-media posts and sentiment scores are unavailable: no licensed social feed is connected. Headlines and Polymarket are proxies, not measured social sentiment.');
+  notes.push('Direct social-media posts are unavailable: no social feed is connected. Headlines, GDELT news tone and Polymarket are proxies, not measured social sentiment.');
   const feed: NewsEvidence = { status: filings.length && headlines.length ? 'available' : filings.length || headlines.length ? 'partial' : 'unavailable', cutoff: analysisDate, windowStart: start, fetchedAt: new Date().toISOString(), cached: false, filings, filingsSource, headlines, headlinesSource, notes };
   if (feed.status !== 'unavailable') await writeDataCache(sb, userId, 'news-evidence', key, feed, analysisDate === today ? 30 * 60 * 1000 : 7 * 86400000);
   else if (saved?.cutoff) return { ...saved, cached: true, notes: [...saved.notes, `Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`] };

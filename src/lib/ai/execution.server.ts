@@ -23,6 +23,7 @@ import { activeNvidiaKey, openNvidiaCredentials } from '@/lib/nvidia-credentials
 import { createNvidiaFailoverFetch } from './nvidia-failover.server';
 import { MODEL_OPTIONS } from '@/lib/research-config';
 import { getFundamentalEvidence, getNewsEvidence } from '@/lib/research-evidence.server';
+import { getFreeSourcesEvidence } from '@/lib/sources/free-sources.server';
 import { priorFindingsPrompt } from '@/lib/research-evidence';
 import { historicalDailyCandles } from '@/lib/stock-data.server';
 import { emptyStock } from '@/lib/stock-data';
@@ -54,8 +55,9 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const predictions=await getPredictionEvidence(sb,userId,run.ticker,run.analysis_date,signal);
   const news=await getNewsEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const fundamentals=await getFundamentalEvidence(sb,userId,run.ticker,run.analysis_date);
+  const free=await getFreeSourcesEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
-  const evidence={macro,predictions,news,fundamentals};
+  const evidence={macro,predictions,news,fundamentals,free};
   const stockData=snapshotAllowed(run.analysis_date,new Date().toISOString().slice(0,10))?await cachedStockData(sb,userId,run.ticker,researchHistoryRange(),'annual'):null;
   // Historical runs exclude current quotes/filings but may use daily bars dated on or before the analysis date.
   const pastBars=stockData?null:await historicalDailyCandles(run.ticker,run.analysis_date).catch(()=>null);
@@ -63,7 +65,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const technicalStock=stockData??pastStock;
   const technical=technicalStock?technicalEvidence(technicalStock,run.analysis_date,run.lookback_days):null;
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
-  const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}).`});
+  const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
   if(evidenceEvent.error)throw evidenceEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status,news:news.status,fundamentals:fundamentals?.status??'unavailable'});
   async function call(agent:string,prompt:string,synthesis=false,streamAgent=agent) {
