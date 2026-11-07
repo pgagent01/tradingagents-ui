@@ -97,3 +97,9 @@
 - [x] Fix analyst evidence gaps: SEC filings/headlines for news, point-in-time SEC fundamentals, historical daily bars, prior findings for risk/debate
 - [x] Remix setup: update API_KEY_ENCRYPTION_SECRET
 - [x] Remix setup: clear copied migrations and rescaffold for new database
+
+- [x] Reviewed 4 saved reports: SEC figures match filings; LITE target equals price, AVGO missing target, AVGO SMA200 claim (pre-fix)
+- [x] Integrated SEC earnings releases, FINRA short interest, World Bank, GDELT into reports
+- [ ] Bluesky social feed — blocked: search needs an authenticated account (user to supply app password)
+- [ ] OECD indicators — deferred
+- [x] Answered: no new agents needed; existing analysts consume new sources

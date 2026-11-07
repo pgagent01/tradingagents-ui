@@ -16,6 +16,7 @@ export function ReportEvidence({value}:{value:unknown}) {
     </div>
     <NewsSection value={evidence['news']}/>
     <FundamentalsSection value={evidence['fundamentals']}/>
+    <FreeSourcesSection value={evidence['free']}/>
   </section>;
 }
 const safeLink=(url:string)=>url.startsWith('https://')?url:'';
@@ -39,5 +40,24 @@ function FundamentalsSection({value}:{value:unknown}) {
     {periods.flatMap(p=>(Array.isArray(p['qualityWarnings'])?p['qualityWarnings']:[]).map((w,i)=><p key={`${p['end']}-${i}`} className="mt-2 text-xs text-warning">{contentText(p['end'])}: {String(w)}</p>))}
     <DataFreshness date={contentText(f['fetchedAt'])} origin={f['cached']===true?'Cached SEC facts':'Retrieved SEC facts'}/>
     {periods.length>0?<div className="mt-3 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Metric (USD)</th>{periods.map((p,i)=>{const url=safeLink(contentText(p['filingUrl']));return <th key={i} className="pr-3 font-mono">{url?<a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{contentText(p['form'])} {contentText(p['end'])}</a>:`${contentText(p['form'])} ${contentText(p['end'])}`}<div className="font-normal">filed {contentText(p['filed'])}</div></th>;})}</tr></thead><tbody>{rows.map(([label,key])=><tr key={key} className="border-b border-border"><td className="py-2 pr-3"><MetricLabel label={label}/></td>{periods.map((p,i)=><td key={i} className="pr-3 font-mono">{key==='revenueGrowthPct'?(typeof p[key]==='number'?`${(p[key] as number).toFixed(1)}%`:'—'):money(p[key])}{(key==='grossProfit'&&p['grossProfitDerived']===true)||(key==='liabilities'&&p['liabilitiesDerived']===true)?' *':''}</td>)}</tr>)}</tbody></table><p className="mt-1 text-xs text-muted-foreground">* derived from reported totals. Quarterly cash flow stays unavailable without compatible standalone or same-filing comparative facts; YTD is never shown as a quarter.</p></div>:<p className="mt-3 text-sm text-muted-foreground">No SEC facts filed by this date.</p>}
+  </div>;
+}
+const list=(v:unknown)=>Array.isArray(v)?v.map(sectionObject):[];
+function SourceHead({title,feed}:{title:string;feed:Record<string,unknown>}){const url=safeLink(contentText(feed['sourceUrl']));
+  return <><h3 className="text-base font-semibold">{title} {url&&<a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-normal text-primary underline">source</a>}</h3>
+  <p className="mt-1 text-xs text-muted-foreground">{feed['status']==='available'?'Used':'Unavailable'} · cutoff {contentText(feed['cutoff'])} · {contentText(feed['note'])}</p>
+  <DataFreshness date={contentText(feed['fetchedAt'])} origin={feed['cached']===true?'Cached evidence':'Retrieved evidence'}/></>;}
+function FreeSourcesSection({value}:{value:unknown}){
+  const f=sectionObject(value);if(!Object.keys(f).length)return null;
+  const g=sectionObject(f['gdelt']),e=sectionObject(f['earningsReleases']),si=sectionObject(f['shortInterest']),wb=sectionObject(f['globalMacro']),so=sectionObject(f['social']);
+  const feeds:[string,Record<string,unknown>][]=[['GDELT global news',g],['SEC earnings releases',e],['FINRA short interest',si],['World Bank macro',wb],['Social media',so]];
+  return <div className="space-y-5"><h2 className="text-xl font-semibold">Additional Free Sources</h2>
+    <ul className="flex flex-wrap gap-2 text-xs">{feeds.map(([n,v])=><li key={n} className={`rounded border px-2 py-1 ${v['status']==='available'?'border-primary/40 text-foreground':'border-border text-muted-foreground'}`}>{n}: {v['status']==='available'?'used':'unavailable'}</li>)}</ul>
+    {Object.keys(g).length>0&&<div><SourceHead title="Global News Coverage · GDELT" feed={g}/>{typeof g['averageTone']==='number'&&<p className="mt-2 text-sm">Average news tone: <span className="font-mono">{Number(g['averageTone']).toFixed(2)}</span></p>}
+      <ul className="mt-2 space-y-1 text-sm">{list(g['items']).map((a,i)=>{const u=safeLink(contentText(a['url']));return <li key={i}><span className="font-mono text-xs text-muted-foreground">{contentText(a['seenAt']).slice(0,10)}</span> {u?<a href={u} target="_blank" rel="noopener noreferrer" className="underline">{contentText(a['title'])}</a>:contentText(a['title'])} <span className="text-xs text-muted-foreground">· {contentText(a['domain'])}</span></li>;})}</ul></div>}
+    {Object.keys(e).length>0&&<div><SourceHead title="Earnings Releases · SEC 8-K Item 2.02" feed={e}/>{list(e['items']).map((r,i)=>{const u=safeLink(contentText(r['url']));return <div key={i} className="mt-2 rounded border border-border p-3 text-sm"><p className="font-mono text-xs text-muted-foreground">Filed {contentText(r['filed'])} {u&&<a href={u} target="_blank" rel="noopener noreferrer" className="text-primary underline">exhibit</a>}</p><p className="mt-1 line-clamp-6">{contentText(r['excerpt'])}</p></div>;})}</div>}
+    {Object.keys(si).length>0&&<div><SourceHead title="Short Interest · FINRA" feed={si}/>{list(si['items']).length>0&&<div className="mt-2 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Settlement</th><th>Short shares</th><th>Change %</th><th><MetricLabel label="Days to cover"/></th></tr></thead><tbody>{list(si['items']).map((r,i)=><tr key={i} className="border-b border-border/50 font-mono"><td className="py-1">{contentText(r['settlementDate'])}</td><td>{money(r['shortShares'])}</td><td>{typeof r['changePct']==='number'?r['changePct']:'—'}</td><td>{typeof r['daysToCover']==='number'?r['daysToCover']:'—'}</td></tr>)}</tbody></table></div>}</div>}
+    {Object.keys(wb).length>0&&<div><SourceHead title="Global Macro · World Bank" feed={wb}/>{list(wb['items']).length>0&&<div className="mt-2 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Region</th><th>Indicator</th><th>Year</th><th>Value</th></tr></thead><tbody>{list(wb['items']).map((r,i)=><tr key={i} className="border-b border-border/50"><td className="py-1">{contentText(r['country'])}</td><td>{contentText(r['name'])}</td><td className="font-mono">{contentText(r['year'])}</td><td className="font-mono">{contentText(r['value'])}</td></tr>)}</tbody></table></div>}</div>}
+    {Object.keys(so).length>0&&<div><SourceHead title="Social Media" feed={so}/></div>}
   </div>;
 }

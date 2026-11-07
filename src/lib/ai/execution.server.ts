@@ -23,6 +23,7 @@ import { activeNvidiaKey, openNvidiaCredentials } from '@/lib/nvidia-credentials
 import { createNvidiaFailoverFetch } from './nvidia-failover.server';
 import { MODEL_OPTIONS } from '@/lib/research-config';
 import { getFundamentalEvidence, getNewsEvidence } from '@/lib/research-evidence.server';
+import { getFreeSourcesEvidence } from '@/lib/sources/free-sources.server';
 import { priorFindingsPrompt } from '@/lib/research-evidence';
 import { historicalDailyCandles } from '@/lib/stock-data.server';
 import { emptyStock } from '@/lib/stock-data';
@@ -54,8 +55,9 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const predictions=await getPredictionEvidence(sb,userId,run.ticker,run.analysis_date,signal);
   const news=await getNewsEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const fundamentals=await getFundamentalEvidence(sb,userId,run.ticker,run.analysis_date);
+  const free=await getFreeSourcesEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
-  const evidence={macro,predictions,news,fundamentals};
+  const evidence={macro,predictions,news,fundamentals,free};
   const stockData=snapshotAllowed(run.analysis_date,new Date().toISOString().slice(0,10))?await cachedStockData(sb,userId,run.ticker,researchHistoryRange(),'annual'):null;
   // Historical runs exclude current quotes/filings but may use daily bars dated on or before the analysis date.
   const pastBars=stockData?null:await historicalDailyCandles(run.ticker,run.analysis_date).catch(()=>null);
@@ -63,7 +65,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const technicalStock=stockData??pastStock;
   const technical=technicalStock?technicalEvidence(technicalStock,run.analysis_date,run.lookback_days):null;
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
-  const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}).`});
+  const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
   if(evidenceEvent.error)throw evidenceEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status,news:news.status,fundamentals:fundamentals?.status??'unavailable'});
   async function call(agent:string,prompt:string,synthesis=false,streamAgent=agent) {
@@ -104,7 +106,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`+stockPrompt(stockSnapshot?{...stockSnapshot,candles:[]}:null)+claimReviewPrompt(technical,fundamentals,run.analysis_date);
   // Risk and debate run after the specialists so they can challenge actual findings.
   const ordered=[...agents.filter(a=>a!=='risk'&&a!=='debate'),...(['risk','debate'] as const).filter(a=>agents.includes(a))];
-  const ROLE_GUIDE:Record<string,string>={fundamentals:' Use the supplied point-in-time SEC fundamentals for multi-year revenue, margin, cash-flow and balance-sheet trends; keep annual and quarterly periods separate and cite period end and filing date.',news:' Use the supplied SEC filing events and dated headlines as catalysts; cite date and link for each; headlines are titles only.',sentiment:' Assess sentiment only from supplied dated headlines, filings and prediction markets; do not infer unseen social-media sentiment.',risk:' Review the prior analyst findings below: test their assumptions, flag uncited claims and quantify downside where evidence allows.',debate:' Stage a bull versus bear debate grounded in the prior analyst findings below; resolve conflicts explicitly.'};
+  const ROLE_GUIDE:Record<string,string>={fundamentals:' Use the supplied point-in-time SEC fundamentals for multi-year revenue, margin, cash-flow and balance-sheet trends; keep annual and quarterly periods separate and cite period end and filing date.',news:' Use the supplied SEC filing events, earnings-release excerpts, dated headlines and GDELT global coverage as catalysts; cite date and link for each; headlines are titles only.',sentiment:' Assess sentiment only from supplied dated headlines, GDELT news tone, FINRA short interest, filings and prediction markets; state that no social-media feed is connected and do not infer unseen social sentiment.',risk:' Review the prior analyst findings below: test their assumptions, flag uncited claims and quantify downside where evidence allows.',debate:' Stage a bull versus bear debate grounded in the prior analyst findings below; resolve conflicts explicitly.'};
   const storedAnalysts:Record<string,{content:string;model:string;status:string}>={};
   for(const agent of ordered) {
     progress.stage='agent_start';progress.agent=agent;

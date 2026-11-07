@@ -11,6 +11,7 @@ vi.mock('@/lib/research-evidence.server', () => ({
   getNewsEvidence: async () => ({ status: 'partial', filings: [{ form: '10-Q', filed: '2026-11-05', url: 'https://www.sec.gov/filing' }], headlines: [], notes: ['No social feed'], cutoff: '2026-11-07' }),
   getFundamentalEvidence: async () => ({ status: 'available', annual: [{ revenue: 150 }], latestQuarter: { revenue: 50 }, cutoff: '2026-11-07' }),
 }));
+vi.mock('@/lib/sources/free-sources.server', () => { const f = { status: 'unavailable', source: 's', sourceUrl: null, cutoff: '2026-11-07', fetchedAt: '', cached: false, note: 'n', items: [] }; return { getFreeSourcesEvidence: async () => ({ gdelt: { ...f, tone: [], averageTone: null }, shortInterest: f, globalMacro: { ...f, lastUpdated: null }, earningsReleases: f, social: f }) }; });
 vi.mock('@/lib/stock-service.server', () => ({ cachedStockData: async () => null }));
 vi.mock('@/lib/stock-data.server', () => ({ historicalDailyCandles: async () => null }));
 vi.mock('ai', () => ({
