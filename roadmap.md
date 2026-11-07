@@ -70,3 +70,7 @@
 - [x] Watchlist with anomaly triggers (sentiment shift, valuation divergence, earnings)
 - [x] Branded PDF and Markdown report exports
 - [x] Store FRED and FMP keys encrypted for gprithvi@gmail.com
+
+- [x] Fix analyst evidence gaps: SEC filings/headlines for news, point-in-time SEC fundamentals, historical daily bars, prior findings for risk/debate
+- [ ] Remix setup: update API_KEY_ENCRYPTION_SECRET
+- [ ] Remix setup: clear copied migrations and rescaffold for new database
