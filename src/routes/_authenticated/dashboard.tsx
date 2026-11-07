@@ -14,6 +14,8 @@ import { CreditMetric } from '@/components/credit-metric';
 import { DataError,DataNotFound } from "@/components/route-feedback";
 import { cn } from "@/lib/utils";
 import { CompanyPicker } from "@/components/company-picker";
+import { AGENTS } from '@/lib/research-config';
+import { reportAgentIds } from '@/lib/report-agents';
 
 const dashboardQuery = queryOptions({
   queryKey: ["dashboard"],
@@ -24,7 +26,7 @@ const dashboardQuery = queryOptions({
     const [runs, cache] = await Promise.all([
       supabase
         .from("research_runs")
-        .select("id, ticker, analysis_date, status, total_cost_usd, total_input_tokens, total_output_tokens, lovable_credits,credit_basis,is_demo, created_at, research_reports(id, recommendation, conviction_score, total_input_tokens, total_output_tokens, total_cost_usd,lovable_credits,credit_basis)")
+        .select("id, ticker, analysis_date, selected_agents, status, total_cost_usd, total_input_tokens, total_output_tokens, lovable_credits,credit_basis,is_demo, created_at, research_reports(id, sections, recommendation, conviction_score, total_input_tokens, total_output_tokens, total_cost_usd,lovable_credits,credit_basis)")
         .order("created_at", { ascending: false })
         .limit(500),
       supabase.from("research_events").select("event_type").in("event_type", ["cache_hit", "cache_miss"]).limit(1000),
@@ -97,7 +99,7 @@ function Dashboard() {
                 const rep = r.research_reports?.[0];
                 return (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-card/60">
-                    <td className="px-3 py-1.5 font-semibold text-foreground">{r.ticker}</td>
+                    <td className="px-3 py-1.5 font-semibold text-foreground">{r.ticker}<div className="mt-1 min-w-40 max-w-60 whitespace-normal font-sans text-[10px] font-normal text-muted-foreground"><span className="font-medium">{rep ? 'Agents: ' : 'Selected: '}</span>{reportAgentIds(rep?.sections, r.selected_agents).map(id => AGENTS.find(a => a.id === id)?.name ?? id.replace(/_/g, ' ')).join(' · ') || 'Not recorded'}</div></td>
                     <td className="px-3 py-1.5 text-muted-foreground">{r.analysis_date}<div><DataFreshness date={r.created_at}/></div></td>
                     <td className="px-3 py-1.5 text-muted-foreground">{r.status}</td>
                     <td className="px-3 py-1.5"><RecBadge rec={rep?.recommendation ?? null} /></td>
