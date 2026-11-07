@@ -1,10 +1,12 @@
+import { selectSecFact, secRows } from '@/lib/sec-periods';
+import type { SecFact } from '@/lib/sec-periods';
 import { checkedGrossProfit } from '@/lib/financial-quality';
 import { numeric, object } from '@/lib/stock-data';
 
 /** Point-in-time SEC fundamentals: only facts filed on or before the cutoff are used. */
 export type FundamentalPeriod = {
   end: string; form: string; filed: string; accession: string | null; filingUrl: string | null;
-  qualityWarnings?: string[]; revenue: number | null; grossProfit: number | null; grossProfitDerived: boolean; operatingIncome: number | null; netIncome: number | null; dilutedEps: number | null;
+  start?: string | null; provenance?: Record<string, SecFact | null>; qualityWarnings?: string[]; revenue: number | null; grossProfit: number | null; grossProfitDerived: boolean; operatingIncome: number | null; netIncome: number | null; dilutedEps: number | null;
   operatingCashFlow: number | null; capex: number | null; freeCashFlow: number | null;
   assets: number | null; liabilities: number | null; liabilitiesDerived: boolean; equity: number | null; cash: number | null; longTermDebt: number | null;
   revenueGrowthPct: number | null; netIncomeGrowthPct: number | null;
@@ -32,26 +34,26 @@ const TAGS = {
   longTermDebt: ['LongTermDebtNoncurrent', 'LongTermDebt'],
 };
 type Row = Record<string, unknown>;
-const pct = (a: number | null, b: number | null) => a !== null && b !== null && b !== 0 ? (a / Math.abs(b) - 1) * 100 : null;
+const pct = (a: number | null, b: number | null) => a !== null && b !== null && b !== 0 ? (a - b) / Math.abs(b) * 100 : null;
 const days = (r: Row) => typeof r['start'] === 'string' && typeof r['end'] === 'string' ? (Date.parse(r['end']) - Date.parse(r['start'])) / 86400000 : null;
 
 export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = new Date().toISOString(), cached = false): FundamentalEvidence {
   const body = object(raw); const facts = object(object(body['facts'])['us-gaap']);
   const cik = numeric(body['cik']) ?? (typeof body['cik'] === 'string' ? Number(body['cik']) : null);
   const sourceUrl = cik ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(cik).padStart(10, '0')}&type=10-K` : null;
-  const rows = (names: string[], unit = 'USD') => names.flatMap(name => { const list = object(object(facts[name])['units'])[unit]; return Array.isArray(list) ? list.map(object) : []; })
-    .filter(r => typeof r['filed'] === 'string' && r['filed'] <= cutoff && typeof r['end'] === 'string' && numeric(r['val']) !== null);
+  const rows = (names: string[], unit = 'USD') => secRows(facts, names, unit, cutoff);
   const isAnnualForm = (f: unknown) => typeof f === 'string' && /^(10-K|20-F|40-F)/.test(f);
   const isQuarterForm = (f: unknown) => typeof f === 'string' && f.startsWith('10-Q');
   const annualDuration = (r: Row) => { const d = days(r); return d !== null && d > 300 && d < 400; };
-  const quarterDuration = (r: Row) => { const d = days(r); return d !== null && d >= 60 && d <= 110; };
-  // Latest filed value for a given period end; later filings may restate comparatives, but never beyond the cutoff.
-  const pick = (names: string[], end: string, duration: ((r: Row) => boolean) | null, unit = 'USD') => {
-    const match = rows(names, unit).filter(r => r['end'] === end && (duration ? duration(r) : true)).sort((a, b) => String(b['filed']).localeCompare(String(a['filed'])));
-    return numeric(match[0]?.['val']);
-  };
+  const quarterDuration = (r: Row) => { const d = days(r); return d !== null && d >= 60 && d <= 300; };
   const build = (anchor: Row, duration: (r: Row) => boolean, prior: FundamentalPeriod | null): FundamentalPeriod => {
     const end = String(anchor['end']);
+    const provenance: Record<string, SecFact | null> = {};
+    const pick = (names: string[], _end: string, d: ((r: Row) => boolean) | null, unit = 'USD') => {
+      const selected = selectSecFact(facts, names, anchor, d ? (isQuarterForm(anchor['form']) ? 'quarter' : 'annual') : 'instant', unit, cutoff);
+      provenance[names[0] ?? 'unknown'] = selected;
+      return selected?.value ?? null;
+    };
     const revenue = pick(REVENUE, end, duration); const cost = pick(TAGS.costOfRevenue, end, duration);
     const reportedGross = pick(TAGS.grossProfit, end, duration);
     const gross = checkedGrossProfit(revenue, cost, reportedGross);
@@ -61,6 +63,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
     const netIncome = pick(TAGS.netIncome, end, duration);
     return {
       qualityWarnings: gross.warning ? [gross.warning] : [],
+      start: typeof anchor['start'] === 'string' ? anchor['start'] : null, provenance,
       end, form: String(anchor['form']), filed: String(anchor['filed']), accession,
       filingUrl: accession && cik ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/` : null,
       revenue, grossProfit: gross.value, grossProfitDerived: gross.derived,
@@ -74,7 +77,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   };
   const anchors = (form: (f: unknown) => boolean, duration: (r: Row) => boolean) => {
     const byEnd = new Map<string, Row>();
-    for (const r of rows(REVENUE).filter(r => form(r['form']) && duration(r))) { const end = String(r['end']); const prev = byEnd.get(end); if (!prev || String(r['filed']) < String(prev['filed'])) byEnd.set(end, r); }
+    for (const r of rows(REVENUE).filter(r => form(r['form']) && duration(r))) { const end = String(r['end']); const prev = byEnd.get(end); if (!prev || String(r['filed']) > String(prev['filed'])) byEnd.set(end, r); }
     return [...byEnd.values()].sort((a, b) => String(a['end']).localeCompare(String(b['end'])));
   };
   const annualAnchors = anchors(isAnnualForm, annualDuration).slice(-5);
@@ -86,7 +89,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   return {
     status: annual.length || latestQuarter ? 'available' : 'unavailable', source: 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency: 'USD',
     annual: annual.slice(-4), latestQuarter,
-    note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD filers may report no USD facts.',
+    note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD filers may report no USD facts.',
   };
 }
 

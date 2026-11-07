@@ -1,4 +1,5 @@
 import { checkedGrossProfit } from '@/lib/financial-quality';
+import { secAnchor, selectSecFact } from '@/lib/sec-periods';
 export const STOCK_RANGES = ['1D','1W','1M','6M','1Y','5Y'] as const;
 export type StockRange = typeof STOCK_RANGES[number];
 export type Candle = {time:number;open:number;high:number;low:number;close:number;volume:number|null};
@@ -31,15 +32,9 @@ export async function firstAvailable<T>(providers:{source:string;load:()=>Promis
 export function emptyStock(ticker:string,company:string):StockData{return {ticker,company,currency:'USD',quoteSource:null,chartSource:null,financialSource:null,asOf:null,fetchedAt:new Date().toISOString(),cached:false,warnings:[],candles:[],price:null,change:null,changePercent:null,marketCap:null,low52:null,high52:null,volume:null,ratios:[],statements:{income:[],balance:[],cash:[]},financialDate:null};}
 export function parseSecFinancials(raw:unknown,price:number|null,period:'annual'|'quarter'='annual') {
   const facts=object(object(object(raw)['facts'])['us-gaap']);
-  const entries=(names:string[],unit='USD')=>names.flatMap(name=>{const rows=object(object(facts[name])['units'])[unit];return Array.isArray(rows)?rows.map(object):[];});
-  const form=period==='annual'?'10-K':'10-Q';
-  const durationMatches=(r:Record<string,unknown>)=>{if(typeof r['start']!=='string'||typeof r['end']!=='string')return false;const days=(Date.parse(r['end'])-Date.parse(r['start']))/86400000;return period==='annual'?days>300&&days<400:days>=60&&days<=110;};
-  const annual=entries(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet','RevenueFromContractWithCustomerIncludingAssessedTax','SalesRevenueGoodsNet']).filter(r=>r['form']===form&&durationMatches(r)).sort((a,b)=>String(b['end']).localeCompare(String(a['end']))||String(b['filed']).localeCompare(String(a['filed'])));
-  const date=typeof annual[0]?.['end']==='string'?annual[0]['end']:null;
-  const get=(names:string[],duration=false,unit='USD')=>{
-    const rows=entries(names,unit).filter(r=>r['end']===date&&r['form']===form&&(!duration||durationMatches(r))).sort((a,b)=>String(b['filed']).localeCompare(String(a['filed'])));
-    return numeric(rows[0]?.['val']);
-  };
+  const anchor=secAnchor(facts,['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet','RevenueFromContractWithCustomerIncludingAssessedTax','SalesRevenueGoodsNet'],period);
+  const date=typeof anchor?.['end']==='string'?anchor['end']:null;
+  const get=(names:string[],duration=false,unit='USD')=>anchor?selectSecFact(facts,names,anchor,duration?period:'instant',unit)?.value??null:null;
   const revenue=get(['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet','RevenueFromContractWithCustomerIncludingAssessedTax','SalesRevenueGoodsNet'],true),income=get(['NetIncomeLoss'],true),equity=get(['StockholdersEquity']),shares=get(['CommonStockSharesOutstanding'],false,'shares'),cash=get(['CashAndCashEquivalentsAtCarryingValue','CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents']),assets=get(['Assets']),totalLe=get(['LiabilitiesAndStockholdersEquity']),liabilities=get(['Liabilities'])??(totalLe!==null&&equity!==null?totalLe-equity:null),cost=get(['CostOfRevenue','CostOfGoodsAndServicesSold'],true),gross=checkedGrossProfit(revenue,cost,get(['GrossProfit'],true)).value;
   const marketCap=shares!==null&&price!==null?shares*price:null;
   const divide=(a:number|null,b:number|null,scale=1)=>a!==null&&b!==null&&b!==0?a/b*scale:null;

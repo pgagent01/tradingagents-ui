@@ -11,7 +11,7 @@ export async function cachedStockData(sb:SupabaseClient<Database>,userId:string,
   let alpha:AlphaCredential|null=null;try{alpha=await ownAlphaCredential(sb,userId);}catch{/* Optional data remains owner-only. */}
   const alphaCredential=alpha;
   if(alphaCredential)alphaCredential.overview=()=>cachedAlphaOverview(sb,userId,ticker,alphaCredential);
-  const cacheKey=`v3:${ticker}:${range}:${period}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}`;
+  const cacheKey=`v4:${ticker}:${range}:${period}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}`;
   const cached=await readDataCache(sb,userId,'stocks',cacheKey);const previous=object(cached?.payload);
   if(cached?.fresh&&previous['ticker']===ticker&&Array.isArray(previous['candles']))return {...cached.payload as unknown as StockData,cached:true};
   const data=validateStockFinancials(await getStockData(ticker,range,userId,credential,period,alpha));
