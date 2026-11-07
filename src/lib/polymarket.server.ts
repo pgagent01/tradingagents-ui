@@ -16,7 +16,7 @@ export async function getPredictionEvidence(sb:EvidenceClient,userId:string,tick
   const batches=await Promise.all(urls.map(async url=>{try{const r=await fetch(url,{signal:AbortSignal.any([signal,AbortSignal.timeout(12000)])});if(!r.ok)return null;const body:unknown=await r.json();const events=sectionObject(body)['events'];return Array.isArray(events)?events.slice(0,50):null;}catch{return null;}}));
   if(signal.aborted) throw new DOMException('Cancelled','AbortError');
   if(batches.every(b=>b===null)) return cachedFeed?.markets ? {...cachedFeed,status:'cached',note:`Stale snapshot from ${cachedFeed.fetchedAt}; refresh unavailable.`} : {status:'unavailable',fetchedAt:null,note:'Public prediction markets could not be reached.',markets:[]};
-  const feed:PredictionFeed={status:'live',fetchedAt:new Date().toISOString(),note:'Bounded public Gamma search; not an exhaustive market census. Quotes are crowd-implied probabilities, not calibrated forecasts. 1-day change is the API-reported price change for the first outcome, in percentage points; no shift is inferred when missing.',markets:relevantMarkets(batches.flatMap(b=>b??[]),terms,today)};
+  const feed:PredictionFeed={status:'live',fetchedAt:new Date().toISOString(),note:'Bounded public Gamma search; not an exhaustive market census. Quotes are crowd-implied probabilities, not calibrated forecasts. 1-day change is the API-reported price change for the first outcome in probability units (0.05 = 5 percentage points); no shift is inferred when missing.',markets:relevantMarkets(batches.flatMap(b=>b??[]),terms,today)};
   await writeDataCache(sb,userId,'polymarket',cacheKey,feed,5*60*1000);
   return feed;
 }
