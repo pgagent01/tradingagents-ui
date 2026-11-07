@@ -1,3 +1,4 @@
+import { claimReviewPrompt, reviewReportClaims } from '@/lib/report-quality';
 import type { ResearchProgress } from '@/lib/research-diagnostics';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -100,7 +101,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     if(synthesis){if(geminiSynthesis){try{object=parseResearchJson(text);}catch{throw new SafeAiError(422,'The model returned an invalid report format. No automatic retry was made.');}}else object=resultSchema.parse(await result.output);}
     return {text,input,output,cost,credit,model:actualModel,object};
   }
-  const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`+stockPrompt(stockSnapshot?{...stockSnapshot,candles:[]}:null);
+  const scope=`Ticker ${run.ticker}. Analysis as of ${run.analysis_date}, lookback ${run.lookback_days} days. Depth ${run.research_depth}. Selected team ${agents.join(', ')}. Use only evidence dated on or before the analysis date. If no live source access is available, state it; do not invent results.`+stockPrompt(stockSnapshot?{...stockSnapshot,candles:[]}:null)+claimReviewPrompt(technical,fundamentals,run.analysis_date);
   // Risk and debate run after the specialists so they can challenge actual findings.
   const ordered=[...agents.filter(a=>a!=='risk'&&a!=='debate'),...(['risk','debate'] as const).filter(a=>agents.includes(a))];
   const ROLE_GUIDE:Record<string,string>={fundamentals:' Use the supplied point-in-time SEC fundamentals for multi-year revenue, margin, cash-flow and balance-sheet trends; keep annual and quarterly periods separate and cite period end and filing date.',news:' Use the supplied SEC filing events and dated headlines as catalysts; cite date and link for each; headlines are titles only.',sentiment:' Assess sentiment only from supplied dated headlines, filings and prediction markets; do not infer unseen social-media sentiment.',risk:' Review the prior analyst findings below: test their assumptions, flag uncited claims and quantify downside where evidence allows.',debate:' Stage a bull versus bear debate grounded in the prior analyst findings below; resolve conflicts explicitly.'};
@@ -119,7 +120,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     const {error}=await sb.rpc('save_agent_result',{_output_id:started.id,_result:{...out,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===out.model)?.rates??null,source_status:'Model-provided citations, not independently verified'}}});if(error)throw error;
     if(out.model!==contentText(sectionObject(roles[agent])['model'])){const fix=await sb.from('agent_outputs').update({model_used:out.model}).eq('id',started.id);if(fix.error)throw fix.error;}
     storedAnalysts[agent]={content:out.text,model:out.model,status:'completed'};
-    summaries.push(`${agent}: ${out.text}`);totalIn+=out.input;totalOut+=out.output;totalCost+=out.cost;if(out.credit===null) creditsKnown=false;else credits+=out.credit;
+    const claimWarnings=reviewReportClaims({[agent]:out.text},technical,fundamentals,run.analysis_date);
+    summaries.push(`${agent}: ${out.text}${claimWarnings.length?'\nEvidence conflicts to resolve (do not repeat): '+JSON.stringify(claimWarnings):''}`);totalIn+=out.input;totalOut+=out.output;totalCost+=out.cost;if(out.credit===null) creditsKnown=false;else credits+=out.credit;
     const endEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'completed',message:`${agent} analyst completed.`});if(endEvent.error)throw endEvent.error;emit({type:'agent',agent,status:'completed'});
   }
   if(technical)summaries.push(`Calculated technical evidence: ${JSON.stringify({...technical,candles:undefined})}`);
@@ -134,7 +136,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(final.model!==String(sectionObject(roles[synthesisRole])['model'])){const fix=await sb.from('agent_outputs').update({model_used:final.model}).eq('id',synthesisOutput.id);if(fix.error)throw fix.error;}
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
-  const f={...final.object,storage_version:2,analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
+  const f={...final.object,storage_version:2,quality_review:{version:1,scope:'Indicator availability and annual financial age only; not a full audit',warnings:reviewReportClaims({...Object.fromEntries(Object.entries(storedAnalysts).map(([a,v])=>[a,v.content])),executive_summary:final.object.executive_summary,technical_analysis:final.object.technical_analysis,fundamental_analysis:final.object.fundamental_analysis,final_synthesis:final.object.final_synthesis},technical,fundamentals,run.analysis_date)},analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
   progress.stage='report_finalize';
   const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;
   progress.stage='completed';

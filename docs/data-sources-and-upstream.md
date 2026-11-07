@@ -2,6 +2,10 @@
 
 ## Current improvements
 
+- SEC parsing now shares filing-version-aligned selection between research and Stock Info. Annual durations must share the anchor start/end; YTD quarter subtraction requires matching concepts/units and comparative facts in the same filing. Missing compatible comparisons remain unavailable. New report facts record individual provenance and derivation inputs; parsed caches were versioned again.
+- New research includes deterministic checks for claims that supplied indicators are unavailable and for annual-period age claims. Conflicts are passed to subsequent synthesis and saved as a limited-scope review; report views can also check existing saved evidence without rewriting it. This does not reconcile every number or certify recommendations.
+- Saved-report navigation, glossary Markdown download and PDF glossary were checked while signed in. Invalid comparison selections no longer silently substitute another report; same-day reports show creation timestamps. No two existing saved reports share a ticker, so a real same-stock pair and a fresh post-change LLM run remain unverified.
+
 - Non-positive P/E values are withheld; real negative earnings and margins remain valid evidence.
 - Reported SEC gross profit that conflicts with revenue minus cost by more than 1% is withheld, not replaced with a preferred number. This is a rounding safeguard, not an audit opinion.
 - Annual durations are bounded to 300–400 days. Quarterly periods remain separate.
@@ -40,8 +44,8 @@ These are researched candidates, not newly connected feeds. Do not invent creden
 
 ## Next quality and usability priorities
 
-1. Validate every duration-based SEC quarter against start/end dates; distinguish standalone quarters from year-to-date facts and derive quarters only from compatible filings. Preserve exact accession/tag/units for each fact.
-2. Add deterministic checks of model claims against stored evidence: the AVGO report incorrectly said SMA200 was unavailable even though the warm-up calculation stored it, and incorrectly described the FY2025 financial period as more than a year old. No saved report was rewritten.
+1. Expand quarter coverage with version-compatible earlier filings where same-filing comparatives are absent; the conservative same-filing derivation now deliberately withholds those values. Independently reconcile values with full filing tables.
+2. Extend the new limited deterministic claim checks beyond indicator availability and annual financial age to numeric claims, valuation assumptions and cited passages. The existing AVGO claim errors were not silently rewritten.
 3. Bound specialist handoff summaries and separate provider reasoning tokens from visible output where available. The AVGO run took about 7.5 minutes and recorded 153,022 tokens; configured USD is an estimate, not a verified invoice.
 4. Full filing/exhibit retrieval, segment guidance and reconciliation before valuation; auditable forecast assumptions rather than invented targets.
 5. Source-level freshness and missing-evidence panel, report-to-report changes, watchlist update alerts and an evidence-linked claim review.
