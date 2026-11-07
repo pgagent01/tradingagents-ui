@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Configure the remixed account's three encrypted NVIDIA slots and FRED, FMP, Alpha Vantage credentials; verify saved status and live connection tests.
+- [ ] Audit imported analyst evidence routing, fix remaining delivery gaps with regressions, and verify a fresh multi-agent report through the saved viewer.
+
 - [x] Fix current-date technical research evidence: daily year retrieval, selected-lookback OHLCV, moving averages/RSI/MACD/Bollinger/ATR, dated source/cache metadata and persisted evidence. Missing-history regression reproduced then passed; 144 tests/build OK. Fresh NVIDIA LITE report completed with 63 daily bars and verified saved indicators. Existing runs untouched; historical-date stock retrieval remains unavailable by design.
 
 - [x] Add missing-key warnings throughout analysis setup, provider acquisition/update guidance and retry controls in Settings. Confirmed requesting account has FRED/FMP/NVIDIA saved; authenticated warning→Settings flow verified at desktop/mobile sizes without runtime errors.
