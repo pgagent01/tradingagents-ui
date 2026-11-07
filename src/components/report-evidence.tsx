@@ -17,7 +17,7 @@ export function ReportEvidence({value}:{value:unknown}) {
     <FundamentalsSection value={evidence['fundamentals']}/>
   </section>;
 }
-const safeLink=(url:string)=>url.startsWith('https://www.sec.gov/')||url.startsWith('https://finance.yahoo.com/')||url.startsWith('https://')?url:'';
+const safeLink=(url:string)=>url.startsWith('https://')?url:'';
 function NewsSection({value}:{value:unknown}) {
   const news=sectionObject(value);if(!Object.keys(news).length)return null;
   const filings=Array.isArray(news['filings'])?news['filings'].map(sectionObject):[];const headlines=Array.isArray(news['headlines'])?news['headlines'].map(sectionObject):[];
