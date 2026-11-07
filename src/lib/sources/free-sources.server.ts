@@ -38,12 +38,9 @@ async function gdelt(ticker: string, cutoff: string, start: string): Promise<Fre
   } catch { return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, [], 'GDELT temporarily unavailable or rate-limited.'), tone: [], averageTone: null }; }
 }
 async function finra(ticker: string, cutoff: string): Promise<FreeSourcesEvidence['shortInterest']> {
-  const src = 'FINRA consolidated short interest'; const url = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data';
-  try {
-    const r = await get('https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ limit: 24, compareFilters: [{ compareType: 'EQUAL', fieldName: 'symbolCode', fieldValue: ticker.toUpperCase() }], dateRangeFilters: [{ fieldName: 'settlementDate', startDate: new Date(Date.parse(`${cutoff}T00:00:00Z`) - 200 * 86400000).toISOString().slice(0, 10), endDate: cutoff }] }) });
-    const items = parseShortInterest(await r.json(), ticker, cutoff);
-    return feed(src, url, cutoff, items, items.length ? 'Twice-monthly settlement data, published about 7 business days after settlement. Days to cover = short shares ÷ average daily volume.' : 'FINRA returned no short-interest records for this symbol before the cutoff.');
-  } catch { return feed(src, url, cutoff, [], 'FINRA short-interest API temporarily unavailable.'); }
+  // The previously used endpoint is described by FINRA metadata as OTC-only.
+  // Do not give listed-stock figures credibility until a matching coverage source is verified.
+  return feed('FINRA short interest', 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data', cutoff, [], `Short-interest coverage for ${ticker} is unverified: the available FINRA dataset is described as OTC-only. Figures are withheld until an appropriate listed-equity source is verified. Short sale volume is not short interest.`);
 }
 async function worldBank(cutoff: string): Promise<FreeSourcesEvidence['globalMacro']> {
   const year = Number(cutoff.slice(0, 4)); let lastUpdated: string | null = null; const items = [];
