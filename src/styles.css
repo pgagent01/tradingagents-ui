@@ -141,3 +141,9 @@
   @page { size: A4; margin: 14mm; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+.report-prose { max-width: 75ch; }
+.report-prose p { margin-bottom: 1rem; }
+.report-prose strong { color: var(--foreground); font-weight: 600; }
+.report-prose h1, .report-prose h2, .report-prose h3 { font-size: 1rem; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; margin: 1.25rem 0 0.6rem; }
+.report-prose li { margin-bottom: 0.35rem; }
+.report-prose ul, .report-prose ol { margin-bottom: 1rem; }
