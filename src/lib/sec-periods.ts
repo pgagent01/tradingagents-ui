@@ -3,7 +3,7 @@ type Row = Record<string, unknown>;
 export type SecFact = { value: number; tag: string; unit: string; start: string | null; end: string; filed: string; accession: string | null; derived: boolean; inputs?: SecFact[] };
 const obj = (v: unknown): Row => v && typeof v === 'object' && !Array.isArray(v) ? v as Row : {};
 const duration = (r: Row) => (Date.parse(String(r['end'])) - Date.parse(String(r['start']))) / 86400000;
-export function secRows(facts: Row, names: string[], unit = 'USD', cutoff = '9999-12-31') {
+export function secRows(facts: Row, names: string[], unit = 'USD', cutoff = '9999-12-31'): Row[] {
   return names.flatMap(tag => {
     const rows = obj(obj(facts[tag])['units'])[unit];
     return (Array.isArray(rows) ? rows.map(obj) : []).filter(r => typeof r['val'] === 'number' && Number.isFinite(r['val']) && typeof r['end'] === 'string' && r['end'] <= cutoff && typeof r['filed'] === 'string' && r['filed'] <= cutoff && /^(10-K|10-Q|20-F|40-F)(\/A)?$/.test(String(r['form']))).map(r => ({ ...r, tag, unit }));
