@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Validate SEC duration alignment and safely derive compatible YTD quarters with provenance; refresh parsed caches.
+- [ ] Check report claims against stored indicator/financial-date evidence, preserve warnings, and show review limitations.
+- [ ] Align report glossary and Markdown export, repair invalid comparison selections and same-day labels, and verify authenticated report flows.
+
 - [x] Show snapshot-based agents in dashboard report rows and accessible financial/technical explanations, including saved RSI/MACD indicators; hover and keyboard checks passed.
 - [x] Run one real AVGO six-analyst NVIDIA report: saved HOLD / 45 conviction / High risk, all seven model stages completed, 153,022 tokens, estimated USD $0.0883. Authenticated report/dashboard/stock flow verified without runtime errors. Model claim inconsistencies remain documented future quality work, not silently corrected in the saved report.
 - [x] Identify social source candidates and access/retention limitations: Bluesky public pilot, approved Reddit, Stocktwits partner access, instance-based Mastodon; no new feed connected.
