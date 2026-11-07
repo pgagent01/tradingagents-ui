@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { pageHead } from '@/lib/page-head';
 import { DataError,DataNotFound } from '@/components/route-feedback';
 import { cn } from '@/lib/utils';
+import { isExecutionQuiet, executionFailureHelp } from '@/lib/execution-guidance';
 const executionQuery=(id:string) => queryOptions({queryKey:['execution',id],queryFn:() => getExecution({data:{id}}),refetchInterval:3000});
 export const Route=createFileRoute('/_authenticated/analysis/$id')({head:() => pageHead('Live Execution','Agent execution status, realtime activity and per-run token costs.'),validateSearch:zodValidator(z.object({execution:z.boolean().default(false)})),errorComponent:DataError,notFoundComponent:DataNotFound,loader:({context,params}) => context.queryClient.ensureQueryData(executionQuery(params.id)),component:Execution});
 function Execution() {
@@ -32,6 +33,8 @@ function Execution() {
   const [executing,setExecuting]=useState(false);
   const [streamText,setStreamText]=useState('');
   const [liveAgent,setLiveAgent]=useState('');
+  const [lastStreamActivity,setLastStreamActivity]=useState(0);
+  const [streamError,setStreamError]=useState('');
   const streamParts=useRef<Record<string,string>>({});
   const autoStarted=useRef(false);
   async function startExecution(){
@@ -61,6 +64,11 @@ function Execution() {
   const elapsed=Math.max(0,Math.floor(((data.run.completed_at?new Date(data.run.completed_at).getTime():now)-new Date(data.run.started_at ?? data.run.created_at).getTime())/1000));
   const selectedOutput=data.outputs.find(o => o.agent_id===selected);
   const report=data.reports[0];
+  const lastEvent = Math.max(Date.parse(data.run.started_at ?? data.run.created_at), ...data.events.map(e => Date.parse(e.created_at)).filter(Number.isFinite), lastStreamActivity);
+  const quiet = !data.run.is_demo && isExecutionQuiet(data.run.status, now, lastEvent);
+  const failureEvent = data.events.find(e => e.event_type === 'failed');
+  const failureStatus = failureEvent?.data && typeof failureEvent.data === 'object' && !Array.isArray(failureEvent.data) ? failureEvent.data['status'] : undefined;
+  const visibleError = data.run.error_message || streamError;
   return <div className="space-y-4">
     <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-mono text-xl font-semibold">{data.run.ticker} <span className="text-sm font-normal text-muted-foreground">/ Execution</span></h1><p className="mt-1 text-xs text-muted-foreground">{data.run.analysis_date} · {data.run.research_depth} · {data.run.status}{data.run.is_demo?' · DEMO':''} · Lookback {data.run.lookback_days} days · {String((data.run.model_config as {preset?:string})?.preset??'Custom')}</p></div><div className="flex items-center gap-3"><span className="font-mono text-xs">{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span><Button variant="outline" size="sm" disabled={!active||cancelMut.isPending} onClick={() => {requestAbort.current?.abort();cancelMut.mutate();}}><Square className="h-3 w-3" />Cancel Run</Button></div></header>
     <UsageMetrics input={data.run.total_input_tokens} output={data.run.total_output_tokens} cost={Number(data.run.total_cost_usd)} demo={data.run.is_demo} />
@@ -68,7 +76,8 @@ function Execution() {
     <CreditMetric credits={data.run.is_demo?0:data.run.lovable_credits} basis={data.run.credit_basis} />
     {!data.run.is_demo&&active&&<Button disabled={executing||data.run.status!=='pending'} size="sm" onClick={()=>void startExecution()}><Activity className="h-4 w-4"/>{executing?'Research in progress…':'Execute research'}</Button>}
     {streamText&&<details open className="border-y border-border py-3"><summary className="text-xs font-semibold">Live output · {liveAgent==='synthesis'?'Final Synthesis':AGENTS.find(a=>a.id===liveAgent)?.name??liveAgent}</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">{streamText}</pre></details>}
-    {data.run.error_message&&<p role="alert" className="text-negative">{data.run.error_message}</p>}
+    {quiet && <div role="status" className="space-y-2 border-l-2 border-warning pl-3 text-xs"><p className="font-medium text-warning">No new activity for {Math.floor((now-lastEvent)/1000)} seconds · {AGENTS.find(a => a.id === liveAgent)?.name ?? data.outputs.find(o => o.status === 'running')?.agent_id ?? 'Research'}</p><p className="text-muted-foreground">The model may still be processing; this does not prove it is stuck or out of quota. You can wait, check activity, or cancel. Reloading will not restart billed work.</p></div>}
+    {visibleError&&<div role="alert" className="space-y-2 border-l-2 border-negative pl-3 text-xs"><p className="font-medium text-negative">{visibleError}</p><p className="text-muted-foreground">{executionFailureHelp(failureStatus, visibleError)}</p><Button asChild variant="outline" size="sm"><Link to="/settings">Check provider settings</Link></Button></div>}
     {demoError && <p role="alert" className="text-xs text-negative">{demoError}</p>}
     <div className="grid gap-6 xl:grid-cols-[3fr_2fr]">
       <section className="min-w-0"><h2 className="mb-3 text-xs uppercase text-muted-foreground">Agent graph</h2><div className="flex items-center gap-2 border-b border-border pb-4 font-mono text-xs"><Activity className="h-4 w-4 text-primary" />{data.run.ticker} → {agents.length} agents → Consensus report</div><div className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-3">{[...agents,...(!data.run.is_demo?['synthesis']:[])].map(id => {

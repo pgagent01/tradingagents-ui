@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { CompanyPicker } from "@/components/company-picker";
 import { AGENTS } from '@/lib/research-config';
 import { reportAgentIds } from '@/lib/report-agents';
+import { dashboardStocks } from '@/lib/dashboard-insights';
 
 const dashboardQuery = queryOptions({
   queryKey: ["dashboard"],
@@ -41,7 +42,7 @@ const dashboardQuery = queryOptions({
     const ev = cache.data ?? [];
     const hits = ev.filter((e) => e.event_type === "cache_hit").length;
     const hitRate = ev.length ? (hits / ev.length) * 100 : null;
-    return { tickers, active, mtd, hitRate, recent: rows.slice(0, 15) };
+    return { tickers, active, mtd, hitRate, stocks: dashboardStocks(rows), recent: rows.slice(0, 15) };
   },
 });
 
@@ -76,6 +77,8 @@ function Dashboard() {
         <Metric label="MTD Token Spend" value={`$${data.mtd.toFixed(2)}`} />
         <Metric label="Cache Hit Rate" value={data.hitRate == null ? "—" : `${data.hitRate.toFixed(1)}%`} />
       </div>
+      <div className="grid gap-5 border-y border-border py-4 md:grid-cols-2">{([['Recently analysed', data.stocks.recent], ['Most analysed', data.stocks.frequent]] as const).map(([title, stocks]) => <section key={title}><h2 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{title}</h2><div className="divide-y divide-border">{stocks.map(stock => <div key={stock.ticker} className="flex items-center justify-between gap-3 py-2 text-xs"><Link to="/stocks/$ticker" params={{ ticker: stock.ticker }} search={{ range: '1M', period: 'quarter' }} className="font-mono font-semibold text-primary hover:underline">{stock.ticker}</Link><span className="text-muted-foreground">{title === 'Most analysed' ? `${stock.count} completed ${stock.count === 1 ? 'report' : 'reports'}` : stock.lastAnalyzed.slice(0, 10)}</span><Button asChild variant="ghost" size="sm" className="h-6 text-xs"><Link to="/analysis/new" search={{ ticker: stock.ticker }}>Analyse <ArrowUpRight className="h-3 w-3"/></Link></Button></div>)}</div>{!stocks.length && <p className="text-xs text-muted-foreground">No completed live analyses.</p>}</section>)}</div>
+      <p className="text-[10px] text-muted-foreground">Stock activity across the latest 500 runs · demo and unfinished runs excluded.</p>
       <section className="rounded-md border border-border bg-secondary">
         <div className="flex h-9 items-center border-b border-border px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Recent Research
@@ -99,7 +102,7 @@ function Dashboard() {
                 const rep = r.research_reports?.[0];
                 return (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-card/60">
-                    <td className="px-3 py-1.5 font-semibold text-foreground">{r.ticker}<div className="mt-1 min-w-40 max-w-60 whitespace-normal font-sans text-[10px] font-normal text-muted-foreground"><span className="font-medium">{rep ? 'Agents: ' : 'Selected: '}</span>{reportAgentIds(rep?.sections, r.selected_agents).map(id => AGENTS.find(a => a.id === id)?.name ?? id.replace(/_/g, ' ')).join(' · ') || 'Not recorded'}</div></td>
+                    <td className="px-3 py-1.5 font-semibold text-foreground"><Link to="/stocks/$ticker" params={{ticker:r.ticker}} search={{range:'1M',period:'quarter'}} className="text-primary hover:underline">{r.ticker}</Link><div className="mt-1 min-w-40 max-w-60 whitespace-normal font-sans text-[10px] font-normal text-muted-foreground"><span className="font-medium">{rep ? 'Agents: ' : 'Selected: '}</span>{reportAgentIds(rep?.sections, r.selected_agents).map(id => AGENTS.find(a => a.id === id)?.name ?? id.replace(/_/g, ' ')).join(' · ') || 'Not recorded'}</div></td>
                     <td className="px-3 py-1.5 text-muted-foreground">{r.analysis_date}<div><DataFreshness date={r.created_at}/></div></td>
                     <td className="px-3 py-1.5 text-muted-foreground">{r.status}</td>
                     <td className="px-3 py-1.5"><RecBadge rec={rep?.recommendation ?? null} /></td>
