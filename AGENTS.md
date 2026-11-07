@@ -39,4 +39,3 @@
 - Technical research uses cached daily history with lookback-filtered OHLCV and technicalindicators warm-up calculations; persist dated evidence and omit unavailable values rather than inventing signals. Current stock snapshots remain excluded from historical research.
 - Route dated filings/headlines to fundamentals as well as news, sentiment, risk and synthesis; use both Yahoo hosts for headline retrieval, and label absent social feeds explicitly so proxies cannot be mistaken for measured sentiment.
 - Share filing-aligned SEC period selection across stock and research; derive quarters only from same-filing same-concept comparatives to avoid YTD mislabeling.
-- Free sources (GDELT, FINRA, World Bank, SEC 8-K 2.02) live in src/lib/sources; unavailable never blocks runs.
