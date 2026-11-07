@@ -74,6 +74,18 @@ describe('analyst evidence routing', () => {
     expect(evidenceContext('debate', evidence)).toContain('sec_fundamentals');
     expect(evidenceContext('sentiment', evidence)).not.toContain('sec_fundamentals');
   });
+  it('gives the fundamental analyst dated filings and earnings catalysts as well as financial facts', () => {
+    const context = evidenceContext('fundamentals', evidence);
+    expect(context).toContain('news_and_filings');
+    expect(context).toContain('sec_fundamentals');
+    expect(context).toContain('fred');
+  });
+  it('gives sentiment the available news and prediction evidence without treating it as social measurements', () => {
+    const context = evidenceContext('sentiment', evidence);
+    expect(context).toContain('news_and_filings');
+    expect(context).toContain('polymarket');
+    expect(context).toContain('do not infer missing sentiment shifts');
+  });
   it('hands prior findings to risk/debate, truncating long outputs', () => {
     const prompt = priorFindingsPrompt(['fundamentals: margins expanding', `technical: ${'x'.repeat(50)}`], 40);
     expect(prompt).toContain('margins expanding');
