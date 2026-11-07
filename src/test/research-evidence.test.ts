@@ -75,7 +75,7 @@ describe('analyst evidence routing', () => {
     expect(evidenceContext('sentiment', evidence)).not.toContain('sec_fundamentals');
   });
   it('hands prior findings to risk/debate, truncating long outputs', () => {
-    const prompt = priorFindingsPrompt(['fundamentals: margins expanding', `technical: ${'x'.repeat(50)}`], 30);
+    const prompt = priorFindingsPrompt(['fundamentals: margins expanding', `technical: ${'x'.repeat(50)}`], 40);
     expect(prompt).toContain('margins expanding');
     expect(prompt).toContain('[truncated]');
     expect(priorFindingsPrompt([])).toContain('independent');
