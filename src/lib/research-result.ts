@@ -72,7 +72,7 @@ export function extractJsonObject(text: string): unknown {
 
 /** Extracts and normalizes JSON-only model output; still rejects missing/invalid ratings. */
 export function parseResearchJson(text: string): ResearchResult {
-  const raw = extractJsonObject(text);
+  const raw = extractJsonObject(text) as { report?: unknown } | null;
   const o = (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.report && typeof raw.report === 'object' ? raw.report : raw) as Partial<Record<keyof ResearchResult, unknown>>;
   const rec = str(o.recommendation).toUpperCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
   const conviction = num(o.conviction_score);
