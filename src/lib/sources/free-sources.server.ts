@@ -29,16 +29,18 @@ async function gdelt(ticker: string, cutoff: string, start: string): Promise<Fre
   const q = encodeURIComponent(`"${companyName(ticker)}"`); const range = `&startdatetime=${stamp(start)}&enddatetime=${stamp(cutoff, true)}`;
   const base = `https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&format=json${range}`; const sourceUrl = `https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist${range}`;
   try {
-    const items = parseGdeltArticles(await (await get(`${base}&mode=artlist&maxrecords=40&sort=datedesc`, {}, 20000)).json().catch(() => ({})), cutoff);
-    await wait(5500); // GDELT allows one request per five seconds.
-    const tone = parseGdeltTone(await (await get(`${base}&mode=timelinetone`, {}, 20000)).json().catch(() => ({})), cutoff);
+    // GDELT allows one request per five seconds and answers rate limits with plain text, so retry once after a pause.
+    const call = async (mode: string) => { for (let i = 0; i < 2; i++) { const t = await (await get(`${base}&mode=${mode}`, {}, 20000)).text(); try { return JSON.parse(t) as unknown; } catch { await wait(6000); } } throw new Error('rate limited'); };
+    const items = parseGdeltArticles(await call('artlist&maxrecords=40&sort=datedesc'), cutoff);
+    await wait(5500);
+    const tone = parseGdeltTone(await call('timelinetone'), cutoff);
     return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, items, 'Machine-coded global news; titles and tone only, article bodies not retrieved. Tone ranges roughly −10 (negative) to +10 (positive); zero-coverage days are excluded from the average.'), tone, averageTone: averageTone(tone) };
   } catch { return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, [], 'GDELT temporarily unavailable or rate-limited.'), tone: [], averageTone: null }; }
 }
 async function finra(ticker: string, cutoff: string): Promise<FreeSourcesEvidence['shortInterest']> {
   const src = 'FINRA consolidated short interest'; const url = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data';
   try {
-    const r = await get('https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ limit: 24, compareFilters: [{ compareType: 'EQUAL', fieldName: 'symbolCode', fieldValue: ticker.toUpperCase() }, { compareType: 'LTE', fieldName: 'settlementDate', fieldValue: cutoff }], sortFields: ['-settlementDate'] }) });
+    const r = await get('https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ limit: 24, compareFilters: [{ compareType: 'EQUAL', fieldName: 'symbolCode', fieldValue: ticker.toUpperCase() }], dateRangeFilters: [{ fieldName: 'settlementDate', startDate: new Date(Date.parse(`${cutoff}T00:00:00Z`) - 200 * 86400000).toISOString().slice(0, 10), endDate: cutoff }] }) });
     const items = parseShortInterest(await r.json(), ticker, cutoff);
     return feed(src, url, cutoff, items, items.length ? 'Twice-monthly settlement data, published about 7 business days after settlement. Days to cover = short shares ÷ average daily volume.' : 'FINRA returned no short-interest records for this symbol before the cutoff.');
   } catch { return feed(src, url, cutoff, [], 'FINRA short-interest API temporarily unavailable.'); }
