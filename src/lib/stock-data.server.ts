@@ -74,7 +74,7 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   return result;
 }
 export async function getStockData(ticker:string,range:StockRange,userId:string,credential:{key:string;version:string}|null,period:'annual'|'quarter',alpha:AlphaCredential|null=null){
-  const key=`${userId}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}:${ticker}:${range}:${period}`,cached=cache.get(key);if(cached&&cached.expires>Date.now())return {...cached.data,cached:true};
+  const key=`v4:${userId}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}:${ticker}:${range}:${period}`,cached=cache.get(key);if(cached&&cached.expires>Date.now())return {...cached.data,cached:true};
   const inflight=pending.get(key);if(inflight)return inflight;
   const task=loadStock(ticker,range,credential?.key??null,period,alpha).then(data=>{if(!data.chartSource&&cached){data.candles=cached.data.candles;data.chartSource=cached.data.chartSource;data.warnings.push(`Cached chart fetched ${cached.data.fetchedAt}; current chart unavailable.`);}if(cache.size>=100)cache.delete(cache.keys().next().value??'');cache.set(key,{expires:Date.now()+60000,data});return data;}).finally(()=>pending.delete(key));pending.set(key,task);return task;
 }
