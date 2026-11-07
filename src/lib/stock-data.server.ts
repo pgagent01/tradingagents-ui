@@ -12,12 +12,22 @@ async function json(url:string,sec=false):Promise<unknown>{
   const response=await fetch(url,{signal:AbortSignal.timeout(sec?20000:8000),headers:{'User-Agent':sec?(process.env['SEC_USER_AGENT']??'TradingAgentsAI gprithvi@gmail.com'):'Mozilla/5.0',Accept:'application/json'}});
   if(!response.ok){if(sec)console.warn('SEC public request status',response.status);throw new Error('Market provider unavailable');}return response.json();
 }
-export async function secFacts(ticker:string){
-  const cached=financialCache.get(ticker);if(cached&&cached.expires>Date.now())return cached.raw;
+export async function secCik(ticker:string){
   if(!tickers||tickers.expires<Date.now())tickers={expires:Date.now()+86400000,data:object(await json('https://www.sec.gov/files/company_tickers.json',true))};
   const match=Object.values(tickers.data).map(object).find(r=>r['ticker']===ticker||r['ticker']===ticker.replace('.','-'));
-  if(!match)return null;
-  const cik=String(match['cik_str']).padStart(10,'0');const raw=await json(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`,true);
+  return match?String(match['cik_str']).padStart(10,'0'):null;
+}
+export async function secSubmissions(cik:string){return json(`https://data.sec.gov/submissions/CIK${cik}.json`,true);}
+export async function yahooNewsSearch(ticker:string){return json(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(ticker)}&newsCount=15&quotesCount=0`);}
+/** Daily bars ending on a past analysis date; Yahoo prices are split-adjusted retrospectively. */
+export async function historicalDailyCandles(ticker:string,analysisDate:string){
+  const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-400*86400;const symbol=encodeURIComponent(ticker.replace('.','-'));
+  const chart=await firstAvailable(['query1','query2'].map(host=>({source:`Yahoo Finance · ${host} · historical daily`,load:async()=>{const parsed=parseYahooChart(await json(`https://${host}.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${start}&period2=${end+1}&interval=1d`));return parsed.candles.length?parsed.candles.filter(c=>c.time<=end):null;}})));
+  return chart?{candles:chart.data,source:chart.source}:null;
+}
+export async function secFacts(ticker:string){
+  const cached=financialCache.get(ticker);if(cached&&cached.expires>Date.now())return cached.raw;
+  const cik=await secCik(ticker);if(!cik)return null;const raw=await json(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`,true);
   if(financialCache.size>=50)financialCache.delete(financialCache.keys().next().value??'');
   financialCache.set(ticker,{expires:Date.now()+21600000,raw});return raw;
 }
@@ -38,7 +48,14 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   ]);if(quote)Object.assign(result,quote.data,{quoteSource:quote.source});}
   if(fmp){try{const financial=await fmpFinancials(ticker,fmp,period);if(financial)Object.assign(result,{financialSource:`Financial Modeling Prep · ${period}`,financialDate:financial.date,ratios:financial.ratios,statements:financial.statements});}catch{/* SEC remains available without FMP entitlements. */}}
   // SEC offers filings, not a substitute for current market quotes or price history.
-  if(!result.financialSource||Object.values(result.statements).some(rows=>rows.every(r=>r.value===null))){try{const raw=await secFacts(ticker);if(raw){const financial=parseSecFinancials(raw,result.price,period);if(financial.date&&(!result.financialSource||financial.date===result.financialDate))Object.assign(result,{financialSource:`SEC EDGAR · ${period==='annual'?'annual 10-K':'quarterly 10-Q'}`,financialDate:financial.date,ratios:result.financialSource?result.ratios.map(row=>({...row,value:row.value??financial.ratios.find(r=>r.label===row.label)?.value??null})):financial.ratios,statements:result.financialSource?Object.fromEntries((['income','balance','cash'] as const).map(group=>[group,result.statements[group].every(r=>r.value===null)?financial.statements[group]:result.statements[group]])):financial.statements});if(result.marketCap===null)result.marketCap=financial.marketCap;}}catch{result.warnings.push('SEC financial filings are temporarily unavailable.');}}
+  const key=(label:string)=>label.split(' ')[0]==='EV'?'EV/EBITDA':label.split(/[ ·]/)[0];
+  if(!result.financialSource||result.ratios.some(r=>r.value===null)||Object.values(result.statements).some(rows=>!rows.length||rows.some(r=>r.value===null))){try{const raw=await secFacts(ticker);if(raw){const financial=parseSecFinancials(raw,result.price,period);
+    if(financial.date&&!result.financialSource)Object.assign(result,{financialSource:`SEC EDGAR · ${period==='annual'?'annual 10-K':'quarterly 10-Q'}`,financialDate:financial.date,ratios:financial.ratios,statements:financial.statements});
+    else if(financial.date&&financial.date===result.financialDate){let filled=false;
+      result.ratios=result.ratios.map(row=>{if(row.value!==null)return row;const v=financial.ratios.find(r=>key(r.label)===key(row.label))?.value??null;if(v!==null)filled=true;return {...row,value:v};});
+      result.statements=Object.fromEntries((['income','balance','cash'] as const).map(group=>{const own=result.statements[group];if(!own.length){if(financial.statements[group].some(r=>r.value!==null))filled=true;return [group,financial.statements[group]];}return [group,own.map(row=>{if(row.value!==null)return row;const v=financial.statements[group].find(r=>r.label===row.label)?.value??null;if(v!==null)filled=true;return {...row,value:v};})];})) as StockData['statements'];
+      if(filled)result.financialSource=`${result.financialSource} + SEC EDGAR (gaps filled)`;}
+    if(result.marketCap===null)result.marketCap=financial.marketCap;}}catch{result.warnings.push('SEC financial filings are temporarily unavailable.');}}
   if(period==='annual'&&alpha?.overview&&result.ratios.every(r=>!r.label.startsWith('EV / EBITDA')||r.value===null)){
     const overview=await alpha.overview();
     if(overview){result.ratios.push(...overview.ratios);result.financialSource=[result.financialSource,'Alpha Vantage · TTM ratios'].filter(Boolean).join(' + ');result.warnings.push(`Alpha Vantage TTM ratios: latest quarter ${overview.date??'unavailable'}; retrieved ${overview.fetchedAt}. These are not annual filing ratios.`);}
