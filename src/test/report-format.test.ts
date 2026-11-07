@@ -34,3 +34,13 @@ describe('report formatting', () => {
     expect(markdown).toContain('145');
   });
 });
+
+describe('long paragraph splitting keeps numbers', () => {
+  it('never drops text around decimals', async () => {
+    const { formatReportText } = await import('@/lib/report-format');
+    const line = ('Revenue was $716.924B with RSI14 of 54.22 and margin 10.8%. ').repeat(12).trim();
+    const out = formatReportText(line);
+    expect(out.replace(/\s+/g, ' ')).toBe(line);
+    expect(out).toContain('$716.924B');
+  });
+});
