@@ -116,7 +116,8 @@
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
 - [x] Phase 1b: rolling 12-month SEC figures with freshness line and SEC-vs-provider comparison table in each new analysis (AMZN live check: TTM to 2026-09-30)
-- [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
+- [ ] Phase 1b remaining: earnings-release (8-K) figure bridge.
+- [ ] Show saved same-period financial source comparisons in reports and exports; verify integration and authenticated desktop/mobile viewing.
 - [x] Valuation foundation: pure DCF, excess-return, FFO, revenue scenarios, WACC and target roll-forward calculators; industry method selection and peer median/IQR with 0.25–4x size filter, max 8.
 - [x] Bounded owner/version-cached FMP peer discovery and provider TTM multiples (48h successful-cache TTL); historical runs exclude current peers. AMZN authenticated desktop/mobile checked: no suitable peers returned; explicit unavailability, no runtime errors.
 - [ ] Phases 2/2b/3 remaining: peer editing, diluted-share forecasting, separate D&A/capex/working-capital projections and lease/minority/preferred adjustments, editable forecasts, bank/REIT/loss-maker live inputs and reconciled target blending. Current operating DCF uses explicitly labeled heuristic assumptions, not consensus forecasts.
