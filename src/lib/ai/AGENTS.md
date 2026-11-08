@@ -5,4 +5,4 @@
 - Persist immutable specialist content and actual models inside new report sections; comparison uses recorded metadata before mutable run configuration so saved research stays reproducible.
 - Failure events store only allowlisted stage, agent, status and retry policy; never persist exception objects, prompts, credentials or provider response bodies in diagnostics.
 - Review indicator-availability and financial-age claims against dated evidence before synthesis; store limited-scope warnings without rewriting model conclusions or claiming a complete audit.
-- Review synthesis targets before finalization; withhold invalid, unanchored or spot-copy targets with immutable warnings, without inventing replacements or replaying billed work.
+- Review synthesis targets before finalization; withhold invalid, unanchored or spot-copy targets with immutable warnings, without inventing replacements or replaying billed work.- Run recovery uses owner-scoped DB functions; resume deletes only unfinished step rows so totals never double-bill.

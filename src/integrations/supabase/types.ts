@@ -264,10 +264,13 @@ export type Database = {
           execution_lease_until: string | null
           id: string
           is_demo: boolean
+          last_error_kind: string | null
+          last_heartbeat_at: string | null
           lookback_days: number
           lovable_credits: number | null
           model_config: Json
           research_depth: string
+          resume_count: number
           selected_agents: Json
           started_at: string | null
           status: string
@@ -286,10 +289,13 @@ export type Database = {
           execution_lease_until?: string | null
           id?: string
           is_demo?: boolean
+          last_error_kind?: string | null
+          last_heartbeat_at?: string | null
           lookback_days?: number
           lovable_credits?: number | null
           model_config?: Json
           research_depth?: string
+          resume_count?: number
           selected_agents?: Json
           started_at?: string | null
           status?: string
@@ -308,10 +314,13 @@ export type Database = {
           execution_lease_until?: string | null
           id?: string
           is_demo?: boolean
+          last_error_kind?: string | null
+          last_heartbeat_at?: string | null
           lookback_days?: number
           lovable_credits?: number | null
           model_config?: Json
           research_depth?: string
+          resume_count?: number
           selected_agents?: Json
           started_at?: string | null
           status?: string
@@ -451,6 +460,7 @@ export type Database = {
       }
       advance_demo_run: { Args: { _run_id: string }; Returns: undefined }
       claim_research_execution: { Args: { _run_id: string }; Returns: boolean }
+      expire_stale_research_run: { Args: { _run_id: string }; Returns: boolean }
       finalize_research_report: {
         Args: { _report: Json; _run_id: string }
         Returns: string
@@ -463,10 +473,12 @@ export type Database = {
         Returns: boolean
       }
       is_valid_invite_code: { Args: { _code: string }; Returns: boolean }
+      resume_research_run: { Args: { _run_id: string }; Returns: Json }
       save_agent_result: {
         Args: { _output_id: string; _result: Json }
         Returns: undefined
       }
+      touch_research_run: { Args: { _run_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

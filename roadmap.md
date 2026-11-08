@@ -107,3 +107,12 @@
 - [ ] Bluesky social feed — blocked: search needs an authenticated account (user to supply app password)
 - [ ] OECD indicators — deferred
 - [x] Answered: no new agents needed; existing analysts consume new sources
+
+## Price target & intrinsic value plan (approved 2026-11-08)
+- [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
+- [ ] Phase 7 extras: refresh stale evidence when resuming >24h later; live resume check on a real failed run.
+- [ ] Phases 1/1b: reconciled inputs, rolling TTM, 8-K bridge, reconciliation table.
+- [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests.
+- [ ] Phases 4/4b: feed valuation to analysts, prompt improvements.
+- [ ] Phases 5/6: Valuation card, exports, verification run.
+- [ ] Phase 8: report scorecard and calibration.

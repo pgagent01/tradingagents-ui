@@ -4,11 +4,11 @@ import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { queryOptions,useSuspenseQuery,useQueryClient,useMutation } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Activity, CheckCircle2, Circle, XCircle, Square, FileText } from 'lucide-react';
+import { Activity, CheckCircle2, Circle, XCircle, Square, FileText, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { UsageMetrics } from '@/components/usage-metrics';
-import { getExecution,advanceDemo,cancelAnalysis } from '@/lib/research.functions';
+import { getExecution,advanceDemo,cancelAnalysis,resumeAnalysis } from '@/lib/research.functions';
 import { CreditMetric } from '@/components/credit-metric';
 import { useRef } from 'react';
 import { AGENTS } from '@/lib/research-config';
@@ -46,6 +46,9 @@ function Execution() {
   const [selected,setSelected]=useState<string|null>(null);
   const [demoError,setDemoError]=useState('');
   const active=['pending','running'].includes(data.run.status);
+  const resume=useServerFn(resumeAnalysis);
+  const canResume=!data.run.is_demo&&['failed','cancelled'].includes(data.run.status)&&(data.run.resume_count??0)<3;
+  const resumeMut=useMutation({mutationFn:() => resume({data:{id}}),onSuccess:async (r) => {toast.success(`Resuming from ${r.from}. Finished steps are kept.`);await qc.invalidateQueries({queryKey:['execution',id]});void startExecution();},onError:(e:Error) => toast.error(e.message)});
   const cancelMut=useMutation({mutationFn:() => cancel({data:{id}}),onSuccess:() => qc.invalidateQueries({queryKey:['execution',id]}),onError:(e:Error) => toast.error(e.message)});
   useEffect(() => { const timer=window.setInterval(() => setNow(Date.now()),1000);return () => window.clearInterval(timer); },[]);
   useEffect(() => {
@@ -70,7 +73,7 @@ function Execution() {
   const failureStatus = failureEvent?.data && typeof failureEvent.data === 'object' && !Array.isArray(failureEvent.data) ? failureEvent.data['status'] : undefined;
   const visibleError = data.run.error_message || streamError;
   return <div className="space-y-4">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-mono text-xl font-semibold">{data.run.ticker} <span className="text-sm font-normal text-muted-foreground">/ Execution</span></h1><p className="mt-1 text-xs text-muted-foreground">{data.run.analysis_date} · {data.run.research_depth} · {data.run.status}{data.run.is_demo?' · DEMO':''} · Lookback {data.run.lookback_days} days · {String((data.run.model_config as {preset?:string})?.preset??'Custom')}</p></div><div className="flex items-center gap-3"><span className="font-mono text-xs">{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span><Button variant="outline" size="sm" disabled={!active||cancelMut.isPending} onClick={() => {requestAbort.current?.abort();cancelMut.mutate();}}><Square className="h-3 w-3" />Cancel Run</Button></div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-mono text-xl font-semibold">{data.run.ticker} <span className="text-sm font-normal text-muted-foreground">/ Execution</span></h1><p className="mt-1 text-xs text-muted-foreground">{data.run.analysis_date} · {data.run.research_depth} · {data.run.status}{data.run.is_demo?' · DEMO':''} · Lookback {data.run.lookback_days} days · {String((data.run.model_config as {preset?:string})?.preset??'Custom')}</p></div><div className="flex items-center gap-3"><span className="font-mono text-xs">{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span><Button variant="outline" size="sm" disabled={!active||cancelMut.isPending} onClick={() => {requestAbort.current?.abort();cancelMut.mutate();}}><Square className="h-3 w-3" />Cancel Run</Button>{canResume && <Button size="sm" disabled={resumeMut.isPending||executing} onClick={() => resumeMut.mutate()}><RotateCcw className="h-3 w-3" />Resume run</Button>}</div></header>
     <UsageMetrics input={data.run.total_input_tokens} output={data.run.total_output_tokens} cost={Number(data.run.total_cost_usd)} demo={data.run.is_demo} />
     {data.run.is_demo && <p className="text-xs text-warning">Demo simulation · mock agent events · hypothetical cost shown above · actual charge $0.</p>}
     <CreditMetric credits={data.run.is_demo?0:data.run.lovable_credits} basis={data.run.credit_basis} />

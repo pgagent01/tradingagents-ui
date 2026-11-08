@@ -48,7 +48,7 @@ describe('real execution analyst handoffs', () => {
       }, rpc,
     } as unknown as SupabaseClient<Database>;
     const role = { provider: 'groq', model: 'test-model', inputRate: 1, outputRate: 1 };
-    const run: Database['public']['Tables']['research_runs']['Row'] = { id: 'run-test', user_id: 'owner-test', ticker: 'LITE', analysis_date: '2026-11-07', lookback_days: 90, research_depth: 'quick', selected_agents: agents, model_config: { roles: Object.fromEntries([...agents, 'synthesis'].map(a => [a, role])) }, status: 'running', completed_at: null, created_at: '2026-11-07T00:00:00Z', started_at: '2026-11-07T00:00:00Z', credit_basis: null, error_message: null, execution_lease_until: null, is_demo: false, lovable_credits: null, total_cost_usd: 0, total_input_tokens: 0, total_output_tokens: 0 };
+    const run: Database['public']['Tables']['research_runs']['Row'] = { id: 'run-test', user_id: 'owner-test', ticker: 'LITE', analysis_date: '2026-11-07', lookback_days: 90, research_depth: 'quick', selected_agents: agents, model_config: { roles: Object.fromEntries([...agents, 'synthesis'].map(a => [a, role])) }, status: 'running', completed_at: null, created_at: '2026-11-07T00:00:00Z', started_at: '2026-11-07T00:00:00Z', credit_basis: null, error_message: null, execution_lease_until: null, last_heartbeat_at: null, resume_count: 0, last_error_kind: null, is_demo: false, lovable_credits: null, total_cost_usd: 0, total_input_tokens: 0, total_output_tokens: 0 };
     await executeResearch(sb, 'owner-test', run, undefined, 'synthetic-secret', new AbortController().signal, () => {});
     expect(calls).toHaveLength(7);
     for (const index of [4, 5, 6]) {
