@@ -1,5 +1,15 @@
 import { sectionObject } from '@/lib/report-content';
 export type ClaimWarning = { code: string; section: string; message: string; evidence: string };
+/** Range checks use twelve-month scenario targets, not spot intrinsic values. */
+export function reviewCalculatedTarget(modelTarget: number | null, valuation: {priceTarget: number | null; intrinsic?: {scenarios: {target: number | null}[]}}, price: unknown) {
+  const calculated=valuation.priceTarget;
+  if (calculated===null) return reviewPriceTarget(modelTarget,price);
+  const checked=reviewPriceTarget(calculated,price);
+  const targets=(valuation.intrinsic?.scenarios??[]).map(s=>s.target).filter((n):n is number=>n!==null&&Number.isFinite(n)&&n>0);
+  const warnings=[...checked.warnings];
+  if (modelTarget!==null && targets.length && (modelTarget<Math.min(...targets) || modelTarget>Math.max(...targets))) warnings.push({code:'model_target_outside_calculated_range',section:'final_synthesis',message:'The model target is outside the calculated twelve-month scenario range. The stored headline uses the calculated base target; model prose is retained for transparency.',evidence:`Model target ${modelTarget}; calculated base ${calculated}; scenario target range ${Math.min(...targets)}–${Math.max(...targets)}. These are assumption-based estimates, not verified future prices.`});
+  return {target:checked.target,warnings};
+}
 /** Withhold unsupported targets without discarding paid research or inventing replacements. */
 export function reviewPriceTarget(target: number | null, price: unknown): { target: number | null; warnings: ClaimWarning[] } {
   const quoted = typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;

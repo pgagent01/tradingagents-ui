@@ -1,4 +1,4 @@
-import { claimReviewPrompt, reviewReportClaims, reviewPriceTarget } from '@/lib/report-quality';
+import { claimReviewPrompt, reviewReportClaims, reviewCalculatedTarget } from '@/lib/report-quality';
 import type { ResearchProgress } from '@/lib/research-diagnostics';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -30,6 +30,7 @@ import { emptyStock } from '@/lib/stock-data';
 import { reconcileWithSnapshot } from '@/lib/valuation/reconcile';
 import { getComparables } from '@/lib/valuation/comparables.server';
 import { valuationEvidence } from '@/lib/valuation/engine';
+import { valuationRates } from '@/lib/valuation/rates.server';
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -69,7 +70,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
   if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData);if(rec.length)fundamentals.reconciliation=rec;}
   const comparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
-  const valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date);
+  const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
+  const valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
   const evidence={macro,predictions,news,fundamentals,free,valuation};
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
   if(evidenceEvent.error)throw evidenceEvent.error;
@@ -144,7 +146,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(final.model!==String(sectionObject(roles[synthesisRole])['model'])){const fix=await sb.from('agent_outputs').update({model_used:final.model}).eq('id',synthesisOutput.id);if(fix.error)throw fix.error;}
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
-  const targetReview=reviewPriceTarget(final.object.price_target,stockSnapshot?.price);
+  const targetReview=reviewCalculatedTarget(final.object.price_target,valuation,stockSnapshot?.price);
   const f={...final.object,price_target:targetReview.target,storage_version:2,valuation,quality_review:{version:2,scope:'Indicator availability, annual financial age and price-target sanity only; not a full audit',warnings:[...reviewReportClaims({...Object.fromEntries(Object.entries(storedAnalysts).map(([a,v])=>[a,v.content])),executive_summary:final.object.executive_summary,technical_analysis:final.object.technical_analysis,fundamental_analysis:final.object.fundamental_analysis,final_synthesis:final.object.final_synthesis},technical,fundamentals,run.analysis_date),...targetReview.warnings]},analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
   progress.stage='report_finalize';
   const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;

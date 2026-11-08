@@ -1,0 +1,39 @@
+import { describe,it,expect } from 'vitest';
+import { valuationBalance } from '@/lib/valuation/financial-inputs';
+import { forecastScenario,sensitivityGrid, type ForecastInput } from '@/lib/valuation/forecast';
+const anchor={end:'2026-09-30',filed:'2026-10-30',accn:'Q3'};
+const fact=(val:number,accn='Q3')=>({units:{USD:[{...anchor,accn,val,form:'10-Q'}]}});
+describe('filing-aligned equity conversion',()=>{
+ it('does not double-count long-term debt aggregate and components',()=>{
+  const balance=valuationBalance({LongTermDebt:fact(999),LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10),ShortTermBorrowings:fact(5)},anchor,'2026-11-08');
+  expect(balance.debt?.value).toBe(115);
+ });
+ it('uses an explicit complete debt aggregate alone',()=>{
+  expect(valuationBalance({DebtCurrentAndNoncurrent:fact(120),LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10),ShortTermBorrowings:fact(5)},anchor,'2026-11-08').debt?.value).toBe(120);
+ });
+ it('never treats absent short-term borrowing as zero',()=>{
+  expect(valuationBalance({LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10)},anchor,'2026-11-08').debt).toBeNull();
+ });
+ it('never combines components from different filings',()=>{
+  expect(valuationBalance({LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10,'OTHER'),ShortTermBorrowings:fact(5)},anchor,'2026-11-08').debt).toBeNull();
+ });
+});
+const input:ForecastInput={revenue:1000,debt:100,cash:50,shares:10,marketCap:900,assumptions:{growth:.05,margin:.2,taxRate:.25,reinvestment:.4,terminalGrowth:.025,riskFree:.04,beta:1,equityPremium:.05,creditSpread:.02,dividendsPerShare:0}};
+describe('explicit FCFF forecasts',()=>{
+ it('calculates after-tax EBIT less explicit net reinvestment',()=>{
+  const base=forecastScenario(input,'Base');
+  expect(base.forecasts).toHaveLength(5);
+  expect(base.forecasts[0]?.revenue).toBe(1050);
+  expect(base.forecasts[0]?.fcff).toBeCloseTo(94.5);
+  expect(base.discountRate).toBeCloseTo(.0855);
+  expect(base.target).toBeCloseTo((base.value??0)*1.09);
+ });
+ it('rejects reinvestment exceeding NOPAT rather than fabricating terminal cash flow',()=>{
+  expect(forecastScenario({...input,assumptions:{...input.assumptions,reinvestment:1.1}},'Base').value).toBeNull();
+ });
+ it('creates nine sensitivities and decreases value at a higher discount rate',()=>{
+  const grid=sensitivityGrid(input,forecastScenario(input,'Base'));
+  expect(grid).toHaveLength(9);
+  expect(grid[1]?.value).toBeGreaterThan(grid[7]?.value??Infinity);
+ });
+});

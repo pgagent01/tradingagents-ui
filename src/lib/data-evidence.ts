@@ -9,6 +9,7 @@ export const MACRO_SERIES = [
   { id: 'CPIAUCSL', name: 'Consumer price index', unit: 'index (1982–84 = 100)', change: 'annual' },
   { id: 'GDPC1', name: 'Real GDP', unit: 'billions of chained 2017 USD', change: 'quarterly' },
   { id: 'UNRATE', name: 'Unemployment rate', unit: '%', change: 'points' },
+  { id: 'DGS10', name: '10-year Treasury yield', unit: '%', change: 'points' },
 ] as const;
 export type MacroMetric = { series: string; name: string; unit: string; date: string; value: number | null; trend: string; source: string };
 export type MacroFeed = { status: 'live' | 'cached' | 'unavailable'; asOf: string; fetchedAt: string | null; note: string; metrics: MacroMetric[] };

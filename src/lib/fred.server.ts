@@ -23,7 +23,7 @@ export async function getFredEvidence(sb:EvidenceClient,userId:string,asOf:strin
   if (!key) return unavailable('No FRED key configured. No mock macroeconomic values are used.');
   const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key.key_ciphertext));
   const fingerprint = Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  const cacheKey = `v1:${asOf}:${fingerprint}`;
+  const cacheKey = `v2:${asOf}:${fingerprint}`;
   const cached = await readDataCache(sb,userId,'fred',cacheKey);
   const cachedFeed = cached?.payload as MacroFeed | undefined;
   if (cached?.fresh && cachedFeed?.metrics) return {...cachedFeed,status:'cached'};
@@ -39,7 +39,7 @@ export async function getFredEvidence(sb:EvidenceClient,userId:string,asOf:strin
   if (signal.aborted) throw new DOMException('Cancelled','AbortError');
   const available = metrics.flatMap(m=>m!==null && m.value!==null?[m]:[]);
   if (!available.length) return cachedFeed?.metrics?.length ? {...cachedFeed,status:'cached',note:`Stale cache fallback; retrieved ${cachedFeed.fetchedAt}. FRED could not be refreshed.`} : unavailable('FRED observations unavailable. Research proceeds without macro values.');
-  const feed:MacroFeed = {status:'live',asOf,fetchedAt:new Date().toISOString(),note:`Point-in-time FRED vintage ${asOf}; observation dates differ by release frequency. ${available.length}/5 series available. Trends compare published observations, not live prices.`,metrics:available};
+  const feed:MacroFeed = {status:'live',asOf,fetchedAt:new Date().toISOString(),note:`Point-in-time FRED vintage ${asOf}; observation dates differ by release frequency. ${available.length}/${MACRO_SERIES.length} series available. Trends compare published observations, not live prices.`,metrics:available};
   await writeDataCache(sb,userId,'fred',cacheKey,feed,60*60*1000);
   return feed;
 }

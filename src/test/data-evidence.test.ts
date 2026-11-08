@@ -6,7 +6,7 @@ import { getPredictionEvidence } from '@/lib/polymarket.server';
 afterEach(()=>vi.restoreAllMocks());
 describe('FRED evidence rules',()=>{
   it('keeps data credentials out of LLM providers',()=>{expect(normalizeCredentialProvider('FRED')).toBe('fred');expect(()=>normalizeProvider('fred')).toThrow();});
-  it('retrieves all five requested macro series',()=>expect(MACRO_SERIES.map(s=>s.id)).toEqual(['FEDFUNDS','T10Y2Y','CPIAUCSL','GDPC1','UNRATE']));
+  it('retrieves the five macro series plus the valuation Treasury yield',()=>expect(MACRO_SERIES.map(s=>s.id)).toEqual(['FEDFUNDS','T10Y2Y','CPIAUCSL','GDPC1','UNRATE','DGS10']));
   it('uses the analysis date as both observation cutoff and vintage',()=>{const u=fredObservationsUrl('test-key','GDPC1','2025-01-31');expect(u.searchParams.get('observation_end')).toBe('2025-01-31');expect(u.searchParams.get('realtime_start')).toBe('2025-01-31');expect(u.searchParams.get('realtime_end')).toBe('2025-01-31');});
   it('computes CPI annual inflation without treating missing values as zero',()=>{const series=MACRO_SERIES.find(s=>s.id==='CPIAUCSL');if(!series)throw Error('Missing CPI');expect(macroMetric(series,{observations:[{date:'2026-02-01',value:'.'},{date:'2026-01-01',value:'105'},{date:'2025-01-01',value:'100'}]})).toMatchObject({value:105,trend:'5.00% year-over-year inflation'});});
   it('labels real GDP level and computes annualized growth separately',()=>{const series=MACRO_SERIES.find(s=>s.id==='GDPC1');if(!series)throw Error('Missing GDP');expect(macroMetric(series,{observations:[{date:'2026-04-01',value:'101'},{date:'2026-01-01',value:'100'}]})).toMatchObject({value:101,trend:'4.06% annualized quarter-over-quarter growth'});});
