@@ -1,4 +1,4 @@
-import { numeric } from '@/lib/stock-data';
+import { numeric, yahooSymbol } from '@/lib/stock-data';
 export type YahooStats = { enterpriseValue: number | null; evSales: number | null; evEbitda: number | null; forwardPe: number | null; peg: number | null; beta5y: number | null; roe: number | null; roa: number | null; dividendYield: number | null; currency: string | null };
 let session: { cookie: string; crumb: string; at: number } | null = null;
 const UA = { 'User-Agent': 'Mozilla/5.0' };
@@ -18,7 +18,7 @@ const raw = (o: unknown, k: string) => { const v = (o as Record<string, unknown>
 /** Provider-reported key statistics (Yahoo's own definitions and periods); null when unavailable, never estimated. */
 export async function yahooStats(ticker: string): Promise<YahooStats | null> {
   const s = await auth(); if (!s) return null;
-  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=defaultKeyStatistics,financialData,summaryDetail,price&crumb=${encodeURIComponent(s.crumb)}`;
+  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yahooSymbol(ticker))}?modules=defaultKeyStatistics,financialData,summaryDetail,price&crumb=${encodeURIComponent(s.crumb)}`;
   const r = await fetch(url, { headers: { ...UA, Cookie: s.cookie }, signal: AbortSignal.timeout(6000) }).catch(() => null);
   if (!r || !r.ok) { if (r?.status === 401) session = null; return null; }
   const res = ((await r.json().catch(() => null)) as { quoteSummary?: { result?: Record<string, unknown>[] } } | null)?.quoteSummary?.result?.[0];
