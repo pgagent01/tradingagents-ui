@@ -29,7 +29,7 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const la=ann.at(-1); const anchor=la?{accn:la.accession,end:la.end,start:la.start??null,filed:la.filed,form:la.form}:null;
   const gaap=((facts as {facts?:{'us-gaap'?:Record<string,unknown>}}|null)?.facts?.['us-gaap'])??null;
   const g=(tags:string[],kind:'annual'|'instant')=>gaap&&anchor?selectSecFact(gaap,tags,anchor,kind,'USD',today)?.value??null:null;
-  const ab=gaap&&anchor?valuationBalance(gaap,anchor,today):null;
+  const ab=gaap&&anchor?valuationBalance(gaap,anchor,today,(facts as {facts?:{dei?:Record<string,unknown>}}).facts?.dei):null;
   const gi=(tags:string[])=>g(tags,'instant');
   const dbt=snapshotDebt(ab?.debt?.value??null,{longTermDebt:gi(['LongTermDebt']),debtCurrent:gi(['DebtCurrent']),ltdCurrent:gi(['LongTermDebtCurrent']),shortTerm:gi(['ShortTermBorrowings','CommercialPaper','ShortTermDebtCurrent'])});
   const ext=usd&&aligned?extendedRatios(cap,dbt.value,ab?.cash?.value??null,revenue,f?.ttm?.operatingIncome.value??null,f?.ttm?.freeCashFlow??null):{};

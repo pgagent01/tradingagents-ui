@@ -28,5 +28,5 @@ function secRowsSameFiling(dei: Record<string, unknown>, anchor: Record<string, 
   if(!rows.length) return null;
   const total=rows.reduce((a,r)=>a+Number(r['val']),0); const r=rows[0]!;
   // Multiple classes are summed; all come from the same cover page.
-  return {value:total,tag:'dei:EntityCommonStockSharesOutstanding',end:String(r['end']),filed:String(r['filed']),accession:String(r['accn']??''),form:String(r['form']??''),derived:rows.length>1} as unknown as SecFact;
+  return {value:total,tag:'dei:EntityCommonStockSharesOutstanding',unit:'shares',start:null,end:String(r['end']),filed:String(r['filed']),accession:typeof r['accn']==='string'?r['accn']:null,derived:rows.length>1};
 }

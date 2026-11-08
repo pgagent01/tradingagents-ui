@@ -99,7 +99,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   return {
     status: annual.length || latestQuarter ? 'available' : 'unavailable', source: 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency: 'USD',
     annual: annual.slice(-4), latestQuarter,
-    ...(balanceAnchor ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff)} : {}),
+    ...(balanceAnchor ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff,object(object(body['facts'])['dei']))} : {}),
     ttm: ttmEvidence(facts, { revenue: REVENUE, operatingIncome: TAGS.operatingIncome, netIncome: TAGS.netIncome, operatingCashFlow: TAGS.operatingCashFlow, capex: TAGS.capex }, cutoff),
     note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD filers may report no USD facts.',
   };
