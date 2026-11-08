@@ -3,6 +3,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const calls = vi.hoisted(() => [] as string[]);
+const savedOutputs=vi.hoisted(()=>[] as Record<string,unknown>[]);
 vi.mock('@ai-sdk/openai-compatible', () => ({ createOpenAICompatible: () => () => ({}) }));
 vi.mock('@/lib/crypto.server', () => ({ decryptSecret: async () => 'synthetic-test-key' }));
 vi.mock('@/lib/fred.server', () => ({ getFredEvidence: async () => ({ status: 'live', metrics: [{ series: 'FEDFUNDS', value: 4 }], note: '', asOf: '2026-11-07', fetchedAt: '2026-11-07' }) }));
@@ -42,7 +43,7 @@ describe('real execution analyst handoffs', () => {
         const query = {
           select: () => query, eq: () => query, insert: () => { inserted = true; return query; }, update: () => query,
           single: async () => ({ data: table === 'user_api_keys' ? { key_ciphertext: 'synthetic-ciphertext' } : table === 'research_runs' ? { status: 'running' } : { id: 'output-test' }, error: null }),
-          then: (resolve: (v: unknown) => unknown) => Promise.resolve({ data: table === 'agent_outputs' && !inserted ? [] : null, error: null }).then(resolve),
+          then: (resolve: (v: unknown) => unknown) => Promise.resolve({ data: table === 'agent_outputs' && !inserted ? savedOutputs : null, error: null }).then(resolve),
         };
         return query;
       }, rpc,
@@ -67,5 +68,14 @@ describe('real execution analyst handoffs', () => {
     expect(storedReport['quality_review']).toMatchObject({version:2,warnings:[]});
     expect(calls[6]).toContain('warm-up bars are separate');
     expect(storedReport['analyst_outputs']).toMatchObject({fundamentals:{content:'fundamentals verified finding',model:'test-model'},risk:{content:'risk verified finding'}});
+    expect(storedReport['scoring_anchor']).toMatchObject({date:'2026-11-07',price:null,horizonMonths:12});
+    const firstCalls=[...calls];calls.length=0;
+    savedOutputs.push({agent_id:'fundamentals',status:'completed',content:'original paid finding',model_used:'original-model',created_at:'2026-11-07T00:00:00Z',input_tokens:100,output_tokens:50,cost_usd:.1,lovable_credits:0});
+    await executeResearch(sb,'owner-test',{...run,resume_count:1},undefined,'synthetic-secret',new AbortController().signal,()=>{});
+    expect(firstCalls).toHaveLength(7);expect(calls).toHaveLength(6);
+    expect(calls.some(c=>c.includes('Your role: fundamentals.'))).toBe(false);
+    expect(calls.at(-1)).toContain('original paid finding');
+    expect(storedReport['analyst_outputs']).toMatchObject({fundamentals:{content:'original paid finding',model:'original-model',evidenceDate:'2026-11-07T00:00:00Z'}});
+    savedOutputs.length=0;
   });
 });
