@@ -8,7 +8,7 @@ const finite = (v: unknown) => typeof v === 'number' && Number.isFinite(v) ? v :
 const text = (v: unknown) => typeof v === 'string' ? v : '';
 export function savedFinancialComparisons(value: unknown): SavedFinancialComparison[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap(v => {
+  return value.flatMap<SavedFinancialComparison>(v => {
     const r = record(v), metric = text(r['metric']);
     if (!metric) return [];
     const base = { metric, sec: finite(r['sec']), used: text(r['used']) || null, flagged: r['flagged'] === true, note: text(r['note']) };
