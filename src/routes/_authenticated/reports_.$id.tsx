@@ -1,5 +1,6 @@
 import { ReportQuality } from '@/components/report-quality';
 import { ReportValuation } from '@/components/report-valuation';
+import { ReportScorecard } from '@/components/report-scorecard';
 import {DataFreshness} from '@/components/data-freshness';
 import { createFileRoute,Link } from '@tanstack/react-router';
 import { queryOptions,useSuspenseQuery } from '@tanstack/react-query';
@@ -49,6 +50,7 @@ function ReportDetail() {
     <section className="space-y-3 border-t border-border pt-4"><h2 className="text-xl font-semibold">Financial Snapshot</h2>{financial.length?<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 font-medium">Metric</th><th className="py-2 text-right font-medium">Reported value</th></tr></thead><tbody>{financial.map((f,i)=><tr key={i} className="border-b border-border"><td className="py-2 capitalize"><MetricLabel label={f.metric}/></td><td className="py-2 text-right font-mono">{f.value}</td></tr>)}</tbody></table></div>:<p className="text-sm text-muted-foreground">No financial figures were supplied. Values are never inferred.</p>}</section>
     <ReportQuality sections={r.sections} summary={r.executive_summary??''} analysisDate={run.analysis_date}/><DataFreshness date={r.created_at} origin="Saved report · not live research"/><ReportEvidence value={s['external_evidence']} />
     <ReportValuation value={s['valuation']}/>
+    {!run.is_demo&&<ReportScorecard id={r.id}/>}
     <ReportStockSnapshot value={s['stock_snapshot']} status={s['stock_snapshot_status']} ticker={r.ticker}/>
     <ReportTechnical value={s['technical_evidence']}/>
     <section className="space-y-3 border-t border-border pt-4"><h2 className="text-xl font-semibold">Research Team & Models</h2><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2">Agent</th><th>Provider</th><th>Model</th><th>Status</th></tr></thead><tbody>{outputs.map((o,i)=><tr key={`${o.agent_id}-${i}`} className="border-b border-border"><td className="py-3 capitalize">{o.agent_id.replace(/_/g,' ')}</td><td>{contentText(sectionObject(sectionObject(sectionObject(run.model_config)['roles'])[o.agent_id])['provider'])||'Not recorded'}</td><td className="break-all font-mono text-xs">{o.model_used??'Not recorded'}</td><td>{o.status??'Not recorded'}</td></tr>)}</tbody></table></div></section>

@@ -26,8 +26,8 @@ export async function yahooNewsSearch(ticker:string){
   return feed?.data??{news:[]};
 }
 /** Daily bars ending on a past analysis date; Yahoo prices are split-adjusted retrospectively. */
-export async function historicalDailyCandles(ticker:string,analysisDate:string){
-  const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-400*86400;const symbol=encodeURIComponent(ticker.replace('.','-'));
+export async function historicalDailyCandles(ticker:string,analysisDate:string,lookbackDays=400){
+  const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-Math.min(800,Math.max(1,lookbackDays))*86400;const symbol=encodeURIComponent(ticker.replace('.','-'));
   const chart=await firstAvailable(['query1','query2'].map(host=>({source:`Yahoo Finance · ${host} · historical daily`,load:async()=>{const parsed=parseYahooChart(await json(`https://${host}.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${start}&period2=${end+1}&interval=1d`));return parsed.candles.length?parsed.candles.filter(c=>c.time<=end):null;}})));
   return chart?{candles:chart.data,source:chart.source}:null;
 }
