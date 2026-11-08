@@ -42,4 +42,13 @@ describe('explicit FCFF forecasts',()=>{
   expect(grid).toHaveLength(9);
   expect(grid[1]?.value).toBeGreaterThan(grid[7]?.value??Infinity);
  });
+});import { valuationBalance as vb2 } from '@/lib/valuation/financial-inputs';
+describe('cover-page shares and lease-inclusive noncurrent debt',()=>{
+ it('uses same-filing dei shares and LongTermDebtAndCapitalLeaseObligations + DebtCurrent (Corning style)',()=>{
+  const f=(tag:string,val:number,unit='USD')=>({[tag]:{units:{[unit]:[{val,end:'2026-09-30',filed:'2026-10-30',accn:'A1',form:'10-Q'}]}}});
+  const gaap={...f('LongTermDebtAndCapitalLeaseObligations',7267e6),...f('DebtCurrent',933e6),...f('CashAndCashEquivalentsAtCarryingValue',2537e6)};
+  const dei={EntityCommonStockSharesOutstanding:{units:{shares:[{val:861401106,end:'2026-10-24',filed:'2026-10-30',accn:'A1',form:'10-Q'},{val:5,end:'2026-10-24',filed:'2026-10-30',accn:'OTHER'}]}}};
+  const b=vb2(gaap,{accn:'A1',end:'2026-09-30',filed:'2026-10-30',form:'10-Q'},'2026-11-08',dei);
+  expect(b.debt?.value).toBe(8200e6); expect(b.shares?.value).toBe(861401106); expect(b.cash?.value).toBe(2537e6);
+ });
 });
