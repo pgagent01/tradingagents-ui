@@ -134,3 +134,4 @@
 - [ ] Rolling-TTM forecast outcome matching and certified historical backtesting — await same-window subsequent filing reconciliation and point-in-time provider revision/peer membership coverage; current outcome scoring is not a full methodological backtest.
 - [x] Latest complete billed report integration verification — HPE report 234cb43e completed end to end (Nov 8).
 - [x] HPE end-to-end report + database/cache integrity check (Nov 8): 7 agents, costs consistent, no orphan/duplicate rows; fixed HPE debt tagging, Blume beta, implausible-target guard, readable valuation export
+- [x] Comparable companies snapshot table on reports (3 model-picked peers; price moves, P/E, sales, market cap)
