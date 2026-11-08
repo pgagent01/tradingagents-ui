@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Prefer compatible directly sourced standard metrics, retain calculated fallbacks and provenance, and verify source selection/cache integration.
+- [x] Prefer directly reported standard trailing metrics in comparables, show provider TTM ratios first on stock pages without replacing filing-period ratios, share owner-scoped durable Yahoo statistics and use provider beta before fetching benchmark fallback. 321 tests passed; authenticated four-company report table, cached refresh and DELL stock provider ratios verified without runtime errors. Historical evidence and saved reports unchanged.
 
 - [x] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis; regression tests pass.
 - [x] Audit new free-source date semantics and analyst routing: withhold unverified OTC-only FINRA coverage, exclude revised/publication-unknown feeds from historical runs, verify unambiguous earnings excerpts and retain neutral GDELT tone. 206 tests passed; final focused 20 tests passed; build OK.
