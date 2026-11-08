@@ -36,3 +36,5 @@ describe('snapshot debt fallback',()=>{
  it('NetApp style: long-term total plus tagged commercial paper (zero)',()=>{expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTerm:0}).value).toBe(2487);expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTerm:100}).value).toBe(2587);});
  it('strict total wins',()=>{expect(snapshotDebt(9666,{longTermDebt:1,debtCurrent:1,ltdCurrent:1,shortTerm:1}).value).toBe(9666);});
 });
+import { ratioMismatch } from '@/lib/valuation/yahoo-stats.server';
+describe('provider cross-check',()=>{it('flags >15% gaps only',()=>{expect(ratioMismatch(1.8,1.758)).toBe(false);expect(ratioMismatch(2.5,1.758)).toBe(true);expect(ratioMismatch(null,1.7)).toBe(false);});});
