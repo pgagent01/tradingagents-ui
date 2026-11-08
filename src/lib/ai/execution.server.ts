@@ -33,6 +33,7 @@ import { valuationEvidence } from '@/lib/valuation/engine';
 import { valuationRates } from '@/lib/valuation/rates.server';
 import { peerSuggestionPrompt } from '@/lib/valuation/peer-suggestions';
 import { verifyModelPeers } from '@/lib/valuation/model-peers.server';
+import { resumeEvidencePolicy } from '@/lib/evidence-freshness';
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -50,6 +51,11 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const roles=sectionObject(sectionObject(run.model_config)['roles']);const agents=Array.isArray(run.selected_agents)?run.selected_agents.filter((a):a is string=>typeof a==='string'):[];
   const previous=await sb.from('agent_outputs').select('*').eq('run_id',run.id);if(previous.error) throw previous.error;
   const completed=new Map((previous.data??[]).filter(o=>o.status==='completed').map(o=>[o.agent_id,o]));
+  const freshness=resumeEvidencePolicy(run.analysis_date,run.started_at,run.resume_count);
+  if(freshness.refresh){
+    const invalidated=await sb.from('research_data_cache').update({expires_at:new Date(0).toISOString()}).eq('user_id',userId).in('provider',['sec-fundamentals','news-evidence','sec-earnings','gdelt','finra-short','worldbank','valuation-peers','stocks','fred','polymarket']);
+    if(invalidated.error)throw new SafeAiError(503,'Stale evidence could not be refreshed safely. Finished steps are still saved.');
+  }
   const summaries:string[]=[];let credits=0;let creditsKnown=true;let totalIn=0,totalOut=0,totalCost=0;
   let catalog:ReturnType<typeof readCatalog>=[];let requestId:string|undefined;
   const hasBuiltIn=Object.values(roles).some(r=>sectionObject(r)['provider']==='lovable');
@@ -83,6 +89,9 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   }
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
   if(evidenceEvent.error)throw evidenceEvent.error;
+  const evidenceRecordedAt=new Date().toISOString();
+  const freshnessEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:freshness.historical?'Original analysis date preserved; current market evidence excluded.':freshness.refresh?'Stale current-date evidence refreshed for unfinished steps; completed findings unchanged.':'Dated evidence recorded for this attempt.',data:{evidence_recorded_at:evidenceRecordedAt,cutoff:run.analysis_date,reused_agents:[...completed.keys()],refreshed:freshness.refresh}});
+  if(freshnessEvent.error)throw freshnessEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status,news:news.status,fundamentals:fundamentals?.status??'unavailable'});
   async function call(agent:string,prompt:string,synthesis=false,streamAgent=agent) {
     progress.stage='model_stream';progress.agent=streamAgent;
@@ -123,21 +132,21 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   // Risk and debate run after the specialists so they can challenge actual findings.
   const ordered=[...agents.filter(a=>a!=='risk'&&a!=='debate'),...(['risk','debate'] as const).filter(a=>agents.includes(a))];
   const ROLE_GUIDE:Record<string,string>={fundamentals:' Use point-in-time SEC fundamentals and aligned TTM; distinguish annual, quarter, YTD and TTM and cite period end and filing date. Evaluate ROIC only with supplied invested capital and tax inputs, and FCF conversion only with aligned earnings and cash flow. Missing debt maturity dates stay unavailable. Discuss calculated valuation and comps limitations; do not invent forecasts.',news:' Use the supplied SEC filing events, earnings-release excerpts, dated headlines and GDELT global coverage as catalysts; cite date and link for each; headlines are titles only.',sentiment:' Assess sentiment only from supplied dated headlines, GDELT news tone, FINRA short interest, filings and prediction markets; state that no social-media feed is connected and do not infer unseen social sentiment.',risk:' Challenge prior findings and uncited assumptions. Stress-test a 20% multiple contraction, recession demand and margin squeeze; quantify price impacts only with supplied denominators, shares and multiples, otherwise state missing inputs. OCF minus capex is not automatically FCFF.',debate:' Use five explicit sections: bull thesis and catalysts; bear rebuttal of bull assumptions; bear thesis and downside; bull rebuttal of risks; resolution with the stronger case and why. Challenge actual findings and valuation evidence rather than defaulting to a polite HOLD compromise.'};
-  const storedAnalysts:Record<string,{content:string;model:string;status:string}>={};
+  const storedAnalysts:Record<string,{content:string;model:string;status:string;evidenceDate:string;evidenceBasis:string}>={};
   for(const agent of ordered) {
     progress.stage='agent_start';progress.agent=agent;
     if(signal.aborted) throw new DOMException('Cancelled','AbortError');
     const {data:state,error:stateError}=await sb.from('research_runs').select('status').eq('id',run.id).eq('user_id',userId).single();if(stateError)throw new SafeAiError(503,'Run status could not be verified.');if(state?.status!=='running') throw new DOMException('Cancelled','AbortError');
     const done=completed.get(agent);
-    if(done){await enrichPeers(agent,done.content??'',done.model_used??'');storedAnalysts[agent]={content:done.content??'',model:done.model_used??'',status:'completed'};summaries.push(`${agent}: ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
+    if(done){await enrichPeers(agent,done.content??'',done.model_used??'');storedAnalysts[agent]={content:done.content??'',model:done.model_used??'',status:'completed',evidenceDate:done.created_at,evidenceBasis:'Original completed step; evidence not replaced'};summaries.push(`${agent} (reused completed finding from ${done.created_at}; compare against refreshed evidence, do not treat as current): ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
     const {data:started,error:startError}=await sb.from('agent_outputs').insert({run_id:run.id,agent_id:agent,status:'running',model_used:contentText(sectionObject(roles[agent])['model'])}).select('id').single();if(startError) throw startError;
     const startEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'running',message:`${agent} analyst started.`});if(startEvent.error)throw startEvent.error;emit({type:'agent',agent,status:'running'});
     const prior=(agent==='risk'||agent==='debate'?priorFindingsPrompt([...summaries,...(technical?[`Calculated technical evidence: ${JSON.stringify({...technical,candles:undefined})}`]:[])]):'')+peerSuggestionPrompt(agent==='fundamentals'&&valuation.comparables.status!=='available'&&run.analysis_date===new Date().toISOString().slice(0,10));
     const out=await call(agent,`${scope}${agent==='technical'?technicalPrompt(technical):''}${prior}\nYour role: ${agent}.${ROLE_GUIDE[agent]??''} Produce an evidence-based assessment with catalysts, risks and an explicit evidence limitations paragraph.${agent==='technical'?' Use supplied daily OHLCV and calculated indicators to assess trend, momentum and volatility. Cite chart source, observation dates and coverage. Null indicators are unavailable. Do not claim full lookback coverage when partial.':''}`);
     progress.stage='result_save';
-    const {error}=await sb.rpc('save_agent_result',{_output_id:started.id,_result:{...out,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===out.model)?.rates??null,source_status:'Model-provided citations, not independently verified'}}});if(error)throw error;
+    const {error}=await sb.rpc('save_agent_result',{_output_id:started.id,_result:{...out,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===out.model)?.rates??null,source_status:'Model-provided citations, not independently verified',evidence_recorded_at:evidenceRecordedAt,cutoff:run.analysis_date}}});if(error)throw error;
     if(out.model!==contentText(sectionObject(roles[agent])['model'])){const fix=await sb.from('agent_outputs').update({model_used:out.model}).eq('id',started.id);if(fix.error)throw fix.error;}
-    storedAnalysts[agent]={content:out.text,model:out.model,status:'completed'};
+    storedAnalysts[agent]={content:out.text,model:out.model,status:'completed',evidenceDate:evidenceRecordedAt,evidenceBasis:'Evidence retrieved for this attempt; individual sources retain their own freshness'};
     await enrichPeers(agent,out.text,out.model);
     const claimWarnings=reviewReportClaims({[agent]:out.text},technical,fundamentals,run.analysis_date);
     summaries.push(`${agent}: ${out.text}${claimWarnings.length?'\nEvidence conflicts to resolve (do not repeat): '+JSON.stringify(claimWarnings):''}`);totalIn+=out.input;totalOut+=out.output;totalCost+=out.cost;if(out.credit===null) creditsKnown=false;else credits+=out.credit;
@@ -156,9 +165,11 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
   const targetReview=reviewCalculatedTarget(final.object.price_target,valuation,stockSnapshot?.price);
+  const analysisClose=technical?.candles.filter(c=>new Date(c.time*1000).toISOString().slice(0,10)<=run.analysis_date).at(-1);
+  const scoringAnchor={date:run.analysis_date,price:analysisClose?.close??null,priceDate:analysisClose?new Date(analysisClose.time*1000).toISOString().slice(0,10):null,target:targetReview.target,horizonMonths:12,bear:valuation.intrinsic?.scenarios.find(c=>c.name==='Bear')?.target??null,bull:valuation.intrinsic?.scenarios.find(c=>c.name==='Bull')?.target??null,source:technical?.chartSource??null};
   const f={...final.object,price_target:targetReview.target,storage_version:2,valuation,quality_review:{version:2,scope:'Indicator availability, annual financial age and price-target sanity only; not a full audit',warnings:[...reviewReportClaims({...Object.fromEntries(Object.entries(storedAnalysts).map(([a,v])=>[a,v.content])),executive_summary:final.object.executive_summary,technical_analysis:final.object.technical_analysis,fundamental_analysis:final.object.fundamental_analysis,final_synthesis:final.object.final_synthesis},technical,fundamentals,run.analysis_date),...targetReview.warnings]},analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
   progress.stage='report_finalize';
-  const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;
+  const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify({...f,scoring_anchor:scoringAnchor,evidence_freshness:{...freshness,recordedAt:evidenceRecordedAt,reusedAgents:[...completed.keys()]}}))});if(error)throw error;
   progress.stage='completed';
   emit({type:'completed',reportId});
 }

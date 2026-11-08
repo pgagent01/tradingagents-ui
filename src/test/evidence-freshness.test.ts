@@ -1,0 +1,4 @@
+import { expect,it } from 'vitest';
+import { resumeEvidencePolicy } from '@/lib/evidence-freshness';
+it('refreshes only resumed current-date evidence older than 24 hours',()=>{expect(resumeEvidencePolicy('2026-11-08','2026-11-07T10:00:00Z',1,new Date('2026-11-08T11:00:00Z')).refresh).toBe(true);expect(resumeEvidencePolicy('2026-11-08','2026-11-07T12:00:00Z',1,new Date('2026-11-08T11:00:00Z')).refresh).toBe(false);});
+it('never changes a historical cutoff or replaces completed findings',()=>{expect(resumeEvidencePolicy('2026-11-06','2026-11-06T10:00:00Z',1,new Date('2026-11-08T11:00:00Z'))).toMatchObject({cutoff:'2026-11-06',historical:true,refresh:false,stale:true});});
