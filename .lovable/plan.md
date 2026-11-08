@@ -2,47 +2,62 @@
 
 Goal: make every report rest on more complete, internally consistent and traceable figures, and make the written analysis provably match those figures. No new user-facing features beyond quality labels.
 
+## 0. Measure first (new)
+- Build a fixed test set of about 15 tickers (tech, pharma, bank, insurer, REIT, loss-maker, foreign SEC filer, non-SEC listing).
+- Record today's coverage: which core figures are missing, headline counts, valuation status, flagged claims.
+- Re-run the same set after each step so improvements are measured, not assumed.
+
 ## 1. Reliable dated headlines (news and sentiment)
-- Add Yahoo ticker RSS and Google News ticker RSS as headline sources alongside GDELT and SEC filing titles.
-- Deduplicate by normalized title and URL, keep publication date and source, drop items after the analysis date for historical runs.
-- GDELT becomes optional enrichment; its failure no longer leaves news/sentiment empty.
-- Report shows headline count per source and "no headlines found" explicitly.
+- Add Yahoo ticker RSS and Google News ticker RSS alongside GDELT and SEC filing titles.
+- Deduplicate by normalized title and URL; keep publication date and source.
+- Relevance filter: keep items that mention the company name or ticker, so generic market stories don't pass as company news.
+- Historical runs: RSS only covers recent days, so older dates rely on SEC filings and GDELT and say so; never use items dated after the analysis date.
+- Report shows headline count per source, and "no headlines found" explicitly.
 
 ## 2. Wider financial coverage (pharma, banks, foreign filers)
-- Fallback concept lists for operating income (e.g. pre-tax income plus interest expense where tagged), revenue variants, and bank lines (net interest income, provision for credit losses, deposits).
-- Read `ifrs-full` facts for foreign SEC filers (ASML, TSM, AZN style): revenue, profit, operating profit, cash flow, capex, equity, shares.
-- Every fallback is labeled with the exact concept used; nothing is mixed across taxonomies within one period.
-- Rolls-Royce style non-SEC listings: show company name correctly and state "no filed statements available".
+- Revenue variants and bank lines (net interest income, provision for credit losses, deposits) added per company type.
+- Operating income is never synthesized from other lines. When it isn't reported, show a clearly named substitute (e.g. "pre-tax income") and don't feed it into margin or DCF math as operating income.
+- Read `ifrs-full` facts for foreign SEC filers: revenue, profit, operating profit, cash flow, capex, equity, shares, in the reported currency.
+- Never mix taxonomies or currencies within one period.
+- Non-SEC listings (e.g. Rolls-Royce): show the company name correctly and state "no filed statements available".
 
 ## 3. Internal consistency checks on filed figures
-- Balance check: assets vs liabilities plus equity within 0.5%.
-- Cash flow check: operating cash flow minus capex vs computed free cash flow.
-- Period checks: quarter sums vs annual, TTM components from the same fiscal calendar.
-- Restatement flag when an amended filing changes a previously used value.
-- Failures appear in a "Data checks" block and are passed to the analysts as warnings; valuation is withheld when core checks fail.
+- Balance check: assets vs liabilities plus equity (including minority interest) within 0.5%; skipped and labeled "not checkable" when a component isn't tagged.
+- Cash flow check: free cash flow recomputed from the same filing's operating cash flow and capex.
+- Period checks: four quarters vs annual, TTM components on the same fiscal calendar.
+- Restatement flag when an amended filing changes a value already used.
+- Severity levels: warnings are shown and passed to analysts; only failures in figures the valuation actually uses withhold the valuation.
 
 ## 4. Numbers in the prose must match the evidence
-- Scan report text for dollar amounts, percentages and multiples; match each to the evidence bundle within rounding tolerance.
-- Unmatched figures are flagged in the report's quality review (not silently removed).
+- Scan report text for dollar amounts, percentages and multiples; normalize units (B/M, %, x) and match to the evidence bundle within rounding tolerance.
+- Allow simple derived values (growth rates, differences) computed from evidence; flag the rest as "unverified figure" rather than removing them.
+- Track the flag rate per report so false alarms can be tuned on the test set.
 - Prompts ask analysts to cite the source label (SEC period, Yahoo TTM, FRED date) for key figures.
-- Synthesis cannot state a price target that differs from the calculated range without an explicit reason (extends existing check).
+- A price target outside the calculated range needs an explicit reason (extends the existing check).
 
 ## 5. Comparable-company hygiene
 - Withhold cross-currency or minor-unit (GBp) multiples unless converted with a dated exchange rate.
-- Flag peer metrics more than 3x the cohort median as outliers, excluded from medians.
-- Show per-row data date so stale peers are visible.
+- Flag peer metrics far from the cohort (outside 3x the interquartile range) and exclude them from medians, keeping them visible.
+- Show each row's data date so stale peers are visible.
 
 ## 6. Freshness and provenance labels
 - Every evidence block shows retrieval time and the underlying period/date.
-- Report header shows the oldest core input date and warns when the latest filing is over 120 days old.
+- Report header shows the oldest core input and warns when the latest filing is over 120 days old.
 
 ## Order
-1, 2, 3 first (inputs), then 4 (output checking), then 5 and 6.
+0, then 2 and 3 (inputs), 1, then 4 (output checking), then 5 and 6.
 
-## Verification
-- Unit tests per rule (concept fallbacks, IFRS mapping, identity tolerances, number matcher, currency withholding).
-- Live reports on PFE, JPM, TSM, RR.L and GOOGL; confirm coverage gaps close, checks appear, and existing saved reports remain unchanged.
+## Success criteria
+- Core figures present for pharma, banks and foreign SEC filers in the test set.
+- Every current-date report has at least 5 relevant dated headlines, or states why not.
+- Unverified-figure flags shown on every report, with false alarms under 1 in 10 on the test set.
+- Saved reports remain unchanged.
+
+## Known weaknesses kept honest
+- Free RSS sources can change or block without notice; failures degrade to labeled "unavailable", never silent.
+- Prose matching can't prove the reasoning is right, only that figures match evidence.
+- Bank and insurer valuation is still not added here; this plan only makes their figures available.
 
 ## Technical details
-- Sources: new `src/lib/sources/headlines.server.ts` (RSS, owner cache, bounded fetch); extend `research-evidence.ts` concept maps and taxonomy selection; new pure `src/lib/data-checks.ts`; number matcher in `report-quality.ts`; currency guard in `peer-snapshot.server.ts`.
-- Bump affected cache keys; saved report snapshots stay immutable.
+- New `src/lib/sources/headlines.server.ts` (RSS, owner cache, bounded fetch, two-host retry); extend `research-evidence.ts` concept maps and taxonomy selection; new pure `src/lib/data-checks.ts`; number matcher in `report-quality.ts`; currency/outlier guard in `peer-snapshot.server.ts`; test-set script under `src/test/`.
+- Bump affected cache keys; saved report snapshots stay immutable. One test per rule.
