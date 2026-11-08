@@ -109,7 +109,7 @@
 - [x] Answered: no new agents needed; existing analysts consume new sources
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
-- [ ] Next slice in progress: filing-aligned debt/share inputs, labeled forecast scenarios, rate assumptions, sensitivity grid and calculated report targets.
+- [x] Operating-company forecast slice: filing-aligned complete debt components/unrestricted cash/common shares, labeled five-year bear/base/bull FCFF estimates, FRED 10Y and SPY beta with explicit defaults, nine sensitivities and calculated base target with model-range review. AMZN live Stock Info displayed estimated ranges; no billed LLM run started.
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
@@ -117,8 +117,8 @@
 - [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
 - [x] Valuation foundation: pure DCF, excess-return, FFO, revenue scenarios, WACC and target roll-forward calculators; industry method selection and peer median/IQR with 0.25–4x size filter, max 8.
 - [x] Bounded owner/version-cached FMP peer discovery and provider TTM multiples (48h successful-cache TTL); historical runs exclude current peers. AMZN authenticated desktop/mobile checked: no suitable peers returned; explicit unavailability, no runtime errors.
-- [ ] Phases 2/2b/3 remaining: SEC SIC peer discovery/Yahoo fallback, peer editing, reconciled total debt and diluted shares, explicit forecast assumptions, FRED 10Y/ERP/beta, live intrinsic scenarios, sensitivity grid and target blending. Pure calculators are not yet wired to forward assumptions.
+- [ ] Phases 2/2b/3 remaining: SEC SIC peer discovery/Yahoo fallback, peer editing, diluted-share forecasting, separate D&A/capex/working-capital projections and lease/minority/preferred adjustments, editable forecasts, bank/REIT/loss-maker live inputs and reconciled target blending. Current operating DCF uses explicitly labeled heuristic assumptions, not consensus forecasts.
 - [x] Feed saved valuation evidence to fundamentals/risk/debate/synthesis; improve conditional ROIC/FCF guidance, stress tests and five-part cross-examination without new LLM stages.
 - [x] Valuation and comps view on Stock Info and new reports; persist immutable valuation and include in Markdown/PDF print view. Existing reports unchanged.
-- [ ] Phases 4/5/6 remaining: calculated-target range review, sensitivity grid, comparison enhancements and approved fresh AMZN LLM report after forecast inputs are implemented. No billed report started this turn.
+- [ ] Phases 4/5/6 remaining: comparison enhancements and approved fresh AMZN LLM report to verify immutable scenario storage/readback; existing saved reports remain unchanged. No billed report started this turn.
 - [ ] Phase 8: report scorecard and calibration.
