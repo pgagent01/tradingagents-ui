@@ -20,10 +20,10 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const f=facts?fundamentalEvidence(facts,today):null;
   const usd=meta['currency']===undefined||meta['currency']==='USD';
   const shares=f?.valuationBalance?.shares?.value??null;
-  const cap=numeric(meta['marketCap']) ?? (price!==null && shares ? price*shares : null);
+  const cap=numeric(meta['marketCap']) ?? ys?.marketCap ?? (price!==null && shares ? price*shares : null);
   const revenue=f?.ttm?.revenue.value??null, net=f?.ttm?.netIncome.value??null;
   const aligned=f?.ttm && f.ttm.revenue.periodEnd===f.ttm.netIncome.periodEnd;
-  const notes=[!raw?'Price history unavailable.':null,!usd?`Quoted in ${String(meta['currency'])}; ratios withheld.`:null,!f||revenue===null?'SEC trailing figures unavailable (may be a foreign filer).':null,numeric(meta['marketCap'])===null&&cap!==null?'Market cap = price × SEC period-end shares.':null].filter(Boolean);
+  const notes=[!raw?'Price history unavailable.':null,!usd?`Quoted in ${String(meta['currency'])}; ratios withheld.`:null,!f||revenue===null?'SEC trailing figures unavailable (may be a foreign filer).':null,numeric(meta['marketCap'])===null&&!ys?.marketCap&&cap!==null?'Market cap = price × SEC period-end shares.':null].filter(Boolean);
   const last=candles.at(-1);
   const ann=f?.annual??[];
   const la=ann.at(-1); const anchor=la?{accn:la.accession,end:la.end,start:la.start??null,filed:la.filed,form:la.form}:null;
@@ -37,13 +37,13 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const quality=usd?qualityRatios({operatingIncome:la?.operatingIncome??null,da:g(['DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'],'annual'),debt:dbt.value,cash:ab?.cash?.value??null,equity,dividends:g(['PaymentsOfDividends','PaymentsOfDividendsCommonStock'],'annual'),buybacks:g(['PaymentsForRepurchaseOfCommonStock'],'annual'),ttmFcf:aligned?f?.ttm?.freeCashFlow??null:null,marketCap:cap}):{};
   const risk=riskStats(candles,spy); const c1y=periodChange(candles,365), s1y=periodChange(spy,365);
   const growth=annualGrowth(ann.at(-1)?.revenue,ann.at(-2)?.revenue);
-  return {...empty,company:String(meta['longName']??meta['shortName']??ticker),price,change1d:candles.length>1&&candles.at(-2)!.close>0?(candles.at(-1)!.close-candles.at(-2)!.close)/candles.at(-2)!.close*100:null,change30d:periodChange(candles,30),change1y:periodChange(candles,365),marketCap:usd?cap:null,ttmRevenue:revenue,ttmNetIncome:aligned?net:null,...(usd&&aligned?snapshotRatios(cap,revenue,net):{pe:null,ps:null,netMargin:null}),...ext,revenueGrowth:growth,provider:ys,note:[notes.join(' '),ratioMismatch((ext as {evSales?:number|null}).evSales,ys?.evSales??null)?`EV/Sales differs from Yahoo's ${ys!.evSales!.toFixed(2)}× by more than 15% (different debt, cash or period).`:null,dbt.note,la?`Debt, cash and yearly ratios from fiscal year ending ${la.end}.`:null,equity!==null&&equity<0?'Shareholders’ equity is negative, which inflates ROIC.':null].filter(Boolean).join(' ')||null,...quality,grossMarginTrend:grossMarginTrend(ann),...risk,vsSpy1y:c1y!==null&&s1y!==null?c1y-s1y:null,fiscalYearEnd:la?.end??null,offHigh:offHigh(candles),revenuePeriodEnd:f?.ttm?.revenue.periodEnd??null,priceDate:last?new Date(last.time*1000).toISOString().slice(0,10):null};
+  return {...empty,company:String(meta['longName']??meta['shortName']??ticker),price,change1d:candles.length>1&&candles.at(-2)!.close>0?(candles.at(-1)!.close-candles.at(-2)!.close)/candles.at(-2)!.close*100:null,change30d:periodChange(candles,30),change1y:periodChange(candles,365),marketCap:usd?cap:null,ttmRevenue:revenue,ttmNetIncome:aligned?net:null,...(usd&&aligned?snapshotRatios(cap,revenue,net):{pe:null,ps:null,netMargin:null}),...ext,revenueGrowth:growth,provider:ys,currency:typeof meta['currency']==='string'?meta['currency'] as string:null,note:[notes.join(' '),ratioMismatch((ext as {evSales?:number|null}).evSales,ys?.evSales??null)?`EV/Sales differs from Yahoo's ${ys!.evSales!.toFixed(2)}× by more than 15% (different debt, cash or period).`:null,dbt.note,la?`Debt, cash and yearly ratios from fiscal year ending ${la.end}.`:null,equity!==null&&equity<0?'Shareholders’ equity is negative, which inflates ROIC.':null].filter(Boolean).join(' ')||null,...quality,grossMarginTrend:grossMarginTrend(ann),...risk,vsSpy1y:c1y!==null&&s1y!==null?c1y-s1y:null,fiscalYearEnd:la?.end??null,offHigh:offHigh(candles),revenuePeriodEnd:f?.ttm?.revenue.periodEnd??null,priceDate:last?new Date(last.time*1000).toISOString().slice(0,10):null};
 }
 /** Descriptive side-by-side table only: never feeds valuation math, which keeps its stricter verified-peer rules. */
 export async function peerSnapshot(sb: EvidenceClient, userId: string, subject: string, candidates: string[], model: string|null): Promise<PeerSnapshot> {
   const picks=[...new Set(candidates.filter(t=>validTicker(t)&&t!==subject))].slice(0,3);
   const today=new Date().toISOString().slice(0,10);
-  const key=`v7:${subject}:${picks.join(',')}:${today}`;
+  const key=`v8:${subject}:${picks.join(',')}:${today}`;
   const cached=await readDataCache(sb,userId,'peer-snapshot',key);
   if(cached?.fresh) return cached.payload as PeerSnapshot;
   const spy=parseYahooChart(await chart('SPY').catch(()=>null)).candles;
