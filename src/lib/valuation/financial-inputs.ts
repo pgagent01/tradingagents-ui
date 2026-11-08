@@ -3,7 +3,7 @@ import { selectSecFact, type SecFact } from '@/lib/sec-periods';
 export function valuationBalance(facts: Record<string, unknown>, anchor: Record<string, unknown>, cutoff: string) {
   const get = (tags: string[], unit = 'USD') => selectSecFact(facts,tags,anchor,'instant',unit,cutoff);
   const combined = get(['LongTermDebtAndShortTermBorrowings','DebtCurrentAndNoncurrent']);
-  const longTotal = get(['LongTermDebtCurrentAndNoncurrent','LongTermDebt']);
+  const longTotal = get(['LongTermDebtCurrentAndNoncurrent']);
   const noncurrent = get(['LongTermDebtNoncurrent']);
   const current = get(['LongTermDebtCurrent']);
   const short = get(['ShortTermBorrowings','ShortTermDebtCurrent']);
