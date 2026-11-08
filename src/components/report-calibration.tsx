@@ -1,0 +1,10 @@
+import { useState } from 'react';
+import { useServerFn } from '@tanstack/react-start';
+import { BarChart3 } from 'lucide-react';
+import { Button } from './ui/button';
+import { getReportCalibration } from '@/lib/report-calibration.functions';
+export function ReportCalibration(){
+  const fetch=useServerFn(getReportCalibration),[data,setData]=useState<Awaited<ReturnType<typeof getReportCalibration>>|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  async function load(){setBusy(true);setError('');try{setData(await fetch());}catch{setError('Calibration data is temporarily unavailable.');}finally{setBusy(false);}}
+  return <section className="space-y-3 border-t border-border pt-4"><div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-semibold">Conviction Calibration</h2><Button variant="outline" size="sm" disabled={busy} onClick={()=>void load()}><BarChart3 className="h-4 w-4"/>{busy?'Checking reports…':'Check calibration'}</Button></div>{error&&<p className="text-sm text-warning">{error}</p>}{data&&<><p className="text-xs text-muted-foreground">Latest {data.reports} real reports · Maximum {data.limit} · Mature 90-day BUY/SELL outcomes vs SPY, direction-adjusted; HOLD excluded from direction scoring.</p><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Conviction</th><th>Scored reports</th><th>Mean directional excess</th><th>Sample</th></tr></thead><tbody>{data.bins.map(b=><tr key={b.label} className="border-b border-border"><td className="py-3">{b.label}</td><td>{b.count}</td><td className="font-mono">{b.meanDirectionalExcess===null?'Unavailable':`${b.meanDirectionalExcess.toFixed(2)} pp`}</td><td>{b.smallSample?'Small sample (<20)':'20+ reports'}</td></tr>)}</tbody></table></div><p className="text-xs text-muted-foreground">Conviction is a research judgement, not a calibrated probability. Price returns exclude dividends and trading costs.</p></>}</section>;
+}

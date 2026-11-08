@@ -11,7 +11,7 @@ export type GdeltArticle = { title: string; url: string; domain: string; country
 export type GdeltNews = SourceFeed<GdeltArticle> & { tone: { date: string; value: number }[]; averageTone: number | null };
 export type ShortInterest = { settlementDate: string; shortShares: number; previousShortShares: number | null; changePct: number | null; avgDailyVolume: number | null; daysToCover: number | null };
 export type MacroIndicator = { country: string; indicator: string; name: string; year: string; value: number };
-export type EarningsRelease = { filed: string; accession: string; url: string; excerpt: string };
+export type EarningsRelease = { filed: string; accession: string; url: string; excerpt: string; taggedFacts?: import('./earnings-bridge').ReleaseFact[] };
 export type FreeSourcesEvidence = { gdelt: GdeltNews; shortInterest: SourceFeed<ShortInterest>; globalMacro: SourceFeed<MacroIndicator> & { lastUpdated: string | null }; earningsReleases: SourceFeed<EarningsRelease>; social: SourceFeed<never> };
 
 /** GDELT seendate is YYYYMMDDTHHMMSSZ. */

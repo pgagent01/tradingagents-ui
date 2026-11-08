@@ -15,6 +15,20 @@
       "when": 1794131729052,
       "tag": "0001_resume_order_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794139218218,
+      "tag": "0002_preserve_cumulative_research_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794139445541,
+      "tag": "0003_lock_research_output_usage_once",
+      "breakpoints": true
     }
   ]
 }

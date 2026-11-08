@@ -5,3 +5,4 @@
 - Persist labeled scenario assumptions, dated rate sources and filing-aligned equity-conversion inputs with each calculated forecast; never substitute historical OCF-minus-capex for enterprise FCFF.
 - Free peer discovery verifies bounded Yahoo suggestions against exact SEC SIC, never blends SIC and text-industry cohorts, and exposes only aligned SEC-denominator ratios; broad classifications do not prove business-model similarity.
 - Optional model peer suggestions come from the existing report-selected fundamentals call, are verified before subsequent analyst handoffs, and reuse saved output on resume; never introduce a separate billed discovery call or infer financial figures.
+- Owner forecast estimates and peer selections are snapshotted into new current-date runs; resume never reads mutable preferences, custom peers remain independently verified and cash-flow ratios are all-or-none.

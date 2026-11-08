@@ -22,6 +22,7 @@ export type FundamentalEvidence = {
   /** SEC vs other providers for the latest fiscal year; added at research time. */
   reconciliation?: ReconciliationRow[];
   valuationBalance?: ReturnType<typeof valuationBalance>;
+  earningsBridge?: ReturnType<typeof import('./sources/earnings-bridge').releaseBridge>;
 };
 export type FilingEvent = { form: string; filed: string; reportDate: string | null; description: string; url: string };
 export type Headline = { title: string; publisher: string; publishedAt: string; url: string };

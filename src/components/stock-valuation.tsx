@@ -1,8 +1,20 @@
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { getValuation } from '@/lib/valuation/valuation.functions';
+import { queryOptions, useSuspenseQuery,useQueryClient } from '@tanstack/react-query';
+import { getValuation,getValuationPreferences,setValuationPreferences } from '@/lib/valuation/valuation.functions';
+import { useState } from 'react';
+import { useServerFn } from '@tanstack/react-start';
+import { Save,RotateCcw } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import type { ForecastOverrides } from '@/lib/valuation/preferences';
 import { ReportValuation } from './report-valuation';
 export function StockValuation({ ticker }: { ticker: string }) {
   const { data } = useSuspenseQuery(valuationQuery(ticker));
-  return <div className="mx-auto mt-6 max-w-6xl"><ReportValuation value={data}/></div>;
+  const prefsQuery=queryOptions({queryKey:['valuation-preferences',ticker],queryFn:()=>getValuationPreferences({data:{ticker}})});
+  const {data:prefs}=useSuspenseQuery(prefsQuery),client=useQueryClient(),save=useServerFn(setValuationPreferences);
+  const [draft,setDraft]=useState<ForecastOverrides|null>(null),[peers,setPeers]=useState<string|null>(null),[excluded,setExcluded]=useState<string|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+  const fields:[keyof ForecastOverrides,string,boolean][]=[['growth','Revenue growth',true],['margin','Operating margin',true],['taxRate','Tax rate',true],['reinvestment','Reinvestment / NOPAT',true],['terminalGrowth','Terminal growth',true],['dividendsPerShare','Dividends / share · USD',false],['annualDilution','Annual dilution',true],['capexRevenue','Capex / revenue',true],['depreciationRevenue','D&A / revenue',true],['workingCapitalRevenue','Working capital / revenue',true],['equityAdjustments','Lease / minority / preferred adjustments · USD',false]];
+  const display=(key:keyof ForecastOverrides,pct:boolean)=>{const value=(draft??prefs.overrides)[key];return value===undefined?'':Number((value*(pct?100:1)).toFixed(6));};
+  async function apply(reset=false){setBusy(true);setMessage('');try{await save({data:{ticker,preferences:reset?{overrides:{},peers:[],excludedPeers:[]}:{overrides:draft??prefs.overrides,peers:(peers??prefs.peers.join(',')).split(/[\s,]+/).filter(Boolean).map(s=>s.toUpperCase()),excludedPeers:(excluded??prefs.excludedPeers.join(',')).split(/[\s,]+/).filter(Boolean).map(s=>s.toUpperCase())}}});setDraft(null);setPeers(null);setExcluded(null);await Promise.all([client.invalidateQueries({queryKey:['valuation',ticker]}),client.invalidateQueries({queryKey:['valuation-preferences',ticker]})]);setMessage('Saved estimates · existing reports unchanged.');}catch{setMessage('Not saved. Check the ranges and supply all three cash-flow ratios together, or leave them blank.');}finally{setBusy(false);}}
+  return <div className="mx-auto mt-6 max-w-6xl"><ReportValuation value={data}/><details className="mt-5 border-t border-border pt-4"><summary className="cursor-pointer font-semibold">Forecast Assumptions &amp; Peer Selection</summary><form onSubmit={e=>{e.preventDefault();void apply();}} className="mt-4 space-y-4"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{fields.map(([key,label,pct])=><label key={key} className="space-y-1 text-xs text-muted-foreground"><span>{label}{pct?' · %':''}</span><Input type="number" step="any" aria-label={label} placeholder="Default" value={display(key,pct)} onChange={e=>setDraft({...draft??prefs.overrides,[key]:e.target.value===''?undefined:Number(e.target.value)/(pct?100:1)})}/></label>)}</div><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-1 text-xs text-muted-foreground">Peer candidates · up to 8<Input aria-label="Peer candidates" value={peers??prefs.peers.join(', ')} onChange={e=>setPeers(e.target.value)}/></label><label className="space-y-1 text-xs text-muted-foreground">Excluded peers<Input aria-label="Excluded peers" value={excluded??prefs.excludedPeers.join(', ')} onChange={e=>setExcluded(e.target.value)}/></label></div><div className="flex gap-2"><Button size="sm" type="submit" disabled={busy}><Save className="h-4 w-4"/>Save estimates</Button><Button size="sm" type="button" variant="outline" disabled={busy} onClick={()=>void apply(true)}><RotateCcw className="h-4 w-4"/>Reset defaults</Button></div>{message&&<p role="status" className="text-xs text-muted-foreground">{message}</p>}</form></details></div>;
 }
 export const valuationQuery = (ticker: string) => queryOptions({ queryKey: ['valuation',ticker], queryFn: () => getValuation({ data: { ticker } }), staleTime: 5 * 60 * 1000, retry: false });

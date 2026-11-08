@@ -1,0 +1,4 @@
+import {expect,it} from 'vitest';
+import {valuationPreferencesSchema} from '@/lib/valuation/preferences';
+it('accepts explicit complete cash-flow estimates and at most eight peer candidates',()=>{expect(valuationPreferencesSchema.safeParse({overrides:{capexRevenue:.08,depreciationRevenue:.03,workingCapitalRevenue:.1},peers:['MSFT'],excludedPeers:[]}).success).toBe(true);expect(valuationPreferencesSchema.safeParse({peers:Array.from({length:9},(_,i)=>`T${i}`)}).success).toBe(false);});
+it('rejects partial ratios and invalid growth/dilution estimates',()=>{expect(valuationPreferencesSchema.safeParse({overrides:{capexRevenue:.1}}).success).toBe(false);expect(valuationPreferencesSchema.safeParse({overrides:{annualDilution:.3}}).success).toBe(false);expect(valuationPreferencesSchema.safeParse({overrides:{growth:2}}).success).toBe(false);});
