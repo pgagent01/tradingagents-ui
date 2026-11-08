@@ -82,6 +82,14 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - **Resume limits:** at most 3 resumes per run, to stop repeat charges from a step that keeps failing.
 - **Cached data reused:** filings and prices already fetched are reused from the cache on resume (subject to the 24-hour rule above).
 
+### 8. Checking old reports later (scorecard and backtesting)
+- **Report scorecard:** each saved report shows how it has played out at 30, 90, 180 and 365 days after its analysis date: return vs SPY, whether the target or bear/bull range was reached (and on which day), and the biggest drop vs the risk analyst's worst case.
+- **Right for the right reasons:** once new filings arrive, compare actual revenue, margins and cash flow with the report's base-case forecast.
+- **Fair scoring:** a 12-month target is only judged at its own horizon; HOLD and SELL calls are tracked too, not just BUYs. Reports are never re-run or edited, only measured against later prices.
+- **Calibration view:** across all your reports, show whether high-conviction calls beat lower-conviction ones and where forecasts are systematically too high or low. Small sample sizes are labelled.
+- **Historical backtests:** runs dated in the past use only data available then; a backtest check confirms no later filing, revision or headline was used.
+- **Saved for scoring:** each new report stores target, horizon in months, bear/base/bull range and price on the analysis date so scoring needs no guesswork. Older reports without these are scored on direction only.
+
 ## Rules
 - Historical-date runs use only filings and rates available on that date.
 - Unavailable inputs stay unavailable. No guessed values.
