@@ -38,10 +38,13 @@ Sector and industry come from SEC SIC codes, with the company profile as backup.
 - Output: an implied value per share from each multiple. Also show a comps table in the report: ticker, market value, each multiple and data date, with links.
 - Comps serve as both a cross-check on the cash-flow value and a weighted part of the target. Their weight depends on company type and is shown in the report.
 - Historical runs use peer prices and filings as of the analysis date.
+- **Speed and limits:** peer multiples come from lightweight cached quote data (Yahoo, or FMP when your key exists) rather than full filings for every peer, so the run stays fast and within SEC request limits. Peer sets and multiples are cached for 48 hours.
+- **Fallback:** if peer data is missing or slow, the valuation uses the cash-flow model alone and the report says comps were unavailable; the run never fails because of comps.
 
 ### 3. Calculation engine
 - Bear / base / bull scenarios: growth, margin, reinvestment and discount rate.
 - Discount rate from the FRED 10-year Treasury yield plus a documented equity risk premium and beta. Use defaults only when they are labelled as defaults.
+- **Companies with debt:** value the whole business's free cash flow using a blended cost of capital (equity cost weighted with borrowing cost, where borrowing cost = 10-year yield + corporate credit spread, or reported interest / debt), then subtract net debt to get equity value. **Debt-free or early-stage companies:** use the equity cost alone. The method used is shown in the report.
 - 12-month target = base value rolled forward one year, less expected dividends, then blended with the peer-multiple check.
 - Pure, tested functions. The AI never produces these numbers.
 
@@ -53,7 +56,7 @@ Sector and industry come from SEC SIC codes, with the company profile as backup.
 ### 4b. Analyst instruction improvements (compared with the original TradingAgents)
 Keep the app's stricter guardrails (no invented figures, dated citations, untrusted-data boundaries). Then:
 - **Fundamentals analyst:** add capital returns (return on invested capital), free-cash-flow conversion, debt due dates, and comment on the calculated valuation inputs.
-- **Debate:** split into a clear **bull case** and **bear case**, each with its strongest arguments and catalysts, followed by an explicit resolution. This mirrors the original's separate bull and bear researchers and reduces default "HOLD" answers.
+- **Debate:** structured cross-examination in five parts: (1) bull thesis and catalysts, (2) bear rebuttal of the bull's assumptions, (3) bear thesis and downside, (4) bull rebuttal of those risks, (5) resolution stating which case carries more weight and why. This mirrors the original's separate, adversarial bull and bear researchers and reduces polite-compromise "HOLD" answers, while staying one stage to control cost.
 - **Risk analyst:** run concrete stress tests (e.g. valuation multiple down 20%, recession demand, margin squeeze) and give the price impact of each.
 - **Final report:** link conviction to the gap between calculated value and current price (margin of safety), and state the position stance, entry/exit levels and what would change the view.
 - Add tests that the new instructions are present and that ratings stay required.
@@ -68,11 +71,11 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 ### 7. Partial runs, resume and stale data (do this first)
 - **Resume button:** failed or cancelled runs show "Resume run". Finished analyst steps are kept and not paid for again; only the failed step and later ones run.
 - **Safe resume:** resuming only works when the run is failed/cancelled and owned by you; the half-finished step is cleared first. Quota or access pauses must be cleared (or another key/model chosen) before resume is offered.
-- **Stuck runs:** a run with no progress for 10 minutes is marked "interrupted" automatically (on next page open or start), so it can be resumed instead of hanging as "running".
+- **Stuck runs:** a run with no progress for 5 minutes is marked "interrupted" automatically as soon as you reopen the run page (or start another run), so the "Resume run" button appears immediately instead of the run hanging as "running".
 - **Heartbeat:** the running step records progress regularly, so a live run is never mistaken for a stuck one and never runs twice.
 - **Stale evidence on resume:** if a run resumes more than 24 hours later, data for a today's-date run is refreshed and the report notes which steps used older data; historical-date runs keep their original dated data.
 - **Clear messages:** timeouts, quota used up, access denied and malformed output each show a plain explanation and whether resuming is possible.
-- **Costs:** report totals include all attempts; a note shows the resumed steps.
+- **Costs:** report totals include all attempts and are never reduced on resume (those charges really happened); saved step outputs keep only the clean final result. Each resume records an audit entry (which step it resumed from, attempt number) so costs always reconcile.
 - **See partial work:** a failed or interrupted run still shows each finished analyst step's output, model and cost, so nothing already paid for is hidden.
 - **Failed step cleanup:** both "running" and "failed" step rows for the step being retried are removed on resume, so the retry is clean and never counted twice; their cost stays in the run total.
 - **Run settings locked:** a resumed run keeps its original stock, date and model choices; changing models means starting a new run (or an explicit "resume with another model" choice that is recorded).
