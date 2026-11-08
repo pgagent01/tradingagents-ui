@@ -1,2 +1,3 @@
 - Pre-tax income and bank lines stay separately named, never substituted for operating income; only data-check failures on valuation inputs withhold targets.
 - Current-date headlines merge Yahoo search/RSS and Google News RSS with relevance filtering and dedup; historical runs omit these recent-only feeds.
+- IFRS/non-USD filers are shown, never valued; data checks and figure matching flag issues but never edit research.

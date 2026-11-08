@@ -40,4 +40,3 @@
 - Route dated filings/headlines to fundamentals as well as news, sentiment, risk and synthesis; use both Yahoo hosts for headline retrieval, and label absent social feeds explicitly so proxies cannot be mistaken for measured sentiment.
 - Share filing-aligned SEC period selection across stock and research; derive quarters only from same-filing same-concept comparatives to avoid YTD mislabeling.
 - Owner-scoped scoring stays separate from saved research; adjusted prices are not point-in-time evidence.
-- IFRS/non-USD filers are shown, never valued; data checks and figure matching flag issues but never edit research.
