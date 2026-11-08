@@ -64,7 +64,7 @@ export function evidenceNumbers(evidence: unknown, limit = 20000): number[] {
 /** Extract $ amounts, percentages and multiples from prose and match them to evidence within rounding tolerance. */
 export function checkFigures(text: string, pool: number[]): FigureCheck {
   const abs = pool.map(Math.abs);
-  const near = (v: number, decimals: number) => { const tol = Math.max(Math.abs(v) * 0.015, 0.5 * 10 ** -decimals); return abs.some(p => Math.abs(p - Math.abs(v)) <= tol || Math.abs(p * 100 - Math.abs(v)) <= tol); };
+  const near = (v: number, unitTol: number) => { const tol = Math.max(Math.abs(v) * 0.015, unitTol); return abs.some(p => Math.abs(p - Math.abs(v)) <= tol || Math.abs(p * 100 - Math.abs(v)) <= tol); };
   const unverified: string[] = []; let checked = 0;
   const re = /(\$|US\$)?\s?(-?\d{1,3}(?:,\d{3})+|-?\d+(?:\.\d+)?)\s?(trillion|billion|million|thousand|bn|mm|[TBMK]\b)?\s?(%|x\b|×)?/gi;
   for (const m of text.matchAll(re)) {
@@ -74,7 +74,7 @@ export function checkFigures(text: string, pool: number[]): FigureCheck {
     if (!dollar && !scale && unit === '%' && Math.abs(n) <= 1 && decimals === 0) continue;
     const value = scale ? n * (SCALE[scale.toLowerCase()] ?? 1) : n;
     checked++;
-    const ok = near(value, scale ? decimals + Math.log10(SCALE[scale.toLowerCase()] ?? 1) * -1 : decimals) || (scale ? near(n, decimals) : false);
+    const mult = scale ? SCALE[scale.toLowerCase()] ?? 1 : 1; const ok = near(value, 0.5 * 10 ** -decimals * mult);
     if (!ok && unverified.length < 12) unverified.push(raw!.trim());
   }
   return { checked, unverified };
