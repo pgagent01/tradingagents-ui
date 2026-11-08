@@ -4,6 +4,8 @@ import { reviewCalculatedTarget } from '@/lib/report-quality';
 import { reportMarkdown, type Report } from '@/lib/report-content';
 import type { FundamentalEvidence } from '@/lib/research-evidence';
 import type { ComparableEvidence } from '@/lib/valuation/comparables';
+import { savedFinancialComparisons } from '@/lib/financial-comparison';
+import { reconcileFigures } from '@/lib/valuation/reconcile';
 
 describe('valuation handoff and saved report integration',()=>{
  it('preserves calculated scenarios and target through serialization, review and report export',()=>{
@@ -18,7 +20,9 @@ describe('valuation handoff and saved report integration',()=>{
   if(valuation.intrinsicValue===null) throw Error('Expected an estimated intrinsic value');
   expect(reviewed.target).toBeCloseTo(valuation.intrinsicValue * 1.09);
   expect(reviewed.target).not.toBe(9999);
-  const sections=JSON.parse(JSON.stringify({valuation,quality_review:{warnings:reviewed.warnings}}));
+  const reconciliation=reconcileFigures({provider:'SEC',periodEnd:end,values:{revenue:1000}},[{provider:'FMP',periodEnd:end,values:{revenue:1040}}]);
+  const sections=JSON.parse(JSON.stringify({valuation,quality_review:{warnings:reviewed.warnings},external_evidence:{fundamentals:{annual:[{end}],reconciliation}}}));
+  expect(savedFinancialComparisons(sections.external_evidence.fundamentals.reconciliation)[0]).toMatchObject({sec:1000,value:1040,diffPct:4,used:'SEC',flagged:true});
   expect(sections.valuation.priceTarget).toBe(reviewed.target);
   expect(sections.valuation.intrinsic.scenarios[1].assumptions.reinvestment).toBe(.4);
   const report={ticker:'AMZN',created_at:date,sections,price_target:reviewed.target,total_input_tokens:10,total_output_tokens:5,total_cost_usd:.01,lovable_credits:0} as unknown as Report;
