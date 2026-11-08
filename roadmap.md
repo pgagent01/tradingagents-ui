@@ -114,7 +114,10 @@
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
 - [x] Phase 1b: rolling 12-month SEC figures with freshness line and SEC-vs-provider comparison table in each new analysis (AMZN live check: TTM to 2026-09-30)
 - [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
-- [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests (in progress: pure calculators and bounded peer evidence).
-- [ ] Phases 4/4b: feed valuation to analysts, prompt improvements.
-- [ ] Phases 5/6: Valuation card, exports, verification run.
+- [x] Valuation foundation: pure DCF, excess-return, FFO, revenue scenarios, WACC and target roll-forward calculators; industry method selection and peer median/IQR with 0.25–4x size filter, max 8.
+- [x] Bounded owner/version-cached FMP peer discovery and provider TTM multiples (48h successful-cache TTL); historical runs exclude current peers. AMZN authenticated desktop/mobile checked: no suitable peers returned; explicit unavailability, no runtime errors.
+- [ ] Phases 2/2b/3 remaining: SEC SIC peer discovery/Yahoo fallback, peer editing, reconciled total debt and diluted shares, explicit forecast assumptions, FRED 10Y/ERP/beta, live intrinsic scenarios, sensitivity grid and target blending. Pure calculators are not yet wired to forward assumptions.
+- [x] Feed saved valuation evidence to fundamentals/risk/debate/synthesis; improve conditional ROIC/FCF guidance, stress tests and five-part cross-examination without new LLM stages.
+- [x] Valuation and comps view on Stock Info and new reports; persist immutable valuation and include in Markdown/PDF print view. Existing reports unchanged.
+- [ ] Phases 4/5/6 remaining: calculated-target range review, sensitivity grid, comparison enhancements and approved fresh AMZN LLM report after forecast inputs are implemented. No billed report started this turn.
 - [ ] Phase 8: report scorecard and calibration.
