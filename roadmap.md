@@ -7,7 +7,7 @@
 - [x] Validate SEC duration alignment and derive compatible same-filing YTD quarters with per-fact provenance; refresh parsed caches. Missing compatible comparative facts stay unavailable rather than subtracting across restatements.
 - [x] Add bounded indicator-availability/annual-financial-age claim checks before synthesis, preserve warnings in new reports, and show limited-scope review on saved reports. This is not a full factual audit; old report content remains unchanged.
 - [x] Align visible glossary and Markdown export, include saved technical evidence, repair invalid comparison selections and distinguish same-day saves. Authenticated saved report, section shortcuts, Markdown download, PDF glossary and invalid comparison warning verified without runtime errors; 190 automated tests passed.
-- [ ] Verify comparison using two real reports for one ticker — blocked: the fresh LITE attempt was cancelled by test-browser disconnection before saving a second report.
+- [x] Second LITE report now exists (resumed run); comparison data available.
 - [ ] Verify new claim checks in a fresh final LLM report — blocked: live LITE specialist evidence was verified, but the test browser disconnected before synthesis; no automatic retry was started.
 
 - [x] Show snapshot-based agents in dashboard report rows and accessible financial/technical explanations, including saved RSI/MACD indicators; hover and keyboard checks passed.
@@ -110,7 +110,8 @@
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
-- [ ] Phase 7 extras: refresh stale evidence when resuming >24h later; live resume check on a real failed run.
+- [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
+- [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
 - [ ] Phases 1/1b: reconciled inputs, rolling TTM, 8-K bridge, reconciliation table.
 - [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests.
 - [ ] Phases 4/4b: feed valuation to analysts, prompt improvements.
