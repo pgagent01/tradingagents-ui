@@ -8,7 +8,7 @@ import { Activity, CheckCircle2, Circle, XCircle, Square, FileText, RotateCcw } 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { UsageMetrics } from '@/components/usage-metrics';
-import { getExecution,advanceDemo,cancelAnalysis } from '@/lib/research.functions';
+import { getExecution,advanceDemo,cancelAnalysis,resumeAnalysis } from '@/lib/research.functions';
 import { CreditMetric } from '@/components/credit-metric';
 import { useRef } from 'react';
 import { AGENTS } from '@/lib/research-config';
