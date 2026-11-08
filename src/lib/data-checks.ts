@@ -23,8 +23,8 @@ export function dataChecks(f: FundamentalEvidence | null | undefined, analysisDa
       checks.push({ code: 'cash_flow_identity', severity: ok ? 'ok' : 'failure', period: p.end, message: ok ? 'Free cash flow equals operating cash flow minus capex.' : 'Free cash flow does not equal operating cash flow minus capex.', usedByValuation: latest });
     }
     if (p.revenue !== null && p.revenue < 0) checks.push({ code: 'negative_revenue', severity: 'failure', period: p.end, message: 'Revenue is negative, which indicates a tagging problem.', usedByValuation: latest });
-    if (p.revenue !== null && p.operatingIncome !== null && p.revenue > 0 && Math.abs(p.operatingIncome) > p.revenue * 1.5) checks.push({ code: 'implausible_margin', severity: 'warning', period: p.end, message: 'Operating income is larger than 150% of revenue; check the filing.', usedByValuation: latest });
-    if (p.operatingIncome === null && p.pretaxIncome != null) checks.push({ code: 'operating_income_substitute', severity: 'warning', period: p.end, message: 'Operating income is not reported; pre-tax income is shown separately and is not used as operating income.', usedByValuation: false });
+    if (p.revenue !== null && p.operatingIncome !== null && p.revenue > 0 && p.operatingIncome > p.revenue) checks.push({ code: 'implausible_margin', severity: 'warning', period: p.end, message: 'Operating income is larger than revenue; check the filing.', usedByValuation: latest });
+    if (latest && p.operatingIncome === null && p.pretaxIncome != null) checks.push({ code: 'operating_income_substitute', severity: 'warning', period: p.end, message: 'Operating income is not reported; pre-tax income is shown separately and is not used as operating income.', usedByValuation: false });
   }
   const t = f.ttm?.revenue && f.ttm.operatingIncome && f.ttm.netIncome ? f.ttm : undefined;
   if (t && t.revenue.value !== null && t.operatingIncome.value !== null && t.revenue.periodEnd !== t.operatingIncome.periodEnd) checks.push({ code: 'ttm_alignment', severity: 'failure', period: t.revenue.periodEnd, message: 'Trailing revenue and operating income end on different dates.', usedByValuation: true });
