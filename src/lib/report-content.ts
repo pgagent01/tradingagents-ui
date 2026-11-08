@@ -63,7 +63,7 @@ export function valuationMarkdown(value:unknown):string {
   const scen=sectionObject(v['intrinsic'])['scenarios'];
   if(Array.isArray(scen)&&scen.length){lines.push('','| Scenario | Discount rate | Intrinsic value | 12-month target |','|---|---|---|---|',...scen.map(x=>{const s=sectionObject(x);const r=s['discountRate'];return `| ${String(s['name']??'')} | ${typeof r==='number'?(r*100).toFixed(2)+'%':'Unavailable'} | ${usd(s['value'])} | ${usd(s['target'])} |`;}));}
   const peers=sectionObject(v['comparables'])['peers'];
-  if(Array.isArray(peers)) lines.push('',`Verified peers: ${peers.map(p=>String(sectionObject(p)['symbol']??'')).filter(Boolean).join(', ')||'none'}`);
+  if(Array.isArray(peers)) lines.push('',`Verified peers: ${peers.map(p=>String(sectionObject(p)['ticker']??'')).filter(Boolean).join(', ')||'none'}`);
   const lim=v['limitations']; if(Array.isArray(lim)&&lim.length) lines.push('','Limitations / notes:',...lim.map(l=>`- ${String(l)}`));
   return lines.join('\n');
 }
