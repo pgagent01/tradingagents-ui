@@ -26,9 +26,10 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const last=candles.at(-1);
   const vb=f?.valuationBalance, ann=f?.annual??[];
   const ext=usd&&aligned?extendedRatios(cap,vb?.debt?.value??null,vb?.cash?.value??null,revenue,f?.ttm?.operatingIncome.value??null,f?.ttm?.freeCashFlow??null):{};
-  const la=ann.at(-1); const anchor=la?{accn:la.accession,end:la.end,start:la.start??null,filed:la.filed}:null;
-  const g=(tags:string[],kind:'annual'|'instant')=>facts&&anchor?selectSecFact(facts as Record<string,unknown>,tags,anchor,kind,'USD',today)?.value??null:null;
-  const ab=facts&&anchor?valuationBalance(facts as Record<string,unknown>,anchor,today):null;
+  const la=ann.at(-1); const anchor=la?{accn:la.accession,end:la.end,start:la.start??null,filed:la.filed,form:la.form}:null;
+  const gaap=((facts as {facts?:{'us-gaap'?:Record<string,unknown>}}|null)?.facts?.['us-gaap'])??null;
+  const g=(tags:string[],kind:'annual'|'instant')=>gaap&&anchor?selectSecFact(gaap,tags,anchor,kind,'USD',today)?.value??null:null;
+  const ab=gaap&&anchor?valuationBalance(gaap,anchor,today):null;
   const quality=usd?qualityRatios({operatingIncome:la?.operatingIncome??null,da:g(['DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'],'annual'),debt:ab?.debt?.value??null,cash:ab?.cash?.value??null,equity:g(['StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],'instant'),dividends:g(['PaymentsOfDividends','PaymentsOfDividendsCommonStock'],'annual'),buybacks:g(['PaymentsForRepurchaseOfCommonStock'],'annual'),ttmFcf:aligned?f?.ttm?.freeCashFlow??null:null,marketCap:cap}):{};
   const risk=riskStats(candles,spy); const c1y=periodChange(candles,365), s1y=periodChange(spy,365);
   const growth=annualGrowth(ann.at(-1)?.revenue,ann.at(-2)?.revenue);
