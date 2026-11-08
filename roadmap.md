@@ -114,7 +114,7 @@
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
 - [x] Phase 1b: rolling 12-month SEC figures with freshness line and SEC-vs-provider comparison table in each new analysis (AMZN live check: TTM to 2026-09-30)
 - [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
-- [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests.
+- [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests (in progress: pure calculators and bounded peer evidence).
 - [ ] Phases 4/4b: feed valuation to analysts, prompt improvements.
 - [ ] Phases 5/6: Valuation card, exports, verification run.
 - [ ] Phase 8: report scorecard and calibration.
