@@ -8,3 +8,4 @@
 - Owner forecast estimates and peer selections are snapshotted into new current-date runs; resume never reads mutable preferences, custom peers remain independently verified and cash-flow ratios are all-or-none.
 - Withhold calculated 12-month targets when base intrinsic value falls outside 0.25x–4x market price, and Blume-adjust measured betas; default assumptions cannot capture one-off charges.
 - The report's comparable-companies snapshot is descriptive only: it reuses the fundamentals model's saved suggestions (no new AI call), skips the SIC gate, and never feeds valuation math.
+- Comparable snapshot extras (ROIC, net debt/EBITDA, payouts, beta) use the latest fiscal-year same-filing facts; its labeled debt fallback is snapshot-only so valuation keeps strict debt rules.
