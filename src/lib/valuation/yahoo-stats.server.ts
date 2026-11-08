@@ -43,12 +43,14 @@ export async function cachedYahooStats(sb: EvidenceClient, userId: string, ticke
   const cached = await readDataCache(sb, userId, 'yahoo-stats', key);
   if (cached?.fresh) return cached.payload as YahooStats | null;
   const value = await yahooStats(ticker);
-  await writeDataCache(sb, userId, 'yahoo-stats', key, value, value ? 30 * 60 * 1000 : 60 * 1000);
+  // A hot-cache hit must not renew an older quote for another full half hour.
+  const remaining=value?.retrievedAt ? Date.parse(value.retrievedAt)+30*60*1000-Date.now() : 30*60*1000;
+  await writeDataCache(sb, userId, 'yahoo-stats', key, value, value ? Math.max(1,remaining) : 60 * 1000);
   return value;
 }
 /** Provider-reported key statistics (Yahoo's own definitions and periods); null when unavailable, never estimated. */
 export async function yahooStats(ticker: string): Promise<YahooStats | null> {
-  const hit=memo.get(ticker); if(hit&&Date.now()-hit.at<30*60*1000) return hit.v;
+  const hit=memo.get(ticker); if(hit&&Date.now()-hit.at<(hit.v?30*60*1000:60*1000)) return hit.v;
   const v=await loadStats(ticker); if(memo.size>200) memo.clear(); memo.set(ticker,{at:Date.now(),v}); return v;
 }
 async function loadStats(ticker: string): Promise<YahooStats | null> {

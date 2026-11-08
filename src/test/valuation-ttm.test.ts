@@ -26,6 +26,12 @@ describe('rolling trailing twelve months', () => {
   it('is unavailable with no annual anchor', () => {
     expect(ttmFigure(facts([YTD, PRIOR]), ['Revenues']).value).toBeNull();
   });
+  it('uses the newest filed revision when same-period YTD figures were amended',()=>{
+    const revised={...YTD,val:800,filed:'2026-11-05',accn:'Q3A',form:'10-Q/A'};
+    const prior={...PRIOR,filed:'2026-11-05',accn:'Q3A',form:'10-Q/A'};
+    expect(ttmFigure(facts([FY,YTD,PRIOR,revised,prior]),['Revenues'],'2026-11-08').value).toBe(1100);
+    expect(ttmFigure(facts([FY,YTD,PRIOR,revised,prior]),['Revenues'],'2026-11-01').value).toBe(1080);
+  });
 });
 
 describe('provider reconciliation', () => {

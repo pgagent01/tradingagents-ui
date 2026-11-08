@@ -38,7 +38,7 @@ export function ttmFigure(facts: Row, names: string[], cutoff = '9999-12-31'): T
   const latestAnnual = annuals[0] ?? null;
   // Newest 10-Q YTD (duration 60–300 days) ending after the latest annual period.
   const ytds = rows.filter(r => /^10-Q/.test(String(r['form'])) && dur(r) >= 60 && dur(r) <= 300 && (!latestAnnual || String(r['end']) > String(latestAnnual['end'])))
-    .sort((a, b) => String(b['end']).localeCompare(String(a['end'])) || dur(b) - dur(a) || names.indexOf(String(a['tag'])) - names.indexOf(String(b['tag'])));
+    .sort((a, b) => String(b['end']).localeCompare(String(a['end'])) || dur(b) - dur(a) || String(b['filed']).localeCompare(String(a['filed'])) || names.indexOf(String(a['tag'])) - names.indexOf(String(b['tag'])));
   for (const ytd of ytds) {
     const fyStart = t(ytd['start']);
     const annual = annuals.find(a => a['tag'] === ytd['tag'] && near(a['end'], fyStart - DAY, 7) && String(a['filed']) <= String(ytd['filed']));
