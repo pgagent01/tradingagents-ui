@@ -11,4 +11,22 @@ describe('shared owner statistics cache',()=>{
     expect(mocks.read).toHaveBeenCalledWith({},'owner-a','yahoo-stats','v2:DELL');
     expect(fetchSpy).not.toHaveBeenCalled();expect(mocks.write).not.toHaveBeenCalled();fetchSpy.mockRestore();
   });
+  it('does not renew hot-cached provider data for another full TTL after durable expiry',async()=>{
+    mocks.read.mockResolvedValue(null);
+    const fetchSpy=vi.spyOn(globalThis,'fetch').mockImplementation(async(input)=>{
+      const url=String(input);
+      if(url.includes('fc.yahoo.com'))return new Response('',{headers:{'set-cookie':'test=public'}});
+      if(url.includes('getcrumb'))return new Response('publiccrumb');
+      return Response.json({quoteSummary:{result:[{price:{currency:'USD',marketCap:{raw:1000}}}]}});
+    });
+    vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-08T14:00:00Z'));
+    try{
+      await cachedYahooStats({} as never,'owner-a','CACHE-TTL');
+      expect(mocks.write.mock.calls[0]?.[5]).toBe(1800000);
+      vi.setSystemTime(new Date('2026-11-08T14:20:00Z'));
+      await cachedYahooStats({} as never,'owner-a','CACHE-TTL');
+      expect(mocks.write.mock.calls[1]?.[5]).toBe(600000);
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+    }finally{vi.useRealTimers();fetchSpy.mockRestore();}
+  });
 });
