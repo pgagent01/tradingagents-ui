@@ -1,4 +1,4 @@
-import { claimReviewPrompt, reviewReportClaims, reviewPriceTarget } from '@/lib/report-quality';
+import { claimReviewPrompt, reviewReportClaims, reviewCalculatedTarget } from '@/lib/report-quality';
 import type { ResearchProgress } from '@/lib/research-diagnostics';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -146,7 +146,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(final.model!==String(sectionObject(roles[synthesisRole])['model'])){const fix=await sb.from('agent_outputs').update({model_used:final.model}).eq('id',synthesisOutput.id);if(fix.error)throw fix.error;}
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
-  const targetReview=reviewPriceTarget(valuation.priceTarget??final.object.price_target,stockSnapshot?.price);
+  const targetReview=reviewCalculatedTarget(final.object.price_target,valuation,stockSnapshot?.price);
   const f={...final.object,price_target:targetReview.target,storage_version:2,valuation,quality_review:{version:2,scope:'Indicator availability, annual financial age and price-target sanity only; not a full audit',warnings:[...reviewReportClaims({...Object.fromEntries(Object.entries(storedAnalysts).map(([a,v])=>[a,v.content])),executive_summary:final.object.executive_summary,technical_analysis:final.object.technical_analysis,fundamental_analysis:final.object.fundamental_analysis,final_synthesis:final.object.final_synthesis},technical,fundamentals,run.analysis_date),...targetReview.warnings]},analyst_outputs:storedAnalysts,external_evidence:evidence,technical_evidence:technical,stock_snapshot:stockSnapshot,stock_snapshot_status:stockSnapshot?'Recorded provider snapshot':'Unavailable for historical-date analysis; current data excluded',research_metadata:{analysis_date:run.analysis_date,lookback_days:run.lookback_days,depth:run.research_depth,agents,roles,recorded_at:new Date().toISOString()},conviction_score:final.object.conviction_score===null?null:Math.round(Math.max(0,Math.min(100,final.object.conviction_score)))};
   progress.stage='report_finalize';
   const {data:reportId,error}=await sb.rpc('finalize_research_report',{_run_id:run.id,_report:JSON.parse(JSON.stringify(f))});if(error)throw error;

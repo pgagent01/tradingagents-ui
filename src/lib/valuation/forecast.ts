@@ -1,7 +1,7 @@
 import { blendedCostOfCapital, dcfValue, twelveMonthTarget } from './methods';
 export type ForecastAssumptions = { growth: number; margin: number; taxRate: number; reinvestment: number; terminalGrowth: number; riskFree: number; beta: number; equityPremium: number; creditSpread: number; dividendsPerShare: number };
 export type ForecastInput = { revenue: number; debt: number; cash: number; shares: number; marketCap: number; assumptions: ForecastAssumptions };
-export type ForecastScenario = { name: string; assumptions: ForecastAssumptions; discountRate: number; costOfEquity: number; forecasts: { year: number; revenue: number; operatingIncome: number; nopat: number; reinvestment: number; fcff: number }[]; value: number | null; target: number | null; reason: string | null };
+export type ForecastScenario = { name: string; assumptions: ForecastAssumptions; discountRate: number | null; costOfEquity: number; forecasts: { year: number; revenue: number; operatingIncome: number; nopat: number; reinvestment: number; fcff: number }[]; value: number | null; target: number | null; reason: string | null };
 export function forecastScenario(input: ForecastInput, name: string): ForecastScenario {
   const a = input.assumptions;
   const equityCost = a.riskFree + a.beta * a.equityPremium;
@@ -12,12 +12,13 @@ export function forecastScenario(input: ForecastInput, name: string): ForecastSc
     return {year,revenue,operatingIncome,nopat,reinvestment,fcff:nopat-reinvestment};
   }) : [];
   const result = valid && rate !== null ? dcfValue({cashFlows:forecasts.map(f=>f.fcff),discountRate:rate,terminalGrowth:a.terminalGrowth,netDebt:input.debt-input.cash,shares:input.shares}) : {value:null,reason:'Invalid or incomplete forecast assumptions or financial inputs.'};
-  return {name,assumptions:a,discountRate:rate??0,costOfEquity:equityCost,forecasts,value:result.value,target:result.value!==null ? twelveMonthTarget(result.value,equityCost,a.dividendsPerShare) : null,reason:result.reason};
+  return {name,assumptions:a,discountRate:rate,costOfEquity:equityCost,forecasts,value:result.value,target:result.value!==null ? twelveMonthTarget(result.value,equityCost,a.dividendsPerShare) : null,reason:result.reason};
 }
 export function sensitivityGrid(input: ForecastInput, base: ForecastScenario) {
-  if (base.value===null) return [];
+  if (base.value===null || base.discountRate===null) return [];
+  const baseRate=base.discountRate;
   return [-.01,0,.01].flatMap(dr=>[-.005,0,.005].map(dg=>{
-    const rate=base.discountRate+dr,growth=input.assumptions.terminalGrowth+dg;
+    const rate=baseRate+dr,growth=input.assumptions.terminalGrowth+dg;
     const result=dcfValue({cashFlows:base.forecasts.map(f=>f.fcff),discountRate:rate,terminalGrowth:growth,netDebt:input.debt-input.cash,shares:input.shares});
     return {discountRate:rate,terminalGrowth:growth,value:result.value};
   }));
