@@ -46,6 +46,8 @@ export const setDemoSetting = createServerFn({ method:'POST' }).middleware([requ
 export const getExecution = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
   const { data:run,error } = await context.supabase.from('research_runs').select('*').eq('id',data.id).eq('user_id',context.userId).single();
   if(error) throw new Error('Run not found or unavailable to this account.');
+  // A run with no heartbeat for 5 minutes is marked interrupted so the owner can resume it.
+  if(run.status==='running' && !run.is_demo) { const { data:expired } = await context.supabase.rpc('expire_stale_research_run',{ _run_id:run.id }); if(expired) { const again = await context.supabase.from('research_runs').select('*').eq('id',run.id).single(); if(again.data) Object.assign(run, again.data); } }
   const [events,outputs,reports] = await Promise.all([
     context.supabase.from('research_events').select('*').eq('run_id',run.id).order('created_at').limit(500),
     context.supabase.from('agent_outputs').select('agent_id,status,model_used,input_tokens,output_tokens,cost_usd').eq('run_id',run.id),
@@ -69,7 +71,13 @@ export const cancelAnalysis = createServerFn({ method:'POST' }).middleware([requ
     if(logError) throw logError;
   }
   return { cancelled:Boolean(run) };
-});export const deleteIncompleteRun = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
+});
+export const resumeAnalysis = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
+  const { data:result,error } = await context.supabase.rpc('resume_research_run',{ _run_id:data.id });
+  if(error) throw new Error(error.message);
+  return result as { resumed:boolean; from:string; attempt:number };
+});
+export const deleteIncompleteRun = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).inputValidator((input: { id:string }) => z.object({ id:z.string().uuid() }).parse(input)).handler(async ({ data,context }) => {
   // Completed runs keep their saved report; only unfinished/failed runs may be deleted. Related events/outputs cascade.
   const { data:run,error } = await context.supabase.from('research_runs').delete().eq('id',data.id).eq('user_id',context.userId).neq('status','completed').select('id').maybeSingle();
   if(error) throw error;
