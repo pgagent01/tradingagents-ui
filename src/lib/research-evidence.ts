@@ -13,10 +13,12 @@ export type FundamentalPeriod = {
   operatingCashFlow: number | null; capex: number | null; freeCashFlow: number | null;
   assets: number | null; liabilities: number | null; liabilitiesDerived: boolean; equity: number | null; cash: number | null; longTermDebt: number | null;
   revenueGrowthPct: number | null; netIncomeGrowthPct: number | null;
+  /** Named substitutes and sector lines; never copied into operatingIncome. */
+  pretaxIncome?: number | null; netInterestIncome?: number | null; creditLossProvision?: number | null; deposits?: number | null; minorityInterest?: number | null;
 };
 export type FundamentalEvidence = {
   status: 'available' | 'unavailable'; source: string; sourceUrl: string | null; cutoff: string; fetchedAt: string; cached: boolean;
-  currency: 'USD'; annual: FundamentalPeriod[]; latestQuarter: FundamentalPeriod | null; note: string;
+  currency: string; taxonomy?: 'us-gaap' | 'ifrs-full'; annual: FundamentalPeriod[]; latestQuarter: FundamentalPeriod | null; note: string;
   /** Rolling trailing-twelve-month figures; absent on snapshots saved before this field existed. */
   ttm?: TtmEvidence;
   /** SEC vs other providers for the latest fiscal year; added at research time. */
@@ -31,6 +33,12 @@ export type NewsEvidence = {
   filings: FilingEvent[]; filingsSource: string | null; headlines: Headline[]; headlinesSource: string | null; notes: string[];
 };
 
+const IFRS: Record<string,string[]> = {
+  revenue: ['Revenue', 'RevenueFromContractsWithCustomers'], costOfRevenue: ['CostOfSales'], grossProfit: ['GrossProfit'], operatingIncome: ['ProfitLossFromOperatingActivities'],
+  netIncome: ['ProfitLossAttributableToOwnersOfParent', 'ProfitLoss'], operatingCashFlow: ['CashFlowsFromUsedInOperatingActivities'], capex: ['PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities'],
+  assets: ['Assets'], liabilities: ['Liabilities'], liabilitiesAndEquity: ['EquityAndLiabilities'], equity: ['EquityAttributableToOwnersOfParent', 'Equity'], cash: ['CashAndCashEquivalents'], longTermDebt: ['NoncurrentPortionOfNoncurrentBorrowings', 'LongtermBorrowings'],
+  pretaxIncome: ['ProfitLossBeforeTax'], netInterestIncome: ['RevenueFromInterest'], creditLossProvision: [], deposits: [], minorityInterest: ['NoncontrollingInterests'], eps: ['DilutedEarningsLossPerShare'],
+};
 const REVENUE = ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueGoodsNet'];
 const TAGS = {
   costOfRevenue: ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold'],
@@ -41,16 +49,30 @@ const TAGS = {
   equity: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
   cash: ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents', 'Cash'],
   longTermDebt: ['LongTermDebtNoncurrent', 'LongTermDebt'],
+  pretaxIncome: ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments'],
+  netInterestIncome: ['InterestIncomeExpenseNet', 'InterestIncomeExpenseAfterProvisionForLoanLoss'], creditLossProvision: ['ProvisionForLoanLeaseAndOtherLosses', 'ProvisionForLoanAndLeaseLosses', 'ProvisionForCreditLosses'],
+  deposits: ['Deposits'], minorityInterest: ['MinorityInterest'], eps: ['EarningsPerShareDiluted'],
 };
+/** Banks and some insurers report total revenue under these concepts instead of contract revenue. */
+const REVENUE_EXTRA = ['RevenuesNetOfInterestExpense', 'InterestAndDividendIncomeOperating'];
+/** Pick the taxonomy and reporting currency with the most revenue facts; IFRS filers usually report in home currency. */
+export function factsTaxonomy(raw: unknown): { taxonomy: 'us-gaap' | 'ifrs-full'; currency: string } {
+  const all = object(object(raw)['facts']);
+  const count = (tax: string, names: string[]) => { const units: Record<string, number> = {}; for (const n of names) for (const [u, rows] of Object.entries(object(object(object(all[tax])[n])['units']))) if (Array.isArray(rows) && /^[A-Z]{3}$/.test(u)) units[u] = (units[u] ?? 0) + rows.length; return Object.entries(units).sort((a, b) => b[1] - a[1])[0] ?? null; };
+  const us = count('us-gaap', [...REVENUE, ...REVENUE_EXTRA]); const ifrs = count('ifrs-full', IFRS.revenue ?? []);
+  if (ifrs && (!us || ifrs[1] > us[1])) return { taxonomy: 'ifrs-full', currency: ifrs[0] };
+  return { taxonomy: 'us-gaap', currency: us?.[0] ?? 'USD' };
+}
 type Row = Record<string, unknown>;
 const pct = (a: number | null, b: number | null) => a !== null && b !== null && b !== 0 ? (a - b) / Math.abs(b) * 100 : null;
 const days = (r: Row) => typeof r['start'] === 'string' && typeof r['end'] === 'string' ? (Date.parse(r['end']) - Date.parse(r['start'])) / 86400000 : null;
 
 export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = new Date().toISOString(), cached = false): FundamentalEvidence {
-  const body = object(raw); const facts = object(object(body['facts'])['us-gaap']);
+  const body = object(raw); const { taxonomy, currency } = factsTaxonomy(raw); const facts = object(object(body['facts'])[taxonomy]);
+  const T: Record<string, string[]> = taxonomy === 'ifrs-full' ? IFRS : TAGS; const REV = taxonomy === 'ifrs-full' ? IFRS.revenue! : [...REVENUE, ...REVENUE_EXTRA];
   const cik = numeric(body['cik']) ?? (typeof body['cik'] === 'string' ? Number(body['cik']) : null);
   const sourceUrl = cik ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(cik).padStart(10, '0')}&type=10-K` : null;
-  const rows = (names: string[], unit = 'USD') => secRows(facts, names, unit, cutoff);
+  const rows = (names: string[], unit = currency) => secRows(facts, names, unit, cutoff);
   const isAnnualForm = (f: unknown) => typeof f === 'string' && /^(10-K|20-F|40-F)/.test(f);
   const isQuarterForm = (f: unknown) => typeof f === 'string' && f.startsWith('10-Q');
   const annualDuration = (r: Row) => { const d = days(r); return d !== null && d > 300 && d < 400; };
@@ -58,35 +80,37 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   const build = (anchor: Row, duration: (r: Row) => boolean, prior: FundamentalPeriod | null): FundamentalPeriod => {
     const end = String(anchor['end']);
     const provenance: Record<string, SecFact | null> = {};
-    const pick = (names: string[], _end: string, d: ((r: Row) => boolean) | null, unit = 'USD') => {
+    const pick = (names: string[], _end: string, d: ((r: Row) => boolean) | null, unit = currency) => {
+      if (!names.length) return null;
       const selected = selectSecFact(facts, names, anchor, d ? (isQuarterForm(anchor['form']) ? 'quarter' : 'annual') : 'instant', unit, cutoff);
       provenance[names[0] ?? 'unknown'] = selected;
       return selected?.value ?? null;
     };
-    const revenue = pick(REVENUE, end, duration); const cost = pick(TAGS.costOfRevenue, end, duration);
-    const reportedGross = pick(TAGS.grossProfit, end, duration);
+    const revenue = pick(REV, end, duration); const cost = pick(T.costOfRevenue, end, duration);
+    const reportedGross = pick(T.grossProfit, end, duration);
     const gross = checkedGrossProfit(revenue, cost, reportedGross);
-    const equity = pick(TAGS.equity, end, null); const reportedLiabilities = pick(TAGS.liabilities, end, null); const total = pick(TAGS.liabilitiesAndEquity, end, null);
-    const ocf = pick(TAGS.operatingCashFlow, end, duration); const capex = pick(TAGS.capex, end, duration);
+    const equity = pick(T.equity, end, null); const reportedLiabilities = pick(T.liabilities, end, null); const total = pick(T.liabilitiesAndEquity, end, null);
+    const ocf = pick(T.operatingCashFlow, end, duration); const capex = pick(T.capex, end, duration);
     const accession = typeof anchor['accn'] === 'string' ? anchor['accn'] : null;
-    const netIncome = pick(TAGS.netIncome, end, duration);
+    const netIncome = pick(T.netIncome, end, duration);
     return {
       qualityWarnings: gross.warning ? [gross.warning] : [],
-      start: provenance[REVENUE[0] ?? 'unknown']?.start ?? (typeof anchor['start'] === 'string' ? anchor['start'] : null), provenance,
+      start: provenance[REV[0] ?? 'unknown']?.start ?? (typeof anchor['start'] === 'string' ? anchor['start'] : null), provenance,
       end, form: String(anchor['form']), filed: String(anchor['filed']), accession,
       filingUrl: accession && cik ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/` : null,
       revenue, grossProfit: gross.value, grossProfitDerived: gross.derived,
-      operatingIncome: pick(TAGS.operatingIncome, end, duration), netIncome,
-      dilutedEps: pick(['EarningsPerShareDiluted'], end, duration, 'USD/shares'),
+      operatingIncome: pick(T.operatingIncome, end, duration), netIncome,
+      dilutedEps: pick(T.eps!, end, duration, `${currency}/shares`),
       operatingCashFlow: ocf, capex, freeCashFlow: ocf !== null && capex !== null ? ocf - capex : null,
-      assets: pick(TAGS.assets, end, null), liabilities: reportedLiabilities ?? (total !== null && equity !== null ? total - equity : null), liabilitiesDerived: reportedLiabilities === null && total !== null && equity !== null,
-      equity, cash: pick(TAGS.cash, end, null), longTermDebt: pick(TAGS.longTermDebt, end, null),
+      assets: pick(T.assets, end, null), liabilities: reportedLiabilities ?? (total !== null && equity !== null ? total - equity : null), liabilitiesDerived: reportedLiabilities === null && total !== null && equity !== null,
+      equity, cash: pick(T.cash, end, null), longTermDebt: pick(T.longTermDebt, end, null),
+      pretaxIncome: pick(T.pretaxIncome!, end, duration), netInterestIncome: pick(T.netInterestIncome!, end, duration), creditLossProvision: pick(T.creditLossProvision!, end, duration), deposits: pick(T.deposits!, end, null), minorityInterest: pick(T.minorityInterest!, end, null),
       revenueGrowthPct: prior ? pct(revenue, prior.revenue) : null, netIncomeGrowthPct: prior ? pct(netIncome, prior.netIncome) : null,
     };
   };
   const anchors = (form: (f: unknown) => boolean, duration: (r: Row) => boolean) => {
     const byEnd = new Map<string, Row>();
-    for (const r of rows(REVENUE).filter(r => form(r['form']) && duration(r))) { const end = String(r['end']); const prev = byEnd.get(end); if (!prev || String(r['filed']) > String(prev['filed'])) byEnd.set(end, r); }
+    for (const r of rows(REV).filter(r => form(r['form']) && duration(r))) { const end = String(r['end']); const prev = byEnd.get(end); if (!prev || String(r['filed']) > String(prev['filed'])) byEnd.set(end, r); }
     return [...byEnd.values()].sort((a, b) => String(a['end']).localeCompare(String(b['end'])));
   };
   const annualAnchors = anchors(isAnnualForm, annualDuration).slice(-5);
@@ -97,11 +121,12 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   const latestQuarter = q ? build(q, quarterDuration, null) : null;
   const balanceAnchor = q ?? annualAnchors.at(-1);
   return {
-    status: annual.length || latestQuarter ? 'available' : 'unavailable', source: 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency: 'USD',
+    status: annual.length || latestQuarter ? 'available' : 'unavailable', source: taxonomy === 'ifrs-full' ? 'SEC EDGAR XBRL company facts (IFRS)' : 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency, taxonomy,
     annual: annual.slice(-4), latestQuarter,
-    ...(balanceAnchor ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff,object(object(body['facts'])['dei']))} : {}),
-    ttm: ttmEvidence(facts, { revenue: REVENUE, operatingIncome: TAGS.operatingIncome, netIncome: TAGS.netIncome, operatingCashFlow: TAGS.operatingCashFlow, capex: TAGS.capex }, cutoff),
-    note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD filers may report no USD facts.',
+    // Valuation inputs assume US GAAP USD figures; other taxonomies/currencies are shown but not valued.
+    ...(balanceAnchor && taxonomy === 'us-gaap' && currency === 'USD' ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff,object(object(body['facts'])['dei']))} : {}),
+    ...(taxonomy === 'us-gaap' && currency === 'USD' ? { ttm: ttmEvidence(facts, { revenue: REVENUE, operatingIncome: TAGS.operatingIncome, netIncome: TAGS.netIncome, operatingCashFlow: TAGS.operatingCashFlow, capex: TAGS.capex }, cutoff) } : {}),
+    note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD and IFRS filers are read in their reported currency and taxonomy; their figures are not converted or valued. Pre-tax income and bank lines are separate named fields, never substituted for operating income.',
   };
 }
 
