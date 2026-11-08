@@ -2,13 +2,16 @@ import { selectSecFact, type SecFact } from '@/lib/sec-periods';
 /** Debt excludes leases: only explicit reported aggregates or complete components are combined. */
 export function valuationBalance(facts: Record<string, unknown>, anchor: Record<string, unknown>, cutoff: string) {
   const get = (tags: string[], unit = 'USD') => selectSecFact(facts,tags,anchor,'instant',unit,cutoff);
-  const combined = get(['LongTermDebtAndShortTermBorrowings','DebtCurrentAndNoncurrent']);
+  const combined = get(['LongTermDebtAndShortTermBorrowings','DebtCurrentAndNoncurrent','DebtLongtermAndShorttermCombinedAmount']);
+  // DebtCurrent is the full current aggregate (current long-term debt plus short-term borrowings).
+  const currentAll = get(['DebtCurrent']);
   const longTotal = get(['LongTermDebtCurrentAndNoncurrent']);
   const noncurrent = get(['LongTermDebtNoncurrent']);
   const current = get(['LongTermDebtCurrent']);
   const short = get(['ShortTermBorrowings','ShortTermDebtCurrent']);
   let debt: SecFact | null = combined;
   const add = (a: SecFact,b: SecFact): SecFact => ({...a, value:a.value+b.value,tag:'DerivedTotalDebt',derived:true,inputs:[a,b]});
+  if (!debt && noncurrent && currentAll) debt=add(noncurrent,currentAll);
   if (!debt && short) {
     if (longTotal) debt=add(longTotal,short);
     else if (noncurrent && current) debt=add(add(noncurrent,current),short);
