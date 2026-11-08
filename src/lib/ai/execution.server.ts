@@ -90,7 +90,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
   let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
   const checks=dataChecks(fundamentals,run.analysis_date);
-  if(checks.withholdValuation&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,notes:[...(valuation.notes??[]),'Calculated target withheld: a data check failed on figures the valuation uses.']};
+  if(checks.withholdValuation&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
   const evidence={macro,predictions,news,fundamentals,free,valuation,dataChecks:checks};
   async function enrichPeers(agent:string,text:string,model:string) {
     if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
