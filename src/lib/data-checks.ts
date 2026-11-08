@@ -9,7 +9,7 @@ const rel = (a: number, b: number) => Math.abs(a - b) / Math.max(Math.abs(a), Ma
 export function dataChecks(f: FundamentalEvidence | null | undefined, analysisDate: string): DataChecks {
   const checks: DataCheck[] = [];
   if (!f || f.status !== 'available') return { version: 1, checks: [{ code: 'no_filed_statements', severity: 'not_checkable', period: null, message: 'No filed statements are available for this company.', usedByValuation: false }], withholdValuation: false, oldestCoreInput: null, filingAgeDays: null };
-  const periods: FundamentalPeriod[] = [...f.annual.slice(-2), ...(f.latestQuarter ? [f.latestQuarter] : [])];
+  const periods: FundamentalPeriod[] = [...(f.annual ?? []).slice(-2), ...(f.latestQuarter ? [f.latestQuarter] : [])];
   for (const p of periods) {
     const latest = p === periods.at(-1);
     if (p.assets === null || p.liabilities === null || p.equity === null) checks.push({ code: 'balance_identity', severity: 'not_checkable', period: p.end, message: 'Assets, liabilities or equity not tagged; balance check skipped.', usedByValuation: false });
@@ -26,10 +26,10 @@ export function dataChecks(f: FundamentalEvidence | null | undefined, analysisDa
     if (p.revenue !== null && p.operatingIncome !== null && p.revenue > 0 && Math.abs(p.operatingIncome) > p.revenue * 1.5) checks.push({ code: 'implausible_margin', severity: 'warning', period: p.end, message: 'Operating income is larger than 150% of revenue; check the filing.', usedByValuation: latest });
     if (p.operatingIncome === null && p.pretaxIncome != null) checks.push({ code: 'operating_income_substitute', severity: 'warning', period: p.end, message: 'Operating income is not reported; pre-tax income is shown separately and is not used as operating income.', usedByValuation: false });
   }
-  const t = f.ttm;
+  const t = f.ttm?.revenue && f.ttm.operatingIncome && f.ttm.netIncome ? f.ttm : undefined;
   if (t && t.revenue.value !== null && t.operatingIncome.value !== null && t.revenue.periodEnd !== t.operatingIncome.periodEnd) checks.push({ code: 'ttm_alignment', severity: 'failure', period: t.revenue.periodEnd, message: 'Trailing revenue and operating income end on different dates.', usedByValuation: true });
-  const annual = f.annual.at(-1);
-  if (annual && periods.some(p => p.form.endsWith('/A'))) checks.push({ code: 'restatement', severity: 'warning', period: annual.end, message: 'An amended filing supplied figures used here; earlier saved reports may show original values.', usedByValuation: false });
+  const annual = (f.annual ?? []).at(-1);
+  if (annual && periods.some(p => String(p.form ?? '').endsWith('/A'))) checks.push({ code: 'restatement', severity: 'warning', period: annual.end, message: 'An amended filing supplied figures used here; earlier saved reports may show original values.', usedByValuation: false });
   const latestEnd = [annual?.end, f.latestQuarter?.end].filter((d): d is string => !!d).sort().at(-1) ?? null;
   const filingAgeDays = latestEnd ? Math.floor((Date.parse(analysisDate) - Date.parse(latestEnd)) / 86400000) : null;
   if (filingAgeDays !== null && filingAgeDays > 120) checks.push({ code: 'stale_filing', severity: 'warning', period: latestEnd, message: `The latest filed period ended ${filingAgeDays} days before the analysis date.`, usedByValuation: false });
