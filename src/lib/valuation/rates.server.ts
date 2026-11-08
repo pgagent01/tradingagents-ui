@@ -12,8 +12,10 @@ export async function valuationRates(sb: EvidenceClient,userId: string,date: str
       const benchmark=await cachedStockData(sb,userId,'SPY','1Y','annual');
       const cutoff=Date.parse(`${date}T23:59:59Z`)/1000;
       const sensitivity=marketSensitivity(stock.candles.filter(c=>c.time<=cutoff),benchmark.candles.filter(c=>c.time<=cutoff));
-      if (sensitivity.beta!==null && Number.isFinite(sensitivity.beta) && sensitivity.beta>0 && sensitivity.beta<=5) Object.assign(result,{beta:sensitivity.beta,betaObservations:sensitivity.days,betaSource:'Calculated daily-return beta versus SPY; split-adjusted provider history'});
+      if (sensitivity.beta!==null && Number.isFinite(sensitivity.beta) && sensitivity.beta>0 && sensitivity.beta<=5) Object.assign(result,{beta:adjustedBeta(sensitivity.beta),betaObservations:sensitivity.days,betaSource:`Blume-adjusted beta ${adjustedBeta(sensitivity.beta).toFixed(2)} (0.67 × raw ${sensitivity.beta.toFixed(2)} + 0.33) from daily returns versus SPY; split-adjusted provider history`});
     } catch { /* Explicit default remains visible, never a fabricated measured beta. */ }
   }
   return result;
 }
+/** One-year raw betas are noisy; Blume adjustment shrinks toward the market beta of 1. */
+export function adjustedBeta(raw:number){return 0.67*raw+0.33;}
