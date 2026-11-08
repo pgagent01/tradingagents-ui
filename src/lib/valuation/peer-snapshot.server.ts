@@ -1,8 +1,7 @@
 import { secFacts } from '@/lib/stock-data.server';
 import { fundamentalEvidence } from '@/lib/research-evidence';
 import { numeric, parseYahooChart, validTicker } from '@/lib/stock-data';
-import { readDataCache, writeDataCache } from '@/lib/data-cache.server';
-import type { EvidenceClient } from '@/lib/research-evidence.server';
+import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-cache.server';
 import { periodChange, snapshotRatios, type PeerSnapshot, type PeerSnapshotRow } from './peer-snapshot';
 async function chart(ticker: string): Promise<unknown> {
   for (const host of ['query1','query2']) {
