@@ -11,6 +11,7 @@ export const getValuation = createServerFn({ method: 'POST' }).middleware([requi
     const { getComparables } = await import('./comparables.server');
     const { getFundamentalEvidence } = await import('@/lib/research-evidence.server');
     const { valuationEvidence } = await import('./engine');
+    const { marketCapOrDerived } = await import('./financial-inputs');
     const { getFredEvidence } = await import('@/lib/fred.server');
     const { cachedStockData } = await import('@/lib/stock-service.server');
     const { valuationRates } = await import('./rates.server');
@@ -21,5 +22,5 @@ export const getValuation = createServerFn({ method: 'POST' }).middleware([requi
     const stock=await cachedStockData(context.supabase,context.userId,data.ticker,'1Y','annual').catch(()=>null);
     const macro=await getFredEvidence(context.supabase,context.userId,today,process.env['API_KEY_ENCRYPTION_SECRET'],new AbortController().signal);
     const rates=await valuationRates(context.supabase,context.userId,today,macro,stock);
-    return valuationEvidence(f, comps, stock?.price??null, today,{marketCap:stock?.marketCap??null,rates,overrides:preferences.overrides});
+    return valuationEvidence(f, comps, stock?.price??null, today,{marketCap:marketCapOrDerived(stock?.marketCap,stock?.price,f?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
   });

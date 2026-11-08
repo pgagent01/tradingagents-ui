@@ -30,3 +30,8 @@ function secRowsSameFiling(dei: Record<string, unknown>, anchor: Record<string, 
   // Multiple classes are summed; all come from the same cover page.
   return {value:total,tag:'dei:EntityCommonStockSharesOutstanding',unit:'shares',start:null,end:String(r['end']),filed:String(r['filed']),accession:typeof r['accn']==='string'?r['accn']:null,derived:rows.length>1};
 }
+/** Provider market cap, else quote × same-filing SEC shares (labeled by callers); null when either is missing. */
+export function marketCapOrDerived(provider: number | null | undefined, price: number | null | undefined, shares: number | null | undefined): number | null {
+  if (typeof provider==='number'&&provider>0) return provider;
+  return typeof price==='number'&&price>0&&typeof shares==='number'&&shares>0?price*shares:null;
+}

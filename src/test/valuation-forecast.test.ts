@@ -52,3 +52,5 @@ describe('cover-page shares and lease-inclusive noncurrent debt',()=>{
   expect(b.debt?.value).toBe(8200e6); expect(b.shares?.value).toBe(861401106); expect(b.cash?.value).toBe(2537e6);
  });
 });
+import { marketCapOrDerived } from '@/lib/valuation/financial-inputs';
+describe('market cap fallback',()=>{it('prefers provider, else price × shares, else null',()=>{expect(marketCapOrDerived(5,1,1)).toBe(5);expect(marketCapOrDerived(null,106,861e6)).toBeCloseTo(106*861e6);expect(marketCapOrDerived(null,null,5)).toBeNull();});});

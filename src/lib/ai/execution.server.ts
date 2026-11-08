@@ -1,3 +1,4 @@
+import { marketCapOrDerived } from '@/lib/valuation/financial-inputs';
 import { claimReviewPrompt, reviewReportClaims, reviewCalculatedTarget } from '@/lib/report-quality';
 import type { ResearchProgress } from '@/lib/research-diagnostics';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -86,13 +87,13 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const automaticComparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
   const comparables=run.analysis_date===new Date().toISOString().slice(0,10)?await customPeers(automaticComparables,run.ticker,run.analysis_date,preferences):automaticComparables;
   const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
-  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates,overrides:preferences.overrides});
+  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
   const evidence={macro,predictions,news,fundamentals,free,valuation};
   async function enrichPeers(agent:string,text:string,model:string) {
     if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
     const checked=await verifyModelPeers(valuation.comparables,text,run.ticker,run.analysis_date,model);
     const selected={...checked,peers:checked.peers.filter(p=>!preferences.excludedPeers.includes(p.ticker))};
-    valuation=valuationEvidence(fundamentals,selected,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates,overrides:preferences.overrides});
+    valuation=valuationEvidence(fundamentals,selected,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
     evidence.valuation=valuation;
   }
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
