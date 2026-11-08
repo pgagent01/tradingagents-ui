@@ -53,10 +53,10 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
     marketCap:usd?cap:null,
     ttmRevenue:choose('ttmRevenue',financialUsd?ys?.revenue:null,()=>revenue),
     ttmNetIncome:choose('ttmNetIncome',financialUsd?ys?.netIncome:null,()=>aligned?net:null),
-    pe:choose('pe',ys?.trailingPe!=null&&ys.trailingPe>0?ys.trailingPe:null,()=>usd&&aligned?snapshotRatios(cap,revenue,net).pe:null),
-    ps:choose('ps',ys?.ps,()=>usd&&aligned?snapshotRatios(cap,revenue,net).ps:null),
+    pe:choose('pe',ys?.currency&& !['GBp','GBX','ZAc','ILA'].includes(ys.currency)&&ys?.trailingPe!=null&&ys.trailingPe>0?ys.trailingPe:null,()=>usd&&aligned?snapshotRatios(cap,revenue,net).pe:null),
+    ps:choose('ps',ys?.currency&& !['GBp','GBX','ZAc','ILA'].includes(ys.currency)?ys?.ps:null,()=>usd&&aligned?snapshotRatios(cap,revenue,net).ps:null),
     ...ext,
-    evSales:choose('evSales',ys?.evSales,()=>numeric('evSales' in ext?ext.evSales:null)),
+    evSales:choose('evSales',ys?.currency&& !['GBp','GBX','ZAc','ILA'].includes(ys.currency)?ys?.evSales:null,()=>numeric('evSales' in ext?ext.evSales:null)),
     netMargin:choose('netMargin',ys?.netMargin,()=>aligned?snapshotRatios(cap,revenue,net).netMargin:null),
     operatingMargin:choose('operatingMargin',ys?.operatingMargin,()=>numeric('operatingMargin' in ext?ext.operatingMargin:null)),
     revenueGrowth:growth,provider:ys,currency,metricSources,
@@ -69,11 +69,14 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
 export async function peerSnapshot(sb: EvidenceClient, userId: string, subject: string, candidates: string[], model: string|null): Promise<PeerSnapshot> {
   const picks=[...new Set(candidates.filter(t=>validTicker(t)&&t!==subject))].slice(0,3);
   const today=new Date().toISOString().slice(0,10);
-  const key=`v10:${subject}:${picks.join(',')}:${today}`;
+  const key=`v11:${subject}:${picks.join(',')}:${today}`;
   const cached=await readDataCache(sb,userId,'peer-snapshot',key);
   if(cached?.fresh) return cached.payload as PeerSnapshot;
   const spy=parseYahooChart(await chart('SPY').catch(()=>null)).candles;
-  const rows=await Promise.all([row(subject,'subject',today,spy,sb,userId),...picks.map(t=>row(t,'peer',today,spy,sb,userId))]);
+  // Each row can fetch chart, SEC facts and stats; two rows stay within six outbound requests.
+  const rows: PeerSnapshotRow[]=[];
+  const symbols=[subject,...picks];
+  for(let i=0;i<symbols.length;i+=2) rows.push(...await Promise.all(symbols.slice(i,i+2).map(t=>row(t,t===subject?'subject':'peer',today,spy,sb,userId))));
   const snap: PeerSnapshot={retrievedAt:new Date().toISOString(),source:'Yahoo Finance reported trailing metrics first; SEC aligned calculations and daily price history only fill unavailable equivalents. Provider trailing periods can differ from SEC periods; per-metric sources are retained.',model,candidates:picks,rows,note:'Comparable companies suggested by the report’s own AI model. Descriptive comparison only; these companies were not required to share the exact SEC industry code, so they do not feed the valuation calculation. Figures are retrieved now, not as of the report date.'};
   await writeDataCache(sb,userId,'peer-snapshot',key,snap,30*60*1000);
   return snap;

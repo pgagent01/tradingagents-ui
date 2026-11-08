@@ -8,7 +8,7 @@ export function valuationBalance(facts: Record<string, unknown>, anchor: Record<
   const longTotal = get(['LongTermDebtCurrentAndNoncurrent']);
   const noncurrent = get(['LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations']);
   const current = get(['LongTermDebtCurrent']);
-  const short = get(['ShortTermBorrowings','ShortTermDebtCurrent']);
+  const short = get(['ShortTermBorrowings','ShortTermDebtCurrent','CommercialPaper']);
   let debt: SecFact | null = combined;
   const add = (a: SecFact,b: SecFact): SecFact => ({...a, value:a.value+b.value,tag:'DerivedTotalDebt',derived:true,inputs:[a,b]});
   if (!debt && noncurrent && currentAll) debt=add(noncurrent,currentAll);
@@ -26,9 +26,14 @@ function secRowsSameFiling(dei: Record<string, unknown>, anchor: Record<string, 
   const units=(dei['EntityCommonStockSharesOutstanding'] as {units?:{shares?:Record<string,unknown>[]}}|undefined)?.units?.shares??[];
   const rows=units.filter(r=>(anchor['accn']?r['accn']===anchor['accn']:r['filed']===anchor['filed'])&&String(r['filed'])<=cutoff);
   if(!rows.length) return null;
-  const total=rows.reduce((a,r)=>a+Number(r['val']),0); const r=rows[0]!;
-  // Multiple classes are summed; all come from the same cover page.
-  return {value:total,tag:'dei:EntityCommonStockSharesOutstanding',unit:'shares',start:null,end:String(r['end']),filed:String(r['filed']),accession:typeof r['accn']==='string'?r['accn']:null,derived:rows.length>1};
+  // Companyfacts strips dimensional class identifiers: differing values cannot safely be summed.
+  const end=rows.map(r=>String(r['end'])).filter(d=>d>=String(anchor['end'])&&d<=cutoff).sort().at(-1);
+  if(!end) return null;
+  const dated=rows.filter(r=>r['end']===end);
+  const values=[...new Set(dated.map(r=>r['val']).filter((v):v is number=>typeof v==='number'&&Number.isFinite(v)&&v>0))];
+  if(values.length!==1 || dated.some(r=>typeof r['val']!=='number'||!Number.isFinite(r['val'])||Number(r['val'])<=0)) return null;
+  const r=dated[0]; const value=values[0]; if(!r||value===undefined)return null;
+  return {value,tag:'dei:EntityCommonStockSharesOutstanding',unit:'shares',start:null,end,filed:String(r['filed']),accession:typeof r['accn']==='string'?r['accn']:null,derived:false};
 }
 /** Provider market cap, else quote × same-filing SEC shares (labeled by callers); null when either is missing. */
 export function marketCapOrDerived(provider: number | null | undefined, price: number | null | undefined, shares: number | null | undefined): number | null {
