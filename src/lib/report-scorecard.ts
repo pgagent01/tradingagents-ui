@@ -5,7 +5,8 @@ export function scoreAnchor(sections: unknown, analysisDate: string, target: num
   const s=sectionObject(sections),saved=sectionObject(s['scoring_anchor']),v=sectionObject(s['valuation']);
   const number=(x:unknown)=>typeof x==='number'&&Number.isFinite(x)&&x>0?x:null;
   // A legacy current quote is not a dated analysis-price observation.
-  return {date:typeof saved['date']==='string'?saved['date']:analysisDate,price:number(saved['price']),target:number(saved['target'])??number(target),horizonMonths:number(saved['horizonMonths'])??number(v['horizonMonths']),bear:number(saved['bear']),bull:number(saved['bull']),recommendation,conviction};
+  const horizonMonths=number(saved['horizonMonths'])??number(v['horizonMonths']);
+  return {date:typeof saved['date']==='string'?saved['date']:analysisDate,price:number(saved['price']),target:horizonMonths===null?null:number(saved['target'])??number(target),horizonMonths,bear:number(saved['bear']),bull:number(saved['bull']),recommendation,conviction};
 }
 export function scoreReport(anchor: ScoreAnchor, stock: ScorePrice[], benchmark: ScorePrice[], asOf: string) {
   const clean=(rows:ScorePrice[])=>rows.filter(r=>r.date<=asOf&&Number.isFinite(r.close)&&r.close>0&&Number.isFinite(r.high)&&Number.isFinite(r.low)).sort((a,b)=>a.date.localeCompare(b.date));

@@ -1,0 +1,4 @@
+import {expect,it} from 'vitest';
+import {historicalEvidenceAudit} from '@/lib/historical-evidence-audit';
+it('flags later filings and headlines instead of declaring a clean backtest',()=>{const a=historicalEvidenceAudit({external_evidence:{fundamentals:{annual:[{end:'2025-12-31',filed:'2026-02-01'}]},news:{headlines:[{publishedAt:'2026-02-02T12:00:00Z'}]}}},'2026-01-01');expect(a.status).toBe('conflicts');expect(a.violations).toHaveLength(2);});
+it('never treats missing provenance as certified historical availability',()=>{expect(historicalEvidenceAudit({},'2026-01-01').status).toBe('no_dated_conflicts');expect(historicalEvidenceAudit({external_evidence:{fundamentals:{annual:[{filed:'2025-12-31',end:'2025-09-30'}]}}},'2026-01-01').violations).toEqual([]);});
