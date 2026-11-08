@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Run fresh live Alphabet (GOOGL) research, audit the full report against source evidence, check saved outputs/usage/cache reuse and fix confirmed regressions.
+- [x] Fresh Alphabet GOOGL report 9e4c0640 completed with NVIDIA 120B: SELL/68/High, estimated target $130.69, USD $0.1366092. Seven unique completed outputs, one final report, run/report/output usage matched. SEC TTM revenue $471.098B, net income $235.694B and FCF $19.747B independently reconciled; provider P/S matched and P/E within 0.12%. Corrected zero-commercial-paper debt recognition, ambiguous/duplicate cover shares, revised YTD precedence, quote-cache TTL renewal and peer-fetch concurrency. 327 tests pass; authenticated stock/report, META/AMZN/AAPL peers, stable cache refresh, export/reload/mobile passed. Initial test stream interrupted during edits and same run explicitly resumed once; interrupted-stage provider usage remains unknown. Defaults-based valuation and unverified headline/earnings-quality interpretation remain limitations, not guaranteed forecasts.
 
 - [x] Prefer directly reported standard trailing metrics in comparables, show provider TTM ratios first on stock pages without replacing filing-period ratios, share owner-scoped durable Yahoo statistics and use provider beta before fetching benchmark fallback. 321 tests passed; authenticated four-company report table, cached refresh and DELL stock provider ratios verified without runtime errors. Historical evidence and saved reports unchanged.
 
