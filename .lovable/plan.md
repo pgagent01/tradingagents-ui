@@ -15,6 +15,12 @@ Goal: every report shows a **calculated, reproducible** intrinsic value and 12-m
 ### 1. Reconciled inputs (foundation)
 Build one checked input set per stock from SEC filings first, then Yahoo / FMP / Alpha Vantage as backups: revenue, operating income, free cash flow, cash, debt, diluted shares, trailing-12-month values from filing-matched quarters. Flag a mismatch between sources over a set tolerance instead of picking one silently.
 
+### 1b. Latest and accurate financials
+- **Rolling trailing-12-month:** always compute as prior full year + current year-to-date − prior year-to-date (or sum of the last four filing-matched quarters), so a months-old annual report never stands in for current results.
+- **Close the earnings-release gap:** when a newer 8-K earnings release exists than the latest 10-Q/10-K, use its figures (with FMP / Alpha Vantage when keys exist) and label them "press release, not yet in filings".
+- **Reconciliation table:** for each key figure, show SEC vs. other providers, the difference, and which one was used. Differences above tolerance are flagged to analysts and in the report, never silently resolved.
+- **Freshness label:** each figure shows its period end and filing date; the report states the newest quarter used.
+
 ### 2. Method selection by company type
 - Profitable operating companies: discounted cash flow, plus a check against peer multiples.
 - Banks and insurers: excess-return model, plus price-to-book.
@@ -44,6 +50,14 @@ Sector and industry come from SEC SIC codes, with the company profile as backup.
 - The current price-target review stays in place. It also rejects an AI target that falls outside the bear-to-bull range without a reason.
 - The calculation and its inputs are saved with each report and never change afterwards.
 
+### 4b. Analyst instruction improvements (compared with the original TradingAgents)
+Keep the app's stricter guardrails (no invented figures, dated citations, untrusted-data boundaries). Then:
+- **Fundamentals analyst:** add capital returns (return on invested capital), free-cash-flow conversion, debt due dates, and comment on the calculated valuation inputs.
+- **Debate:** split into a clear **bull case** and **bear case**, each with its strongest arguments and catalysts, followed by an explicit resolution. This mirrors the original's separate bull and bear researchers and reduces default "HOLD" answers.
+- **Risk analyst:** run concrete stress tests (e.g. valuation multiple down 20%, recession demand, margin squeeze) and give the price impact of each.
+- **Final report:** link conviction to the gap between calculated value and current price (margin of safety), and state the position stance, entry/exit levels and what would change the view.
+- Add tests that the new instructions are present and that ratings stay required.
+
 ### 5. Display, exports and comparisons
 Add the Valuation card, sensitivity grid, export section and Stock Info panel. Same-stock report comparison shows how the target changed between dates.
 
@@ -60,4 +74,7 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - New `src/lib/valuation/` with pure modules: `inputs.ts` (reconcile), `methods/{dcf,excess-return,ffo,scenario}.ts`, `select-method.ts`, `target.ts`. Add `inputs.server.ts` for fetching through the existing stock service and SEC period helpers. Cache in `research_data_cache`, scoped to the owner and versioned.
 - Add a `valuation` evidence field in `data-evidence.ts`, routed to fundamentals, risk, debate and synthesis. Extend `reviewPriceTarget` with a range check, and bump the `quality_review` version.
 - Save it in the report sections as a `valuation` section. Render it in `report-evidence.tsx`. Add it to exports in `report-content.ts`.
+- Add `ttm.ts` and `reconcile.ts` (source comparison table) under `src/lib/valuation/`, reusing `src/lib/sec-periods.ts`; 8-K figures come via `src/lib/sources/free-sources*.ts`.
+- Update `ROLE_GUIDE` and the synthesis prompt in `src/lib/ai/execution.server.ts`; the debate stays one stage with structured bull/bear sections (no new agent, same cost).
+- TradingAgents remains a design reference only; record prompt changes in `upstream/tradingagents.json` notes so upstream reviews can compare.
 - Tests go in `src/test/valuation-*.test.ts`. Record the module rule in `src/lib/valuation/AGENTS.md`.
