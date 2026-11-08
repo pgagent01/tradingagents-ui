@@ -40,3 +40,6 @@
 - Route dated filings/headlines to fundamentals as well as news, sentiment, risk and synthesis; use both Yahoo hosts for headline retrieval, and label absent social feeds explicitly so proxies cannot be mistaken for measured sentiment.
 - Share filing-aligned SEC period selection across stock and research; derive quarters only from same-filing same-concept comparatives to avoid YTD mislabeling.
 - Owner-scoped scoring stays separate from saved research; adjusted prices are not point-in-time evidence.
+- Read SEC facts in the taxonomy and currency with most revenue facts; IFRS or non-USD figures are displayed but never valued, and pre-tax income/bank lines stay separately named so they cannot masquerade as operating income.
+- Accounting identity and freshness checks (src/lib/data-checks.ts) are stored with new reports; only failures in figures valuation uses withhold the calculated target, so warnings inform analysts without suppressing research.
+- Report figure matching compares prose $/%/x figures to saved evidence and flags, never edits; current-date headlines merge Yahoo search, Yahoo RSS and Google News RSS with relevance filtering and dedup, while historical runs omit these recent-only feeds.
