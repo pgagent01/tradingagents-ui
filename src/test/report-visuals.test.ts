@@ -38,3 +38,5 @@ describe('snapshot debt fallback',()=>{
 });
 import { ratioMismatch } from '@/lib/valuation/yahoo-stats.server';
 describe('provider cross-check',()=>{it('flags >15% gaps only',()=>{expect(ratioMismatch(1.8,1.758)).toBe(false);expect(ratioMismatch(2.5,1.758)).toBe(true);expect(ratioMismatch(null,1.7)).toBe(false);});});
+import { yahooSymbol } from '@/lib/stock-data';
+describe('yahoo symbols',()=>{it('keeps exchange suffixes, dashes share classes',()=>{expect(yahooSymbol('RR.L')).toBe('RR.L');expect(yahooSymbol('SHOP.TO')).toBe('SHOP.TO');expect(yahooSymbol('BRK.B')).toBe('BRK-B');expect(yahooSymbol('DELL')).toBe('DELL');});});

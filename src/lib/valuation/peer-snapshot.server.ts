@@ -1,6 +1,6 @@
 import { secFacts } from '@/lib/stock-data.server';
 import { fundamentalEvidence } from '@/lib/research-evidence';
-import { numeric, parseYahooChart, validTicker } from '@/lib/stock-data';
+import { numeric, parseYahooChart, validTicker, yahooSymbol } from '@/lib/stock-data';
 import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-cache.server';
 import { selectSecFact } from '@/lib/sec-periods';
 import { valuationBalance } from './financial-inputs';
@@ -9,7 +9,7 @@ import { yahooStats, ratioMismatch } from './yahoo-stats.server';
 import { snapshotDebt, qualityRatios, grossMarginTrend, riskStats, periodChange, snapshotRatios, extendedRatios, annualGrowth, offHigh, type PeerSnapshot, type PeerSnapshotRow } from './peer-snapshot';
 async function chart(ticker: string): Promise<unknown> {
   for (const host of ['query1','query2']) {
-    try { const r=await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker.replace('.','-'))}?range=2y&interval=1d`,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'},signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); } catch { /* try second host */ }
+    try { const r=await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol(ticker))}?range=2y&interval=1d`,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'},signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); } catch { /* try second host */ }
   }
   return null;
 }
