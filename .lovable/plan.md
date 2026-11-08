@@ -25,6 +25,14 @@ Build one checked input set per stock from SEC filings first, then Yahoo / FMP /
 
 Sector and industry come from SEC SIC codes, with the company profile as backup.
 
+### 2b. Comparable companies (comps)
+- Peer set: 5–8 companies from the same SEC industry code, then filtered by size (market value roughly 0.25x to 4x). Users can add or remove peers on the Stock Info page, and the peer list is saved with each report.
+- Multiples: price/earnings (trailing and forward when available), EV/sales, EV/EBITDA, price/free cash flow and price/book (banks and REITs). Each is calculated from the peer's own filings and dated quote.
+- Use the peer median and interquartile range, not the average, so outliers have less effect. Exclude a peer from a multiple when its value is negative or missing.
+- Output: an implied value per share from each multiple. Also show a comps table in the report: ticker, market value, each multiple and data date, with links.
+- Comps serve as both a cross-check on the cash-flow value and a weighted part of the target. Their weight depends on company type and is shown in the report.
+- Historical runs use peer prices and filings as of the analysis date.
+
 ### 3. Calculation engine
 - Bear / base / bull scenarios: growth, margin, reinvestment and discount rate.
 - Discount rate from the FRED 10-year Treasury yield plus a documented equity risk premium and beta. Use defaults only when they are labelled as defaults.
