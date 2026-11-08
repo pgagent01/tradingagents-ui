@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { queryOptions,useSuspenseQuery,useQueryClient,useMutation } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Activity, CheckCircle2, Circle, XCircle, Square, FileText } from 'lucide-react';
+import { Activity, CheckCircle2, Circle, XCircle, Square, FileText, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { UsageMetrics } from '@/components/usage-metrics';
