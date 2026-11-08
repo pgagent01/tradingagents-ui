@@ -4,6 +4,7 @@ import { summarizePeers } from './comparables';
 import { selectMethod } from './select-method';
 import type { TtmEvidence } from './ttm';
 import { intrinsicScenarios, type RateContext } from './scenarios';
+import type { ForecastOverrides } from './preferences';
 export type ValuationEvidence = {
   version: number; analysisDate: string; currency: 'USD'; method: string; status: 'estimated' | 'relative_only' | 'unavailable';
   intrinsicValue: number | null; priceTarget: number | null; horizonMonths: 12; price: number | null;
@@ -12,7 +13,7 @@ export type ValuationEvidence = {
   intrinsic?: ReturnType<typeof intrinsicScenarios>;
 };
 /** Relative value is NOT intrinsic value or a forecast of a price twelve months from now. */
-export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string, context?: {marketCap: number | null; rates: RateContext}): ValuationEvidence {
+export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string, context?: {marketCap: number | null; rates: RateContext;overrides?:ForecastOverrides}): ValuationEvidence {
   const ttm = f?.ttm, recent = f?.latestQuarter ?? f?.annual.at(-1);
   const shares = ttm?.dilutedShares?.value ?? null;
   const earningsAligned = ttm?.netIncome.periodEnd != null && ttm.netIncome.periodEnd === ttm.dilutedShares?.end;
@@ -29,7 +30,7 @@ export function valuationEvidence(f: FundamentalEvidence | null, comps: Comparab
   const limitations = [selection.reason, missingByMethod[selection.method]??'Intrinsic valuation awaits explicit growth, margin, reinvestment and discount-rate scenarios; reported operating cash flow minus capex is not automatically FCFF.', 'A 12-month target awaits a documented roll-forward rate and dividend assumption; peer-relative value is not a price forecast.'];
   if (shares === null || shares <= 0) limitations.push('Positive dated diluted share count unavailable.');
   if (!aligned) limitations.push('Earnings and share-count periods do not align; implied values withheld.');
-  const intrinsic=selection.method==='dcf' && context ? intrinsicScenarios(f,context.marketCap,context.rates) : undefined;
+  const intrinsic=selection.method==='dcf' && context ? intrinsicScenarios(f,context.marketCap,context.rates,context.overrides) : undefined;
   const base=intrinsic?.scenarios.find(s=>s.name==='Base');
   const estimated=intrinsic?.status==='estimated';
   return { version: 2, analysisDate, currency: 'USD', method: selection.method, status: estimated ? 'estimated' : usable ? 'relative_only' : 'unavailable', intrinsicValue:base?.value??null, priceTarget: price!==null && price>0 ? base?.target??null : null, horizonMonths: 12, price,
