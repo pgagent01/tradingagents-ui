@@ -42,7 +42,7 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
 export async function peerSnapshot(sb: EvidenceClient, userId: string, subject: string, candidates: string[], model: string|null): Promise<PeerSnapshot> {
   const picks=[...new Set(candidates.filter(t=>validTicker(t)&&t!==subject))].slice(0,3);
   const today=new Date().toISOString().slice(0,10);
-  const key=`v5:${subject}:${picks.join(',')}:${today}`;
+  const key=`v6:${subject}:${picks.join(',')}:${today}`;
   const cached=await readDataCache(sb,userId,'peer-snapshot',key);
   if(cached?.fresh) return cached.payload as PeerSnapshot;
   const spy=parseYahooChart(await chart('SPY').catch(()=>null)).candles;
