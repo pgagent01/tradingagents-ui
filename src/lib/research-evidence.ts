@@ -2,6 +2,8 @@ import { selectSecFact, secRows } from '@/lib/sec-periods';
 import type { SecFact } from '@/lib/sec-periods';
 import { checkedGrossProfit } from '@/lib/financial-quality';
 import { numeric, object } from '@/lib/stock-data';
+import { ttmEvidence, type TtmEvidence } from '@/lib/valuation/ttm';
+import type { ReconciliationRow } from '@/lib/valuation/reconcile';
 
 /** Point-in-time SEC fundamentals: only facts filed on or before the cutoff are used. */
 export type FundamentalPeriod = {
@@ -14,6 +16,10 @@ export type FundamentalPeriod = {
 export type FundamentalEvidence = {
   status: 'available' | 'unavailable'; source: string; sourceUrl: string | null; cutoff: string; fetchedAt: string; cached: boolean;
   currency: 'USD'; annual: FundamentalPeriod[]; latestQuarter: FundamentalPeriod | null; note: string;
+  /** Rolling trailing-twelve-month figures; absent on snapshots saved before this field existed. */
+  ttm?: TtmEvidence;
+  /** SEC vs other providers for the latest fiscal year; added at research time. */
+  reconciliation?: ReconciliationRow[];
 };
 export type FilingEvent = { form: string; filed: string; reportDate: string | null; description: string; url: string };
 export type Headline = { title: string; publisher: string; publishedAt: string; url: string };
@@ -89,6 +95,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
   return {
     status: annual.length || latestQuarter ? 'available' : 'unavailable', source: 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency: 'USD',
     annual: annual.slice(-4), latestQuarter,
+    ttm: ttmEvidence(facts, { revenue: REVENUE, operatingIncome: TAGS.operatingIncome, netIncome: TAGS.netIncome, operatingCashFlow: TAGS.operatingCashFlow, capex: TAGS.capex }, cutoff),
     note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD filers may report no USD facts.',
   };
 }
