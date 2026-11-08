@@ -109,6 +109,7 @@
 - [x] Answered: no new agents needed; existing analysts consume new sources
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
+- [ ] Current step: bounded Yahoo suggestions + exact SEC SIC free peer fallback; automated integration tests and authenticated fresh AMZN report, reload and export verification.
 - [x] Operating-company forecast slice: filing-aligned complete debt components/unrestricted cash/common shares, labeled five-year bear/base/bull FCFF estimates, FRED 10Y and SPY beta with explicit defaults, nine sensitivities and calculated base target with model-range review. AMZN live Stock Info displayed estimated ranges; no billed LLM run started.
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)

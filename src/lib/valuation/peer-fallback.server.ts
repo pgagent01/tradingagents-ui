@@ -51,7 +51,7 @@ export async function secYahooPeer(ticker: string, date: string, classification:
     return { ticker, company: String(meta['longName'] ?? meta['shortName'] ?? ticker), industry: classification.industry, marketCap: cap, currency: 'USD', date, source: `https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}/`, multiples: {
       pe: multiple(ttm?.netIncome.value, shares?.end != null && shares.end === ttm?.netIncome.periodEnd),
       pFcf: multiple(ttm?.freeCashFlow, shares?.end != null && shares.end === ttm?.operatingCashFlow.periodEnd),
-      pb: multiple(recent?.equity, recent?.end != null && recent.end === balance?.periodEnd),
+      pb: multiple(recent?.equity, recent?.end != null && recent.end === balance?.shares?.end),
       forwardPe: null, evSales: null, evEbitda: null,
     } };
   } catch { return null; }

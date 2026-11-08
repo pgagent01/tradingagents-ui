@@ -26,12 +26,13 @@ export async function getComparables(sb: EvidenceClient, userId: string, ticker:
     const tickers = [...new Set(candidates.map(r => String(r['symbol'] ?? '')).filter(s => s !== ticker && validTicker(s)))].slice(0, 12);
     const peers: Peer[] = [];
     for (let i = 0; credential && industry && marketCap !== null && marketCap > 0 && profile?.['currency'] === 'USD' && i < tickers.length; i += 3) {
+      const key = credential.key;
       const batch = await Promise.all(tickers.slice(i, i+3).map(async (symbol): Promise<Peer | null> => {
         try {
-          const p = (await fmpRequest('profile', credential.key, { symbol }))[0];
+          const p = (await fmpRequest('profile', key, { symbol }))[0];
           const cap = numeric(p?.['marketCap']);
           if (!p || cap === null || cap <= 0 || p['industry'] !== industry || p['currency'] !== 'USD' || cap < marketCap * .25 || cap > marketCap * 4) return null;
-          const ratios = (await fmpRequest('ratios-ttm', credential.key, { symbol }))[0];
+          const ratios = (await fmpRequest('ratios-ttm', key, { symbol }))[0];
           const get = (key: string) => { const n = numeric(ratios?.[key]); return n !== null && n > 0 ? n : null; };
           return { ticker: symbol, company: String(p['companyName'] ?? symbol), industry, marketCap: cap, currency: 'USD', date: result.fetchedAt.slice(0,10), source: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}/`, multiples: { pe: get('priceToEarningsRatioTTM'), forwardPe: null, evSales: get('enterpriseValueToSalesRatioTTM'), evEbitda: get('enterpriseValueMultipleTTM'), pFcf: get('priceToFreeCashFlowRatioTTM'), pb: get('priceToBookRatioTTM') } } satisfies Peer;
         } catch { return null; }
