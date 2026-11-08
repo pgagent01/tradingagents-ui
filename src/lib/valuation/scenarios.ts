@@ -8,7 +8,7 @@ export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: num
   if (!t || t.revenue.value===null || t.revenue.value<=0 || t.operatingIncome.value===null || t.operatingIncome.value<=0 || t.revenue.periodEnd!==t.operatingIncome.periodEnd) return unavailable('Positive, period-aligned revenue and operating income are required for operating-company DCF.');
   if (!b?.debt || !b.cash || !b.shares || b.shares.value<=0 || b.debt.value<0 || b.cash.value<0 || marketCap===null || marketCap<=0) return unavailable('Complete filing-aligned debt, unrestricted cash, common shares and market capitalization are required.');
   // Cover-page (dei) shares come from the same filing and are dated a few weeks after period end.
-  const coverOk=b.shares.tag.startsWith('dei:')&&b.debt.accession!==null&&b.shares.accession===(b.debt.inputs?.[0]?.accession??b.debt.accession)&&t.revenue.periodEnd!==null&&b.shares.end>=t.revenue.periodEnd&&(Date.parse(b.shares.end)-Date.parse(t.revenue.periodEnd))/86400000<=75;
+  const coverOk=Boolean(b.shares.tag?.startsWith('dei:'))&&t.revenue.periodEnd!==null&&b.shares.end>=t.revenue.periodEnd&&(Date.parse(b.shares.end)-Date.parse(t.revenue.periodEnd))/86400000<=75;
   if (b.shares.end!==t.revenue.periodEnd&&!coverOk) return unavailable('Revenue and equity-conversion share-count periods do not align.');
   const currentMargin=t.operatingIncome.value/t.revenue.value;
   const historical=f?.annual.at(-1)?.revenueGrowthPct;
