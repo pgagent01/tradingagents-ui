@@ -20,6 +20,8 @@ describe('filing-aligned equity conversion',()=>{
 });
 const input:ForecastInput={revenue:1000,debt:100,cash:50,shares:10,marketCap:900,assumptions:{growth:.05,margin:.2,taxRate:.25,reinvestment:.4,terminalGrowth:.025,riskFree:.04,beta:1,equityPremium:.05,creditSpread:.02,dividendsPerShare:0}};
 describe('explicit FCFF forecasts',()=>{
+ it('uses separate capex, depreciation and working-capital estimates only when all are supplied',()=>{const a={...input.assumptions,capexRevenue:.08,depreciationRevenue:.03,workingCapitalRevenue:.1};expect(forecastScenario({...input,assumptions:a},'Base').forecasts[0]?.fcff).toBeCloseTo(99.75);expect(forecastScenario({...input,assumptions:{...input.assumptions,capexRevenue:.08}},'Base').value).toBeNull();});
+ it('applies explicit forecast dilution and equity adjustments once',()=>{const plain=forecastScenario(input,'Base');const adjusted=forecastScenario({...input,assumptions:{...input.assumptions,annualDilution:.02,equityAdjustments:50}},'Base');expect(adjusted.value).toBeCloseTo(((plain.value??0)*10-50)/(10*1.02**5));});
  it('calculates after-tax EBIT less explicit net reinvestment',()=>{
   const base=forecastScenario(input,'Base');
   expect(base.forecasts).toHaveLength(5);
