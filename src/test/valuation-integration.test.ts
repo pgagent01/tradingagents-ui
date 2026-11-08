@@ -15,6 +15,7 @@ describe('valuation handoff and saved report integration',()=>{
   const reviewed=reviewCalculatedTarget(9999,valuation,90);
   expect(valuation.intrinsic?.scenarios).toHaveLength(3);
   expect(valuation.intrinsic?.sensitivity).toHaveLength(9);
+  if(valuation.intrinsicValue===null) throw Error('Expected an estimated intrinsic value');
   expect(reviewed.target).toBeCloseTo(valuation.intrinsicValue * 1.09);
   expect(reviewed.target).not.toBe(9999);
   const sections=JSON.parse(JSON.stringify({valuation,quality_review:{warnings:reviewed.warnings}}));
