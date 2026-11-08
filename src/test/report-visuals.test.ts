@@ -32,7 +32,7 @@ describe('comparable quality and risk',()=>{
 });
 import { snapshotDebt } from '@/lib/valuation/peer-snapshot';
 describe('snapshot debt fallback',()=>{
- it('HPE style: long-term total plus short-term part of current debt',()=>{expect(snapshotDebt(null,{longTermDebt:21748,debtCurrent:4609,ltdCurrent:3796,shortTagged:false}).value).toBe(22561);});
- it('NetApp style: long-term total alone only when no short-term concept is tagged',()=>{expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTagged:false}).value).toBe(2487);expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTagged:true}).value).toBeNull();});
- it('strict total wins',()=>{expect(snapshotDebt(9666,{longTermDebt:1,debtCurrent:1,ltdCurrent:1,shortTagged:true}).value).toBe(9666);});
+ it('HPE style: long-term total plus short-term part of current debt',()=>{expect(snapshotDebt(null,{longTermDebt:21748,debtCurrent:4609,ltdCurrent:3796,shortTerm:null}).value).toBe(22561);});
+ it('NetApp style: long-term total plus tagged commercial paper (zero)',()=>{expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTerm:0}).value).toBe(2487);expect(snapshotDebt(null,{longTermDebt:2487,debtCurrent:null,ltdCurrent:0,shortTerm:100}).value).toBe(2587);});
+ it('strict total wins',()=>{expect(snapshotDebt(9666,{longTermDebt:1,debtCurrent:1,ltdCurrent:1,shortTerm:1}).value).toBe(9666);});
 });

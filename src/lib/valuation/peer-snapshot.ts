@@ -69,10 +69,11 @@ export function riskStats(stock: Candle[], spy: Candle[]): { beta: number | null
 /** Snapshot-only debt fallback when the strict valuation total is missing:
  *  total long-term debt (incl. current portion) + short-term remainder of DebtCurrent; or total long-term debt
  *  alone when the same filing tags no short-term borrowing concept at all (labeled). Never used by valuation math. */
-export function snapshotDebt(strict: number | null, f: { longTermDebt: number | null; debtCurrent: number | null; ltdCurrent: number | null; shortTagged: boolean }): { value: number | null; note: string | null } {
+export function snapshotDebt(strict: number | null, f: { longTermDebt: number | null; debtCurrent: number | null; ltdCurrent: number | null; shortTerm: number | null; shortTagged?: boolean }): { value: number | null; note: string | null } {
   if (strict!==null) return {value:strict,note:null};
   if (f.longTermDebt===null) return {value:null,note:null};
   if (f.debtCurrent!==null&&f.ltdCurrent!==null&&f.debtCurrent>=f.ltdCurrent) return {value:f.longTermDebt+f.debtCurrent-f.ltdCurrent,note:'Debt = total long-term debt + short-term borrowings.'};
-  if (!f.shortTagged&&f.debtCurrent===null) return {value:f.longTermDebt,note:'Debt = total long-term debt; filing reports no short-term borrowings.'};
+  if (f.debtCurrent===null&&f.shortTerm!==null) return {value:f.longTermDebt+f.shortTerm,note:'Debt = total long-term debt + reported short-term borrowings.'};
+  if (f.debtCurrent===null) return {value:f.longTermDebt,note:'Debt = total long-term debt; filing reports no short-term borrowings.'};
   return {value:null,note:null};
 }

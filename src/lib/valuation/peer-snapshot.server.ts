@@ -30,7 +30,7 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const g=(tags:string[],kind:'annual'|'instant')=>gaap&&anchor?selectSecFact(gaap,tags,anchor,kind,'USD',today)?.value??null:null;
   const ab=gaap&&anchor?valuationBalance(gaap,anchor,today):null;
   const gi=(tags:string[])=>g(tags,'instant');
-  const dbt=snapshotDebt(ab?.debt?.value??null,{longTermDebt:gi(['LongTermDebt']),debtCurrent:gi(['DebtCurrent']),ltdCurrent:gi(['LongTermDebtCurrent']),shortTagged:gi(['ShortTermBorrowings','CommercialPaper','ShortTermDebtCurrent'])!==null});
+  const dbt=snapshotDebt(ab?.debt?.value??null,{longTermDebt:gi(['LongTermDebt']),debtCurrent:gi(['DebtCurrent']),ltdCurrent:gi(['LongTermDebtCurrent']),shortTerm:gi(['ShortTermBorrowings','CommercialPaper','ShortTermDebtCurrent'])});
   const ext=usd&&aligned?extendedRatios(cap,dbt.value,ab?.cash?.value??null,revenue,f?.ttm?.operatingIncome.value??null,f?.ttm?.freeCashFlow??null):{};
   const equity=g(['StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],'instant');
   const quality=usd?qualityRatios({operatingIncome:la?.operatingIncome??null,da:g(['DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'],'annual'),debt:dbt.value,cash:ab?.cash?.value??null,equity,dividends:g(['PaymentsOfDividends','PaymentsOfDividendsCommonStock'],'annual'),buybacks:g(['PaymentsForRepurchaseOfCommonStock'],'annual'),ttmFcf:aligned?f?.ttm?.freeCashFlow??null:null,marketCap:cap}):{};
