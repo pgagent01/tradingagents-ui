@@ -20,3 +20,15 @@ export function reconcileFigures(sec: ProviderFigures, others: ProviderFigures[]
     return { metric, sec: s, others: rows, used, flagged, note };
   });
 }
+
+type StatementRow = { label: string; value: number | null };
+type SecAnnual = { end: string; revenue: number | null; operatingIncome: number | null; netIncome: number | null; operatingCashFlow: number | null; cash: number | null; equity: number | null };
+/** Latest SEC fiscal year vs the stock snapshot's provider statements (only when the provider is not SEC itself). */
+export function reconcileWithSnapshot(latest: SecAnnual | null | undefined, snap: { financialSource: string | null; financialDate: string | null; statements: Record<'income' | 'balance' | 'cash', StatementRow[]> } | null | undefined): ReconciliationRow[] {
+  if (!latest || !snap?.financialSource || /sec/i.test(snap.financialSource)) return [];
+  const get = (rows: StatementRow[], label: string) => rows.find(r => r.label === label)?.value ?? null;
+  return reconcileFigures(
+    { provider: 'SEC', periodEnd: latest.end, values: { revenue: latest.revenue, operatingIncome: latest.operatingIncome, netIncome: latest.netIncome, operatingCashFlow: latest.operatingCashFlow, cash: latest.cash, equity: latest.equity } },
+    [{ provider: snap.financialSource, periodEnd: snap.financialDate?.slice(0, 10) ?? null, values: { revenue: get(snap.statements.income, 'Revenue'), operatingIncome: get(snap.statements.income, 'Operating income'), netIncome: get(snap.statements.income, 'Net income'), operatingCashFlow: get(snap.statements.cash, 'Operating cash flow'), cash: get(snap.statements.balance, 'Cash & equivalents'), equity: get(snap.statements.balance, 'Stockholders equity') } }],
+  );
+}
