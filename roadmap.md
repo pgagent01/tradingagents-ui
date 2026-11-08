@@ -109,6 +109,7 @@
 - [x] Answered: no new agents needed; existing analysts consume new sources
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
+- [ ] Complete remaining plan work requested November 8: stale-evidence provenance/recovery, earnings-release bridge, valuation coverage and controls, saved comparisons, scorecard/calibration and end-to-end validation. Keep data-dependent gaps explicit rather than marking partial implementations complete.
 - [x] Bounded Yahoo suggestions + exact SEC SIC free peer fallback; authenticated fresh AMZN report completed SELL/60/High, estimated target $72.29, USD $0.1265. Database readback confirms three scenarios/nine sensitivities; reload and Markdown matched, desktop/mobile checked. Strict filters still yielded zero AMZN peers.
 - [x] Use the report-selected fundamentals LLM (including NVIDIA NIM) for bounded optional peer suggestions within its existing billed stage; independently verify, record actual model and hand off results without another model call. Automated handoff tests pass; live model-suggestion behavior was added after the completed AMZN run and remains unverified on a new report. 264 tests pass; build OK.
 - [x] Operating-company forecast slice: filing-aligned complete debt components/unrestricted cash/common shares, labeled five-year bear/base/bull FCFF estimates, FRED 10Y and SPY beta with explicit defaults, nine sensitivities and calculated base target with model-range review. AMZN live Stock Info displayed estimated ranges; no billed LLM run started.
