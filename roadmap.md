@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Run fresh live Alphabet (GOOGL) research, audit the full report against source evidence, check saved outputs/usage/cache reuse and fix confirmed regressions.
+
 - [x] Prefer directly reported standard trailing metrics in comparables, show provider TTM ratios first on stock pages without replacing filing-period ratios, share owner-scoped durable Yahoo statistics and use provider beta before fetching benchmark fallback. 321 tests passed; authenticated four-company report table, cached refresh and DELL stock provider ratios verified without runtime errors. Historical evidence and saved reports unchanged.
 
 - [x] Apply conservative price-target safeguards and preserve explicit warnings rather than inventing valuations or retrying billed synthesis; regression tests pass.
