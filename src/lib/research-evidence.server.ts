@@ -25,7 +25,7 @@ export async function getNewsEvidence(sb: EvidenceClient, userId: string, ticker
   return feed;
 }
 export async function getFundamentalEvidence(sb: EvidenceClient, userId: string, ticker: string, analysisDate: string): Promise<FundamentalEvidence | null> {
-  const key = `v4:${ticker}:${analysisDate}`;
+  const key = `v5:${ticker}:${analysisDate}`;
   const cached = await readDataCache(sb, userId, 'sec-fundamentals', key); const saved = cached?.payload as FundamentalEvidence | undefined;
   if (cached?.fresh && saved?.cutoff) return { ...saved, cached: true };
   try {

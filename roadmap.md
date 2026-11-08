@@ -109,6 +109,7 @@
 - [x] Answered: no new agents needed; existing analysts consume new sources
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
+- [ ] Next slice in progress: filing-aligned debt/share inputs, labeled forecast scenarios, rate assumptions, sensitivity grid and calculated report targets.
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
