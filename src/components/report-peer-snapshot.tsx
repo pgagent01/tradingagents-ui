@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import { RefreshCw } from 'lucide-react';
@@ -13,6 +13,8 @@ const tone=(n:number|null)=>n===null?'':n>=0?'text-primary':'text-destructive';
 export function ReportPeerSnapshot({id}:{id:string}){
   const fetchSnap=useServerFn(getReportPeerSnapshot),[snap,setSnap]=useState<Snap|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   async function load(){setBusy(true);setError('');try{setSnap(await fetchSnap({data:{id}}));}catch{setError('Comparable company figures are unavailable right now. Your saved report is unchanged.');}finally{setBusy(false);}}
+  useEffect(()=>{void load();// eslint-disable-next-line react-hooks/exhaustive-deps
+  },[id]);
   return <section className="space-y-3 border-t border-border pt-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">Comparable Companies Snapshot</h2><Button variant="outline" size="sm" onClick={()=>void load()} disabled={busy}><RefreshCw className={busy?'animate-spin':''}/>{snap?'Refresh':'Load comparables'}</Button></div>
     {error&&<p className="text-sm text-destructive">{error}</p>}
