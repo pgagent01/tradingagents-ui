@@ -8,7 +8,7 @@ export type TtmFigure = {
   method: 'annual' | 'annual_plus_ytd' | 'unavailable';
   periodEnd: string | null;
   inputs: { annual: TtmInput | null; ytd: TtmInput | null; priorYtd: TtmInput | null };
-  note?: string;
+  note?: string | undefined;
 };
 export type TtmEvidence = {
   asOf: string | null; newestFiled: string | null; method: TtmFigure['method'];
