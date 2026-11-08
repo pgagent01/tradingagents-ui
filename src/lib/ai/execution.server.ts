@@ -34,6 +34,7 @@ import { valuationRates } from '@/lib/valuation/rates.server';
 import { peerSuggestionPrompt } from '@/lib/valuation/peer-suggestions';
 import { verifyModelPeers } from '@/lib/valuation/model-peers.server';
 import { resumeEvidencePolicy } from '@/lib/evidence-freshness';
+import { releaseBridge } from '@/lib/sources/earnings-bridge';
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -68,6 +69,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const news=await getNewsEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const fundamentals=await getFundamentalEvidence(sb,userId,run.ticker,run.analysis_date);
   const free=await getFreeSourcesEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
+  if(fundamentals)fundamentals.earningsBridge=releaseBridge(free.earningsReleases.items.flatMap(r=>r.taggedFacts??[]),fundamentals.latestQuarter?.end??fundamentals.annual.at(-1)?.end??null);
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const stockData=snapshotAllowed(run.analysis_date,new Date().toISOString().slice(0,10))?await cachedStockData(sb,userId,run.ticker,researchHistoryRange(),'annual'):null;
   // Historical runs exclude current quotes/filings but may use daily bars dated on or before the analysis date.
