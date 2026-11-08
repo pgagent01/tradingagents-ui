@@ -2,7 +2,7 @@ export const MULTIPLES = ['pe', 'forwardPe', 'evSales', 'evEbitda', 'pFcf', 'pb'
 export const COMPARABLE_CACHE_TTL = 48 * 60 * 60 * 1000;
 export type Multiple = typeof MULTIPLES[number];
 export type Peer = { ticker: string; company: string; industry: string; marketCap: number; currency: string; date: string; source: string; multiples: Record<Multiple, number | null> };
-export type ComparableEvidence = { status: 'available' | 'unavailable'; industry: string | null; fetchedAt: string; cached: boolean; peers: Peer[]; summaries: { multiple: Multiple; count: number; low: number; median: number; high: number; impliedLow: number | null; impliedBase: number | null; impliedHigh: number | null }[]; note: string };
+export type ComparableEvidence = { status: 'available' | 'unavailable'; industry: string | null; fetchedAt: string; cached: boolean; peers: Peer[]; summaries: { multiple: Multiple; count: number; low: number; median: number; high: number; impliedLow: number | null; impliedBase: number | null; impliedHigh: number | null; outliers?: string[] }[]; note: string };
 export function eligiblePeers(peers: Peer[], ticker: string, marketCap: number, industry: string): Peer[] {
   if (!Number.isFinite(marketCap) || marketCap <= 0 || !industry) return [];
   const seen = new Set<string>();
@@ -20,7 +20,9 @@ export function quantile(values: number[], fraction: number): number | null {
 /** Provider trailing ratios stay distinct from filing-derived subject denominators. */
 export function summarizePeers(peers: Peer[], bases: Partial<Record<Multiple, number | null>>, shares: number | null, netDebt: number | null): ComparableEvidence['summaries'] {
   return MULTIPLES.flatMap(multiple => {
-    const values = peers.map(p => p.multiples[multiple]).filter((v): v is number => v !== null && Number.isFinite(v) && v > 0);
+    const all = peers.map(p => ({ t: p.ticker, v: p.multiples[multiple] })).filter((x): x is { t: string; v: number } => x.v !== null && Number.isFinite(x.v) && x.v > 0);
+    const { kept, outliers } = withoutOutliers(all);
+    const values = kept.map(x => x.v);
     if (values.length < 3) return [];
     const low = quantile(values, .25), median = quantile(values, .5), high = quantile(values, .75);
     if (low === null || median === null || high === null) return [];
@@ -32,6 +34,14 @@ export function summarizePeers(peers: Peer[], bases: Partial<Record<Multiple, nu
       const value = (base * m - (ev ? netDebt ?? 0 : 0)) / shares;
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    return [{ multiple, count: values.length, low, median, high, impliedLow: implied(low), impliedBase: implied(median), impliedHigh: implied(high) }];
+    return [{ multiple, count: values.length, low, median, high, impliedLow: implied(low), impliedBase: implied(median), impliedHigh: implied(high), ...(outliers.length ? { outliers } : {}) }];
   });
+}
+/** Drop values outside 3x the interquartile range (needs 4+ values); dropped tickers stay listed. */
+export function withoutOutliers<T extends { t: string; v: number }>(rows: T[]): { kept: T[]; outliers: string[] } {
+  if (rows.length < 4) return { kept: rows, outliers: [] };
+  const vs = rows.map(r => r.v); const q1 = quantile(vs, .25), q3 = quantile(vs, .75);
+  if (q1 === null || q3 === null) return { kept: rows, outliers: [] };
+  const iqr = q3 - q1, lo = q1 - 3 * iqr, hi = q3 + 3 * iqr;
+  return { kept: rows.filter(r => r.v >= lo && r.v <= hi), outliers: rows.filter(r => r.v < lo || r.v > hi).map(r => r.t) };
 }
