@@ -109,6 +109,8 @@
 - [x] Answered: no new agents needed; existing analysts consume new sources
 
 ## Price target & intrinsic value plan (approved 2026-11-08)
+- [x] Bounded Yahoo suggestions + exact SEC SIC free peer fallback; authenticated fresh AMZN report completed SELL/60/High, estimated target $72.29, USD $0.1265. Database readback confirms three scenarios/nine sensitivities; reload and Markdown matched, desktop/mobile checked. Strict filters still yielded zero AMZN peers.
+- [x] Use the report-selected fundamentals LLM (including NVIDIA NIM) for bounded optional peer suggestions within its existing billed stage; independently verify, record actual model and hand off results without another model call. Automated handoff tests pass; live model-suggestion behavior was added after the completed AMZN run and remains unverified on a new report. 264 tests pass; build OK.
 - [x] Operating-company forecast slice: filing-aligned complete debt components/unrestricted cash/common shares, labeled five-year bear/base/bull FCFF estimates, FRED 10Y and SPY beta with explicit defaults, nine sensitivities and calculated base target with model-range review. AMZN live Stock Info displayed estimated ranges; no billed LLM run started.
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
@@ -117,8 +119,8 @@
 - [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
 - [x] Valuation foundation: pure DCF, excess-return, FFO, revenue scenarios, WACC and target roll-forward calculators; industry method selection and peer median/IQR with 0.25–4x size filter, max 8.
 - [x] Bounded owner/version-cached FMP peer discovery and provider TTM multiples (48h successful-cache TTL); historical runs exclude current peers. AMZN authenticated desktop/mobile checked: no suitable peers returned; explicit unavailability, no runtime errors.
-- [ ] Phases 2/2b/3 remaining: SEC SIC peer discovery/Yahoo fallback, peer editing, diluted-share forecasting, separate D&A/capex/working-capital projections and lease/minority/preferred adjustments, editable forecasts, bank/REIT/loss-maker live inputs and reconciled target blending. Current operating DCF uses explicitly labeled heuristic assumptions, not consensus forecasts.
+- [ ] Phases 2/2b/3 remaining: peer editing, diluted-share forecasting, separate D&A/capex/working-capital projections and lease/minority/preferred adjustments, editable forecasts, bank/REIT/loss-maker live inputs and reconciled target blending. Current operating DCF uses explicitly labeled heuristic assumptions, not consensus forecasts.
 - [x] Feed saved valuation evidence to fundamentals/risk/debate/synthesis; improve conditional ROIC/FCF guidance, stress tests and five-part cross-examination without new LLM stages.
 - [x] Valuation and comps view on Stock Info and new reports; persist immutable valuation and include in Markdown/PDF print view. Existing reports unchanged.
-- [ ] Phases 4/5/6 remaining: comparison enhancements and approved fresh AMZN LLM report to verify immutable scenario storage/readback; existing saved reports remain unchanged. No billed report started this turn.
+- [ ] Phases 4/5/6 remaining: comparison enhancements; fresh AMZN valuation storage/readback verified. Existing saved reports remain unchanged.
 - [ ] Phase 8: report scorecard and calibration.
