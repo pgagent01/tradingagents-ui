@@ -31,4 +31,14 @@ describe('valuation handoff and saved report integration',()=>{
   expect(markdown).toContain('FRED DGS10');
   expect(markdown).toContain('2026-11-05');
  });
+ it('withholds the 12-month target when the base value is implausibly far from the market price',()=>{
+  const date='2026-11-08',end='2026-09-30';
+  const figure=(value:number)=>({value,periodEnd:end,method:'annual' as const,inputs:{annual:null,ytd:null,priorYtd:null}});
+  const f={annual:[],latestQuarter:null,ttm:{revenue:figure(1000),operatingIncome:figure(200),netIncome:figure(100),operatingCashFlow:figure(150),capex:figure(50),freeCashFlow:100,dilutedShares:{value:10,end,filed:'2026-10-30'}},valuationBalance:{debt:{value:100,end},cash:{value:50,end},shares:{value:10,end}}} as unknown as FundamentalEvidence;
+  const comps:ComparableEvidence={industry:'Software',status:'unavailable',fetchedAt:date,cached:false,peers:[],summaries:[],note:''};
+  const v=valuationEvidence(f,comps,5000,date,{marketCap:50000,rates:{riskFree:.04,riskFreeDate:date,riskFreeSource:'FRED DGS10',beta:1,betaObservations:250,betaSource:'SPY'}});
+  expect(v.intrinsicValue).not.toBeNull();
+  expect(v.priceTarget).toBeNull();
+  expect(v.limitations[0]).toContain('outside 0.25×–4×');
+ });
 });

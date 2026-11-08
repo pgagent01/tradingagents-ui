@@ -33,9 +33,11 @@ export function valuationEvidence(f: FundamentalEvidence | null, comps: Comparab
   const intrinsic=selection.method==='dcf' && context ? intrinsicScenarios(f,context.marketCap,context.rates,context.overrides) : undefined;
   const base=intrinsic?.scenarios.find(s=>s.name==='Base');
   const estimated=intrinsic?.status==='estimated';
-  return { version: 2, analysisDate, currency: 'USD', method: selection.method, status: estimated ? 'estimated' : usable ? 'relative_only' : 'unavailable', intrinsicValue:base?.value??null, priceTarget: price!==null && price>0 ? base?.target??null : null, horizonMonths: 12, price,
+  const implausible=estimated && price!==null && price>0 && base?.value!==null && base?.value!==undefined && (base.value<price*0.25 || base.value>price*4);
+  const plausibility=implausible ? [`Base intrinsic value ${base?.value?.toFixed(2)} USD is outside 0.25×–4× the market price ${price?.toFixed(2)} USD; default assumptions likely miss one-time charges or business-specific economics, so the 12-month target is withheld. Enter reviewed assumptions to recalculate.`] : [];
+  return { version: 2, analysisDate, currency: 'USD', method: selection.method, status: estimated ? 'estimated' : usable ? 'relative_only' : 'unavailable', intrinsicValue:base?.value??null, priceTarget: price!==null && price>0 && !implausible ? base?.target??null : null, horizonMonths: 12, price,
     bear: usable ? chosen.impliedLow : null, base: usable ? chosen.impliedBase : null, bull: usable ? chosen.impliedHigh : null, basis: usable ? chosen.multiple : null,
-    comparables: { ...comps, summaries }, limitations:estimated ? intrinsic.notes : [...limitations,...(intrinsic?.reason?[intrinsic.reason]:[])],...(intrinsic?{intrinsic}:{}),
+    comparables: { ...comps, summaries }, limitations:estimated ? [...plausibility,...intrinsic.notes] : [...limitations,...(intrinsic?.reason?[intrinsic.reason]:[])],...(intrinsic?{intrinsic}:{}),
     inputs: { trailing: ttm ?? null, balancePeriod: recent?.end ?? null, bookEquity: recent?.equity ?? null, shares: ttm?.dilutedShares ?? null, source: f?.sourceUrl ?? null },
   };
 }

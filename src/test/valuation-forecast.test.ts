@@ -14,6 +14,10 @@ describe('filing-aligned equity conversion',()=>{
  it('never treats absent short-term borrowing as zero',()=>{
   expect(valuationBalance({LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10)},anchor,'2026-11-08').debt).toBeNull();
  });
+ it('adds noncurrent long-term debt to the full current-debt aggregate (HPE-style tagging)',()=>{
+  expect(valuationBalance({LongTermDebtNoncurrent:fact(17343),DebtCurrent:fact(2901),LongTermDebtCurrent:fact(2137)},anchor,'2026-11-08').debt?.value).toBe(20244);
+  expect(valuationBalance({DebtLongtermAndShorttermCombinedAmount:fact(20244)},anchor,'2026-11-08').debt?.value).toBe(20244);
+ });
  it('never combines components from different filings',()=>{
   expect(valuationBalance({LongTermDebtNoncurrent:fact(100),LongTermDebtCurrent:fact(10,'OTHER'),ShortTermBorrowings:fact(5)},anchor,'2026-11-08').debt).toBeNull();
  });
