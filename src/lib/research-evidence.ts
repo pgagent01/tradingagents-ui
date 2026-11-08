@@ -35,14 +35,15 @@ export type NewsEvidence = {
   headlineCounts?: Record<string, number>;
 };
 
-const IFRS: Record<string,string[]> = {
+const IFRS: Record<TagKey,string[]> & { revenue: string[] } = {
   revenue: ['Revenue', 'RevenueFromContractsWithCustomers'], costOfRevenue: ['CostOfSales'], grossProfit: ['GrossProfit'], operatingIncome: ['ProfitLossFromOperatingActivities'],
   netIncome: ['ProfitLossAttributableToOwnersOfParent', 'ProfitLoss'], operatingCashFlow: ['CashFlowsFromUsedInOperatingActivities'], capex: ['PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities'],
   assets: ['Assets'], liabilities: ['Liabilities'], liabilitiesAndEquity: ['EquityAndLiabilities'], equity: ['EquityAttributableToOwnersOfParent', 'Equity'], cash: ['CashAndCashEquivalents'], longTermDebt: ['NoncurrentPortionOfNoncurrentBorrowings', 'LongtermBorrowings'],
   pretaxIncome: ['ProfitLossBeforeTax'], netInterestIncome: ['RevenueFromInterest'], creditLossProvision: [], deposits: [], minorityInterest: ['NoncontrollingInterests'], eps: ['DilutedEarningsLossPerShare'],
 };
 const REVENUE = ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueGoodsNet'];
-const TAGS = {
+type TagKey = 'costOfRevenue'|'grossProfit'|'operatingIncome'|'netIncome'|'operatingCashFlow'|'capex'|'assets'|'liabilities'|'liabilitiesAndEquity'|'equity'|'cash'|'longTermDebt'|'pretaxIncome'|'netInterestIncome'|'creditLossProvision'|'deposits'|'minorityInterest'|'eps';
+const TAGS: Record<TagKey,string[]> = {
   costOfRevenue: ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold'],
   grossProfit: ['GrossProfit'], operatingIncome: ['OperatingIncomeLoss'], netIncome: ['NetIncomeLoss', 'ProfitLoss'],
   operatingCashFlow: ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
@@ -61,7 +62,7 @@ const REVENUE_EXTRA = ['RevenuesNetOfInterestExpense', 'InterestAndDividendIncom
 export function factsTaxonomy(raw: unknown): { taxonomy: 'us-gaap' | 'ifrs-full'; currency: string } {
   const all = object(object(raw)['facts']);
   const count = (tax: string, names: string[]) => { const units: Record<string, number> = {}; for (const n of names) for (const [u, rows] of Object.entries(object(object(object(all[tax])[n])['units']))) if (Array.isArray(rows) && /^[A-Z]{3}$/.test(u)) units[u] = (units[u] ?? 0) + rows.length; return Object.entries(units).sort((a, b) => b[1] - a[1])[0] ?? null; };
-  const us = count('us-gaap', [...REVENUE, ...REVENUE_EXTRA]); const ifrs = count('ifrs-full', IFRS.revenue ?? []);
+  const us = count('us-gaap', [...REVENUE, ...REVENUE_EXTRA]); const ifrs = count('ifrs-full', IFRS.revenue);
   if (ifrs && (!us || ifrs[1] > us[1])) return { taxonomy: 'ifrs-full', currency: ifrs[0] };
   return { taxonomy: 'us-gaap', currency: us?.[0] ?? 'USD' };
 }
@@ -71,7 +72,7 @@ const days = (r: Row) => typeof r['start'] === 'string' && typeof r['end'] === '
 
 export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = new Date().toISOString(), cached = false): FundamentalEvidence {
   const body = object(raw); const { taxonomy, currency } = factsTaxonomy(raw); const facts = object(object(body['facts'])[taxonomy]);
-  const T: Record<string, string[]> = taxonomy === 'ifrs-full' ? IFRS : TAGS; const REV = taxonomy === 'ifrs-full' ? IFRS.revenue! : [...REVENUE, ...REVENUE_EXTRA];
+  const T: Record<TagKey, string[]> = taxonomy === 'ifrs-full' ? IFRS : TAGS; const REV = taxonomy === 'ifrs-full' ? IFRS.revenue : [...REVENUE, ...REVENUE_EXTRA];
   const cik = numeric(body['cik']) ?? (typeof body['cik'] === 'string' ? Number(body['cik']) : null);
   const sourceUrl = cik ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(cik).padStart(10, '0')}&type=10-K` : null;
   const rows = (names: string[], unit = currency) => secRows(facts, names, unit, cutoff);
@@ -102,11 +103,11 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
       filingUrl: accession && cik ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/` : null,
       revenue, grossProfit: gross.value, grossProfitDerived: gross.derived,
       operatingIncome: pick(T.operatingIncome, end, duration), netIncome,
-      dilutedEps: pick(T.eps!, end, duration, `${currency}/shares`),
+      dilutedEps: pick(T.eps, end, duration, `${currency}/shares`),
       operatingCashFlow: ocf, capex, freeCashFlow: ocf !== null && capex !== null ? ocf - capex : null,
       assets: pick(T.assets, end, null), liabilities: reportedLiabilities ?? (total !== null && equity !== null ? total - equity : null), liabilitiesDerived: reportedLiabilities === null && total !== null && equity !== null,
       equity, cash: pick(T.cash, end, null), longTermDebt: pick(T.longTermDebt, end, null),
-      pretaxIncome: pick(T.pretaxIncome!, end, duration), netInterestIncome: pick(T.netInterestIncome!, end, duration), creditLossProvision: pick(T.creditLossProvision!, end, duration), deposits: pick(T.deposits!, end, null), minorityInterest: pick(T.minorityInterest!, end, null),
+      pretaxIncome: pick(T.pretaxIncome, end, duration), netInterestIncome: pick(T.netInterestIncome, end, duration), creditLossProvision: pick(T.creditLossProvision, end, duration), deposits: pick(T.deposits, end, null), minorityInterest: pick(T.minorityInterest, end, null),
       revenueGrowthPct: prior ? pct(revenue, prior.revenue) : null, netIncomeGrowthPct: prior ? pct(netIncome, prior.netIncome) : null,
     };
   };
