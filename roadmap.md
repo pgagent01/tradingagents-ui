@@ -135,3 +135,6 @@
 - [x] Latest complete billed report integration verification — HPE report 234cb43e completed end to end (Nov 8).
 - [x] HPE end-to-end report + database/cache integrity check (Nov 8): 7 agents, costs consistent, no orphan/duplicate rows; fixed HPE debt tagging, Blume beta, implausible-target guard, readable valuation export
 - [x] Comparable companies snapshot table on reports (3 model-picked peers; price moves, P/E, sales, market cap)
+
+- [x] Live test 6 stocks (DELL, GLW, TSLA, PFE, JPM, RR.L) with 550B/120B; review reports, caching, reuse
+- [x] Check which comparables metrics can be sourced directly vs computed

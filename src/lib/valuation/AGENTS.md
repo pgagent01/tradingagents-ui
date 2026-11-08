@@ -9,3 +9,5 @@
 - Withhold calculated 12-month targets when base intrinsic value falls outside 0.25x–4x market price, and Blume-adjust measured betas; default assumptions cannot capture one-off charges.
 - The report's comparable-companies snapshot is descriptive only: it reuses the fundamentals model's saved suggestions (no new AI call), skips the SIC gate, and never feeds valuation math.
 - Comparable snapshot extras (ROIC, net debt/EBITDA, payouts, beta) use the latest fiscal-year same-filing facts; its labeled debt fallback is snapshot-only so valuation keeps strict debt rules.
+- Yahoo key statistics are shown as provider-reported columns and cross-checked, never silently merged; minor-unit currencies (GBp) withhold price-based provider ratios. Valuation prefers the provider 5-year beta (Blume-adjusted) because one-year daily betas overstate risk for momentum stocks.
+- Cover-page (dei) share counts from the same filing may stand in for missing balance-sheet shares; market cap falls back to quote × those shares.

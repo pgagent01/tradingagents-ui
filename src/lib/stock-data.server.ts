@@ -1,7 +1,7 @@
 import { COMPANIES } from '@/lib/companies';
 import { fmpChart,fmpQuote,fmpFinancials } from '@/lib/fmp.server';
 import { type AlphaCredential } from '@/lib/alphavantage.server';
-import { emptyStock,firstAvailable,numeric,object,parseYahooChart,parseSecFinancials, type StockData,type StockRange } from '@/lib/stock-data';
+import { emptyStock,firstAvailable,numeric,object,parseYahooChart,parseSecFinancials, type StockData,type StockRange, yahooSymbol } from '@/lib/stock-data';
 
 const cache=new Map<string,{expires:number;data:StockData}>();
 const pending=new Map<string,Promise<StockData>>();
@@ -27,7 +27,7 @@ export async function yahooNewsSearch(ticker:string){
 }
 /** Daily bars ending on a past analysis date; Yahoo prices are split-adjusted retrospectively. */
 export async function historicalDailyCandles(ticker:string,analysisDate:string,lookbackDays=400){
-  const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-Math.min(800,Math.max(1,lookbackDays))*86400;const symbol=encodeURIComponent(ticker.replace('.','-'));
+  const end=Math.floor(Date.parse(`${analysisDate}T23:59:59Z`)/1000);const start=end-Math.min(800,Math.max(1,lookbackDays))*86400;const symbol=encodeURIComponent(yahooSymbol(ticker));
   const chart=await firstAvailable(['query1','query2'].map(host=>({source:`Yahoo Finance · ${host} · historical daily`,load:async()=>{const parsed=parseYahooChart(await json(`https://${host}.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${start}&period2=${end+1}&interval=1d`));return parsed.candles.length?parsed.candles.filter(c=>c.time<=end):null;}})));
   return chart?{candles:chart.data,source:chart.source}:null;
 }
@@ -39,7 +39,7 @@ export async function secFacts(ticker:string){
 }
 async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'annual'|'quarter',alpha:AlphaCredential|null):Promise<StockData>{
   const result=emptyStock(ticker,COMPANIES.find(c=>c.ticker===ticker)?.name??ticker);
-  const query=ranges[range];const symbol=encodeURIComponent(ticker.replace('.','-'));
+  const query=ranges[range];const symbol=encodeURIComponent(yahooSymbol(ticker));
   const chart=await firstAvailable(['query1','query2'].map(host=>({source:`Yahoo Finance · ${host}`,load:async()=>{const parsed=parseYahooChart(await json(`https://${host}.finance.yahoo.com/v8/finance/chart/${symbol}?range=${query.range}&interval=${query.interval}`));return parsed.candles.length?parsed:null;}})));
   if(chart){const {meta}=chart.data;Object.assign(result,{candles:chart.data.candles,price:chart.data.price,change:chart.data.change,changePercent:chart.data.changePercent,chartSource:chart.source,quoteSource:chart.source,currency:String(meta['currency']??'USD'),company:String(meta['longName']??meta['shortName']??result.company),low52:numeric(meta['fiftyTwoWeekLow']),high52:numeric(meta['fiftyTwoWeekHigh']),volume:numeric(meta['regularMarketVolume']),marketCap:numeric(meta['marketCap']),asOf:numeric(meta['regularMarketTime'])!==null?new Date(Number(meta['regularMarketTime'])*1000).toISOString():null});}
   if(chart&&range!=='1D'){try{const daily=parseYahooChart(await json(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=5m`));result.change=daily.change;result.changePercent=daily.changePercent;}catch{result.change=null;result.changePercent=null;}}

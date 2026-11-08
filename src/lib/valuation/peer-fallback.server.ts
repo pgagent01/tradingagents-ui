@@ -1,6 +1,6 @@
 import { secCik, secSubmissions, secFacts } from '@/lib/stock-data.server';
 import { fundamentalEvidence } from '@/lib/research-evidence';
-import { numeric, object, parseYahooChart, validTicker } from '@/lib/stock-data';
+import { numeric, object, parseYahooChart, validTicker, yahooSymbol } from '@/lib/stock-data';
 import type { Peer } from './comparables';
 
 async function yahoo(path: string): Promise<unknown> {
@@ -34,7 +34,7 @@ export async function secYahooPeer(ticker: string, date: string, classification:
   try {
     const own = await secIndustry(ticker);
     if (!own || own.sic !== classification.sic) return null;
-    const raw = await yahoo(`v8/finance/chart/${encodeURIComponent(ticker.replace('.', '-'))}?range=1d&interval=1d`);
+    const raw = await yahoo(`v8/finance/chart/${encodeURIComponent(yahooSymbol(ticker))}?range=1d&interval=1d`);
     const { meta, price } = parseYahooChart(raw);
     if (meta['currency'] !== 'USD' || price === null || price <= 0) return null;
     const f = fundamentalEvidence(await secFacts(ticker), date);

@@ -13,6 +13,10 @@ export async function valuationRates(sb: EvidenceClient,userId: string,date: str
       const cutoff=Date.parse(`${date}T23:59:59Z`)/1000;
       const sensitivity=marketSensitivity(stock.candles.filter(c=>c.time<=cutoff),benchmark.candles.filter(c=>c.time<=cutoff));
       if (sensitivity.beta!==null && Number.isFinite(sensitivity.beta) && sensitivity.beta>0 && sensitivity.beta<=5) Object.assign(result,{beta:adjustedBeta(sensitivity.beta),betaObservations:sensitivity.days,betaSource:`Blume-adjusted beta ${adjustedBeta(sensitivity.beta).toFixed(2)} (0.67 × raw ${sensitivity.beta.toFixed(2)} + 0.33) from daily returns versus SPY; split-adjusted provider history`});
+      // Prefer the provider's 5-year monthly beta (more stable than one year of daily returns) when available.
+      const { yahooStats } = await import('./yahoo-stats.server');
+      const y=await yahooStats(stock.ticker).catch(()=>null);
+      if (y?.beta5y!=null && Number.isFinite(y.beta5y) && y.beta5y>0 && y.beta5y<=5) Object.assign(result,{beta:adjustedBeta(y.beta5y),betaObservations:sensitivity.days,betaSource:`Blume-adjusted beta ${adjustedBeta(y.beta5y).toFixed(2)} (0.67 × Yahoo Finance 5-year monthly beta ${y.beta5y.toFixed(2)} + 0.33), retrieved ${date}${sensitivity.beta!==null?`; 1-year daily beta vs SPY was ${sensitivity.beta.toFixed(2)}`:''}`});
     } catch { /* Explicit default remains visible, never a fabricated measured beta. */ }
   }
   return result;
