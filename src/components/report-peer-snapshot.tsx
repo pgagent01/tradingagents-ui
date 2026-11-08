@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
+import { PeerCharts } from './report-visuals';
 import { getReportPeerSnapshot } from '@/lib/valuation/peer-snapshot.functions';
 type Snap=Awaited<ReturnType<typeof getReportPeerSnapshot>>;
 const pct=(n:number|null)=>n===null?'—':`${n>0?'+':''}${n.toFixed(2)}%`;
@@ -16,13 +17,14 @@ export function ReportPeerSnapshot({id}:{id:string}){
     {error&&<p className="text-sm text-destructive">{error}</p>}
     {!snap&&!error&&<p className="text-sm text-muted-foreground">Compare this stock with three similar companies picked by the report’s AI model: price moves, valuation ratios, sales and size.</p>}
     {snap&&<>
-      <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-muted-foreground">{['Company','Price','1 day','30 days','1 year','Market cap','Sales (TTM)','Net income (TTM)','P/E','P/S','Net margin'].map(h=><th key={h} className="whitespace-nowrap px-2 py-2 font-medium">{h}</th>)}</tr></thead>
+      <PeerCharts rows={snap.rows}/>
+      <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-muted-foreground">{['Company','Price','1 day','30 days','1 year','Market cap','Sales (TTM)','Net income (TTM)','P/E','P/S','EV/Sales','EV/EBIT','Op. margin','FCF margin','Net margin','Revenue growth','From 1-yr high'].map(h=><th key={h} className="whitespace-nowrap px-2 py-2 font-medium">{h}</th>)}</tr></thead>
       <tbody>{snap.rows.map(r=><tr key={r.ticker} className={`border-b border-border ${r.role==='subject'?'bg-muted/50 font-medium':''}`}>
         <td className="px-2 py-2"><div>{r.ticker}{r.role==='subject'&&<span className="ml-1 text-xs text-muted-foreground">(this report)</span>}</div><div className="text-xs text-muted-foreground">{r.company}</div>{r.note&&<div className="text-xs text-muted-foreground">{r.note}</div>}</td>
         <td className="px-2 py-2 whitespace-nowrap">{r.price===null?'—':`$${r.price.toFixed(2)}`}</td>
         {[r.change1d,r.change30d,r.change1y].map((v,i)=><td key={i} className={`px-2 py-2 whitespace-nowrap ${tone(v)}`}>{pct(v)}</td>)}
-        <td className="px-2 py-2">{big(r.marketCap)}</td><td className="px-2 py-2">{big(r.ttmRevenue)}</td><td className="px-2 py-2">{big(r.ttmNetIncome)}</td><td className="px-2 py-2">{x(r.pe)}</td><td className="px-2 py-2">{x(r.ps)}</td><td className="px-2 py-2">{pct(r.netMargin)}</td></tr>)}</tbody></table></div>
-      <p className="text-xs text-muted-foreground">{snap.note} {snap.model&&`Model: ${snap.model}. `}Sources: {snap.source}. Retrieved {snap.retrievedAt.slice(0,16).replace('T',' ')} UTC. P/E is blank for loss-making companies.</p>
+        <td className="px-2 py-2">{big(r.marketCap)}</td><td className="px-2 py-2">{big(r.ttmRevenue)}</td><td className="px-2 py-2">{big(r.ttmNetIncome)}</td><td className="px-2 py-2">{x(r.pe)}</td><td className="px-2 py-2">{x(r.ps)}</td><td className="px-2 py-2">{x(r.evSales??null)}</td><td className="px-2 py-2">{x(r.evEbit??null)}</td><td className="px-2 py-2">{pct(r.operatingMargin??null)}</td><td className="px-2 py-2">{pct(r.fcfMargin??null)}</td><td className="px-2 py-2">{pct(r.netMargin)}</td><td className={`px-2 py-2 ${tone(r.revenueGrowth??null)}`}>{pct(r.revenueGrowth??null)}</td><td className="px-2 py-2">{pct(r.offHigh??null)}</td></tr>)}</tbody></table></div>
+      <p className="text-xs text-muted-foreground">{snap.note} {snap.model&&`Model: ${snap.model}. `}Sources: {snap.source}. Retrieved {snap.retrievedAt.slice(0,16).replace('T',' ')} UTC. P/E and EV/EBIT are blank for loss-making companies; EV ratios are blank when debt or cash is not reported. EV = market cap + debt − cash (leases excluded).</p>
     </>}
   </section>;
 }
