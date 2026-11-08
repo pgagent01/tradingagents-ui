@@ -21,7 +21,7 @@ export async function cachedStockData(sb:SupabaseClient<Database>,userId:string,
     if(stats.currency===data.currency && stats.marketCap!==null)data.marketCap=stats.marketCap;
     // Provider TTM ratios are separate from annual/quarter filing ratios, not silent replacements.
     const reported=[{label:'P/E · Yahoo TTM',value:stats.trailingPe!=null&&stats.trailingPe>0?stats.trailingPe:null},{label:'P/S · Yahoo TTM',value:stats.ps??null},{label:'EV / EBITDA · Yahoo TTM',value:stats.evEbitda},{label:'Net margin % · Yahoo TTM',value:stats.netMargin??null},{label:'ROE % · Yahoo TTM',value:stats.roe}].filter(r=>r.value!==null);
-    data.ratios.push(...reported);
+    data.ratios=[...reported,...data.ratios];
     if(reported.length)data.warnings.push(`Standard TTM metrics reported by Yahoo Finance, retrieved ${stats.retrievedAt??data.fetchedAt}; provider periods differ from the separately shown filing-period ratios.`);
   }
   if(!data.quoteSource&&!data.chartSource&&previous['ticker']===ticker&&Array.isArray(previous['candles']))return {...cached?.payload as unknown as StockData,...(data.financialSource?{financialSource:data.financialSource,financialDate:data.financialDate,ratios:data.ratios,statements:data.statements}:{}),cached:true,warnings:[...(Array.isArray(previous['warnings'])?previous['warnings'].filter((w):w is string=>typeof w==='string'):[]),'Providers unavailable; showing previously saved data.']};
