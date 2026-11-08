@@ -21,17 +21,17 @@ export function forecastOutcomes(sections: unknown, raw: unknown, asOf: string) 
   const baseEnd = date(savedRevenue['periodEnd']), baseStart = date(annual['start']);
   const analysisDate = date(valuation['analysisDate']);
   const intrinsic = sectionObject(valuation['intrinsic']);
-  const scenarios = Array.isArray(intrinsic['scenarios']) ? intrinsic['scenarios'].map(sectionObject) : [];
-  const comparable = savedRevenue['method'] === 'annual' && baseEnd !== null && baseStart !== null && annual['end'] === baseEnd;
+  const scenarios = Array.isArray(intrinsic['scenarios']) ? intrinsic['scenarios'].slice(0, 3).map(sectionObject) : [];
+  const comparable = savedRevenue['method'] === 'annual' && baseEnd !== null && baseStart !== null && annual['end'] === baseEnd && analysisDate !== null;
   const body = sectionObject(raw), facts = sectionObject(sectionObject(body['facts'])['us-gaap']);
   const cik = finite(body['cik']);
   const anchors = secRows(facts, revenueTags, 'USD', asOf).filter(r => /^(10-K|20-F|40-F)/.test(String(r['form'])) && typeof r['start'] === 'string');
-  const rows = scenarios.flatMap(scenario => (Array.isArray(scenario['forecasts']) ? scenario['forecasts'].map(sectionObject) : []).flatMap(forecast => {
+  const rows = scenarios.flatMap(scenario => (Array.isArray(scenario['forecasts']) ? scenario['forecasts'].slice(0, 5).map(sectionObject) : []).flatMap(forecast => {
     const year = finite(forecast['year']);
     if (year === null || !Number.isInteger(year) || year < 1 || year > 5) return [];
     const end = baseEnd ? anniversary(baseEnd, year) : null;
     const start = baseStart ? anniversary(baseStart, year) : null;
-    const candidates = comparable && end && start ? anchors.filter(r => Math.abs(Date.parse(String(r['end'])) - Date.parse(end)) <= 7 * day && Math.abs(Date.parse(String(r['start'])) - Date.parse(start)) <= 7 * day && (Date.parse(String(r['end'])) - Date.parse(String(r['start']))) / day > 300 && (Date.parse(String(r['end'])) - Date.parse(String(r['start']))) / day < 400 && (!analysisDate || String(r['filed']) > analysisDate)).sort((a, b) => String(b['filed']).localeCompare(String(a['filed']))) : [];
+    const candidates = comparable && end && start ? anchors.filter(r => Math.abs(Date.parse(String(r['end'])) - Date.parse(end)) <= 7 * day && Math.abs(Date.parse(String(r['start'])) - Date.parse(start)) <= 7 * day && (Date.parse(String(r['end'])) - Date.parse(String(r['start']))) / day > 300 && (Date.parse(String(r['end'])) - Date.parse(String(r['start']))) / day < 400 && analysisDate && String(r['filed']) > analysisDate && String(r['end']) > analysisDate).sort((a, b) => String(b['filed']).localeCompare(String(a['filed'])) || revenueTags.indexOf(String(a['tag'])) - revenueTags.indexOf(String(b['tag']))) : [];
     const anchor = candidates[0];
     return (['revenue', 'operatingIncome'] as const).map(metric => {
       const expected = finite(forecast[metric]);
