@@ -11,7 +11,7 @@ export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: num
   const currentMargin=t.operatingIncome.value/t.revenue.value;
   const historical=f?.annual.at(-1)?.revenueGrowthPct;
   const growth=historical!==null && historical!==undefined ? Math.max(0,Math.min(.15,historical/100)) : .05;
-  const common: ForecastAssumptions={growth,margin:currentMargin,taxRate:.25,reinvestment:.4,terminalGrowth:.025,riskFree:rates.riskFree,beta:rates.beta,equityPremium:.05,creditSpread:.02,dividendsPerShare:0,...overrides};
+  const common: ForecastAssumptions={...overrides,growth:overrides.growth??growth,margin:overrides.margin??currentMargin,taxRate:overrides.taxRate??.25,reinvestment:overrides.reinvestment??.4,terminalGrowth:overrides.terminalGrowth??.025,riskFree:rates.riskFree,beta:rates.beta,equityPremium:.05,creditSpread:.02,dividendsPerShare:overrides.dividendsPerShare??0};
   const input={revenue:t.revenue.value,debt:b.debt.value,cash:b.cash.value,shares:b.shares.value,marketCap,assumptions:common};
   const cases=[{name:'Bear',assumptions:{...common,growth:Math.max(-.2,common.growth-.04),margin:common.margin*.8,reinvestment:Math.min(.95,common.reinvestment+.1),creditSpread:.03,terminalGrowth:Math.max(0,common.terminalGrowth-.005)}},{name:'Base',assumptions:common},{name:'Bull',assumptions:{...common,growth:Math.min(.5,common.growth+.04),margin:Math.min(.8,common.margin*1.2),reinvestment:Math.max(0,common.reinvestment-.1),creditSpread:.015,terminalGrowth:Math.min(.05,common.terminalGrowth+.005)}}];
   const scenarios=cases.map(c=>forecastScenario({...input,assumptions:c.assumptions},c.name));

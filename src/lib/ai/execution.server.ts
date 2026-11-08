@@ -35,6 +35,8 @@ import { peerSuggestionPrompt } from '@/lib/valuation/peer-suggestions';
 import { verifyModelPeers } from '@/lib/valuation/model-peers.server';
 import { resumeEvidencePolicy } from '@/lib/evidence-freshness';
 import { releaseBridge } from '@/lib/sources/earnings-bridge';
+import { valuationPreferencesSchema } from '@/lib/valuation/preferences';
+import { customPeers } from '@/lib/valuation/preferences.server';
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -79,14 +81,18 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const technical=technicalStock?technicalEvidence(technicalStock,run.analysis_date,run.lookback_days):null;
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
   if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData);if(rec.length)fundamentals.reconciliation=rec;}
-  const comparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
+  const parsedPreferences=valuationPreferencesSchema.safeParse(sectionObject(run.model_config)['valuationPreferences']);
+  const preferences=parsedPreferences.success?parsedPreferences.data:{overrides:{},peers:[],excludedPeers:[]};
+  const automaticComparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
+  const comparables=run.analysis_date===new Date().toISOString().slice(0,10)?await customPeers(automaticComparables,run.ticker,run.analysis_date,preferences):automaticComparables;
   const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
-  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
+  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates,overrides:preferences.overrides});
   const evidence={macro,predictions,news,fundamentals,free,valuation};
   async function enrichPeers(agent:string,text:string,model:string) {
     if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
     const checked=await verifyModelPeers(valuation.comparables,text,run.ticker,run.analysis_date,model);
-    valuation=valuationEvidence(fundamentals,checked,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
+    const selected={...checked,peers:checked.peers.filter(p=>!preferences.excludedPeers.includes(p.ticker))};
+    valuation=valuationEvidence(fundamentals,selected,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates,overrides:preferences.overrides});
     evidence.valuation=valuation;
   }
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
