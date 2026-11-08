@@ -13,14 +13,17 @@ export type ValuationEvidence = {
 export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string): ValuationEvidence {
   const ttm = f?.ttm, recent = f?.latestQuarter ?? f?.annual.at(-1);
   const shares = ttm?.dilutedShares?.value ?? null;
-  const bases: Partial<Record<Multiple, number | null>> = { pe: ttm?.netIncome.value ?? null, pb: recent?.equity ?? null, pFcf: ttm?.freeCashFlow ?? null };
+  const earningsAligned = ttm?.netIncome.periodEnd != null && ttm.netIncome.periodEnd === ttm.dilutedShares?.end;
+  const bookAligned = recent?.end != null && recent.end === ttm?.dilutedShares?.end;
+  const cashAligned = ttm?.operatingCashFlow.periodEnd != null && ttm.operatingCashFlow.periodEnd === ttm.dilutedShares?.end;
+  const bases: Partial<Record<Multiple, number | null>> = { pe: earningsAligned ? ttm?.netIncome.value ?? null : null, pb: bookAligned ? recent?.equity ?? null : null, pFcf: cashAligned ? ttm?.freeCashFlow ?? null : null };
   const summaries = summarizePeers(comps.peers, bases, shares, null);
   const selection = selectMethod(comps.industry, ttm?.revenue.value ?? null, ttm?.netIncome.value ?? null);
   const preferred = selection.method === 'excess_return' ? 'pb' : selection.method === 'dcf' ? 'pe' : null;
   const chosen = summaries.find(s => s.multiple === preferred && s.impliedBase !== null);
-  const aligned = chosen?.multiple === 'pe' ? ttm?.netIncome.periodEnd === ttm?.dilutedShares?.end : true;
+  const aligned = chosen?.multiple === 'pe' ? earningsAligned : chosen?.multiple === 'pb' ? bookAligned : true;
   const usable = chosen && aligned && shares !== null && shares > 0;
-  const limitations = [selection.reason, 'Intrinsic valuation awaits explicit growth, margin, reinvestment and discount-rate scenarios; reported operating cash flow minus capex is not automatically FCFF.', 'A 12-month target awaits a documented roll-forward rate and dividend assumption; peer-relative value is not a price forecast.', comps.note];
+  const limitations = [selection.reason, 'Intrinsic valuation awaits explicit growth, margin, reinvestment and discount-rate scenarios; reported operating cash flow minus capex is not automatically FCFF.', 'A 12-month target awaits a documented roll-forward rate and dividend assumption; peer-relative value is not a price forecast.'];
   if (shares === null || shares <= 0) limitations.push('Positive dated diluted share count unavailable.');
   if (!aligned) limitations.push('Earnings and share-count periods do not align; implied values withheld.');
   return { version: 1, analysisDate, currency: 'USD', method: selection.method, status: usable ? 'relative_only' : 'unavailable', intrinsicValue: null, priceTarget: null, horizonMonths: 12, price,

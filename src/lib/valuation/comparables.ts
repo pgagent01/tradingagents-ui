@@ -1,4 +1,5 @@
 export const MULTIPLES = ['pe', 'forwardPe', 'evSales', 'evEbitda', 'pFcf', 'pb'] as const;
+export const COMPARABLE_CACHE_TTL = 48 * 60 * 60 * 1000;
 export type Multiple = typeof MULTIPLES[number];
 export type Peer = { ticker: string; company: string; industry: string; marketCap: number; currency: string; date: string; source: string; multiples: Record<Multiple, number | null> };
 export type ComparableEvidence = { status: 'available' | 'unavailable'; industry: string | null; fetchedAt: string; cached: boolean; peers: Peer[]; summaries: { multiple: Multiple; count: number; low: number; median: number; high: number; impliedLow: number | null; impliedBase: number | null; impliedHigh: number | null }[]; note: string };
@@ -8,11 +9,11 @@ export function eligiblePeers(peers: Peer[], ticker: string, marketCap: number, 
   return peers.filter(p => {
     if (p.ticker === ticker || seen.has(p.ticker) || p.industry !== industry || p.currency !== 'USD' || !Number.isFinite(p.marketCap) || p.marketCap < marketCap * .25 || p.marketCap > marketCap * 4) return false;
     seen.add(p.ticker); return true;
-  }).sort((a, b) => Math.abs(Math.log(a.marketCap / marketCap)) - Math.abs(Math.log(b.marketCap / marketCap))).slice(0, 8);
+  }).sort((a, b) => Math.abs(Math.log(a.marketCap / marketCap)) - Math.abs(Math.log(b.marketCap / marketCap)) || a.ticker.localeCompare(b.ticker)).slice(0, 8);
 }
 export function quantile(values: number[], fraction: number): number | null {
   const sorted = values.filter(v => Number.isFinite(v) && v > 0).sort((a,b) => a-b);
-  if (!sorted.length || fraction < 0 || fraction > 1) return null;
+  if (!sorted.length || !Number.isFinite(fraction) || fraction < 0 || fraction > 1) return null;
   const index = (sorted.length - 1) * fraction, lower = sorted[Math.floor(index)], upper = sorted[Math.ceil(index)];
   return lower === undefined || upper === undefined ? null : lower + (upper - lower) * (index % 1);
 }

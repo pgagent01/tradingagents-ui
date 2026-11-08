@@ -2,8 +2,7 @@ import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-c
 import { fmpRequest, ownFmpCredential } from '@/lib/fmp.server';
 import { numeric } from '@/lib/stock-data';
 import { validTicker } from '@/lib/stock-data';
-import { eligiblePeers, type ComparableEvidence, type Peer } from './comparables';
-const TTL = 48 * 60 * 60 * 1000;
+import { COMPARABLE_CACHE_TTL, eligiblePeers, type ComparableEvidence, type Peer } from './comparables';
 export async function getComparables(sb: EvidenceClient, userId: string, ticker: string, date: string, today = new Date().toISOString().slice(0,10)): Promise<ComparableEvidence> {
   const result: ComparableEvidence = { status: 'unavailable', industry: null, fetchedAt: new Date().toISOString(), cached: false, peers: [], summaries: [], note: 'Comparable data unavailable; research can continue without it.' };
   // Never substitute current profiles, market caps or TTM ratios into a historical run.
@@ -11,7 +10,7 @@ export async function getComparables(sb: EvidenceClient, userId: string, ticker:
   try {
     const credential = await ownFmpCredential(sb, userId);
     if (!credential) return { ...result, note: 'No owner FMP credential for bounded comparable discovery; free Yahoo peer discovery is not connected.' };
-    const cacheKey = `v1:${ticker}:${credential.version}`;
+    const cacheKey = `v2:${ticker}:${credential.version}`;
     const cached = await readDataCache(sb, userId, 'valuation-peers', cacheKey);
     if (cached?.fresh) return { ...cached.payload as unknown as ComparableEvidence, cached: true };
     const profile = (await fmpRequest('profile', credential.key, { symbol: ticker }))[0];
@@ -39,7 +38,7 @@ export async function getComparables(sb: EvidenceClient, userId: string, ticker:
     result.peers = eligiblePeers(peers, ticker, marketCap, industry);
     result.status = result.peers.length >= 3 ? 'available' : 'unavailable';
     result.note = `FMP industry fallback (not SEC SIC), exact industry and USD market-cap filter 0.25×–4×; ${result.peers.length} usable peers. Provider-reported TTM ratios, not independently filing-reconciled; date is retrieval date, underlying filing dates unavailable. Forward P/E unavailable. At least three positive observations required per multiple. Cached up to 48 hours.`;
-    await writeDataCache(sb, userId, 'valuation-peers', cacheKey, result, result.status === 'available' ? TTL : 5 * 60 * 1000);
+    await writeDataCache(sb, userId, 'valuation-peers', cacheKey, result, result.status === 'available' ? COMPARABLE_CACHE_TTL : 5 * 60 * 1000);
     return result;
   } catch { return result; }
 }
