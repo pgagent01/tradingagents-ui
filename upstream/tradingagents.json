@@ -4,5 +4,6 @@
   "lastReviewedCommit": "9fa1196fffbcfd9de5146d2dd2869df84ab99838",
   "checkedOn": "2026-11-07",
   "relationship": "Independent TypeScript adaptation; monitoring baseline, not a claim that this revision has been ported",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "adaptationNotes": "2026-11-08: fundamentals evaluates aligned TTM, conditional ROIC and FCF conversion; risk requests evidence-bounded stress tests; debate uses five-part adversarial cross-examination; synthesis separates relative multiples from intrinsic forecasts and ties conviction to evidenced margin of safety. No new upstream revision reviewed."
 }
