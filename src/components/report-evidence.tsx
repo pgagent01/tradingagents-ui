@@ -1,4 +1,5 @@
 import { MetricLabel } from '@/components/metric-label';
+import { ReportFinancialComparison } from '@/components/report-financial-comparison';
 import {DataFreshness} from '@/components/data-freshness';
 import { sectionObject, contentText, financialRows } from '@/lib/report-content';
 
@@ -40,6 +41,7 @@ function FundamentalsSection({value}:{value:unknown}) {
     {periods.flatMap(p=>(Array.isArray(p['qualityWarnings'])?p['qualityWarnings']:[]).map((w,i)=><p key={`${p['end']}-${i}`} className="mt-2 text-xs text-warning">{contentText(p['end'])}: {String(w)}</p>))}
     <DataFreshness date={contentText(f['fetchedAt'])} origin={f['cached']===true?'Cached SEC facts':'Retrieved SEC facts'}/>
     {periods.length>0?<div className="mt-3 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Metric (USD)</th>{periods.map((p,i)=>{const url=safeLink(contentText(p['filingUrl']));return <th key={i} className="pr-3 font-mono">{url?<a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{contentText(p['form'])} {contentText(p['end'])}</a>:`${contentText(p['form'])} ${contentText(p['end'])}`}<div className="font-normal">filed {contentText(p['filed'])}</div></th>;})}</tr></thead><tbody>{rows.map(([label,key])=><tr key={key} className="border-b border-border"><td className="py-2 pr-3"><MetricLabel label={label}/></td>{periods.map((p,i)=><td key={i} className="pr-3 font-mono">{key==='revenueGrowthPct'?(typeof p[key]==='number'?`${(p[key] as number).toFixed(1)}%`:'—'):money(p[key])}{(key==='grossProfit'&&p['grossProfitDerived']===true)||(key==='liabilities'&&p['liabilitiesDerived']===true)?' *':''}</td>)}</tr>)}</tbody></table><p className="mt-1 text-xs text-muted-foreground">* derived from reported totals. Quarterly cash flow stays unavailable without compatible standalone or same-filing comparative facts; YTD is never shown as a quarter.</p></div>:<p className="mt-3 text-sm text-muted-foreground">No SEC facts filed by this date.</p>}
+    <ReportFinancialComparison value={f['reconciliation']} period={sectionObject(Array.isArray(f['annual']) ? f['annual'].at(-1) : null)['end']} />
   </div>;
 }
 const list=(v:unknown)=>Array.isArray(v)?v.map(sectionObject):[];
