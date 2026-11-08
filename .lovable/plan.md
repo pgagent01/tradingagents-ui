@@ -73,6 +73,11 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - **Stale evidence on resume:** if a run resumes more than 24 hours later, data for a today's-date run is refreshed and the report notes which steps used older data; historical-date runs keep their original dated data.
 - **Clear messages:** timeouts, quota used up, access denied and malformed output each show a plain explanation and whether resuming is possible.
 - **Costs:** report totals include all attempts; a note shows the resumed steps.
+- **See partial work:** a failed or interrupted run still shows each finished analyst step's output, model and cost, so nothing already paid for is hidden.
+- **Failed step cleanup:** both "running" and "failed" step rows for the step being retried are removed on resume, so the retry is clean and never counted twice; their cost stays in the run total.
+- **Run settings locked:** a resumed run keeps its original stock, date and model choices; changing models means starting a new run (or an explicit "resume with another model" choice that is recorded).
+- **Resume limits:** at most 3 resumes per run, to stop repeat charges from a step that keeps failing.
+- **Cached data reused:** filings and prices already fetched are reused from the cache on resume (subject to the 24-hour rule above).
 
 ## Rules
 - Historical-date runs use only filings and rates available on that date.
@@ -89,5 +94,6 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - Resume: new owner-scoped transactional DB function `resume_research_run` (failed/cancelled → pending, delete `running` agent_outputs, log event); `resumeAnalysis` server fn with requireSupabaseAuth; existing claim + skip-completed logic does the rest.
 - Lease: add `last_heartbeat_at` to `research_runs`, updated by `save_agent_result` and periodic stream ticks; `claim_research_execution` and a `expire_stale_runs` function mark runs idle >10 min as failed (`interrupted`). Never reclaim a run with a fresh heartbeat.
 - Evidence freshness: store evidence fetch time in run events; on resume of a current-date run older than 24h, refetch and record per-agent evidence dates in report sections.
-- Tests: resume state transitions, stale-lease expiry, no duplicate claim, skipped completed agents.
+- Add `resume_count` and `last_error_kind` (timeout/quota/denied/format/interrupted) to `research_runs`; `resume_research_run` rejects when count ≥3 or an `ai_access_state` pause is active for the run's provider.
+- Tests: resume limit, failed-row cleanup without cost loss, locked run config, resume state transitions, stale-lease expiry, no duplicate claim, skipped completed agents.
 - Tests go in `src/test/valuation-*.test.ts`. Record the module rule in `src/lib/valuation/AGENTS.md`.
