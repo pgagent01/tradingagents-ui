@@ -65,6 +65,15 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - Unit tests with fixed inputs for each method: AAPL-style operating company, JPM-style bank, REIT, loss-maker.
 - One live report run (uses NVIDIA credits; only with your approval) on Amazon, then compare it with the two existing Amazon reports.
 
+### 7. Partial runs, resume and stale data (do this first)
+- **Resume button:** failed or cancelled runs show "Resume run". Finished analyst steps are kept and not paid for again; only the failed step and later ones run.
+- **Safe resume:** resuming only works when the run is failed/cancelled and owned by you; the half-finished step is cleared first. Quota or access pauses must be cleared (or another key/model chosen) before resume is offered.
+- **Stuck runs:** a run with no progress for 10 minutes is marked "interrupted" automatically (on next page open or start), so it can be resumed instead of hanging as "running".
+- **Heartbeat:** the running step records progress regularly, so a live run is never mistaken for a stuck one and never runs twice.
+- **Stale evidence on resume:** if a run resumes more than 24 hours later, data for a today's-date run is refreshed and the report notes which steps used older data; historical-date runs keep their original dated data.
+- **Clear messages:** timeouts, quota used up, access denied and malformed output each show a plain explanation and whether resuming is possible.
+- **Costs:** report totals include all attempts; a note shows the resumed steps.
+
 ## Rules
 - Historical-date runs use only filings and rates available on that date.
 - Unavailable inputs stay unavailable. No guessed values.
@@ -77,4 +86,8 @@ Add the Valuation card, sensitivity grid, export section and Stock Info panel. S
 - Add `ttm.ts` and `reconcile.ts` (source comparison table) under `src/lib/valuation/`, reusing `src/lib/sec-periods.ts`; 8-K figures come via `src/lib/sources/free-sources*.ts`.
 - Update `ROLE_GUIDE` and the synthesis prompt in `src/lib/ai/execution.server.ts`; the debate stays one stage with structured bull/bear sections (no new agent, same cost).
 - TradingAgents remains a design reference only; record prompt changes in `upstream/tradingagents.json` notes so upstream reviews can compare.
+- Resume: new owner-scoped transactional DB function `resume_research_run` (failed/cancelled → pending, delete `running` agent_outputs, log event); `resumeAnalysis` server fn with requireSupabaseAuth; existing claim + skip-completed logic does the rest.
+- Lease: add `last_heartbeat_at` to `research_runs`, updated by `save_agent_result` and periodic stream ticks; `claim_research_execution` and a `expire_stale_runs` function mark runs idle >10 min as failed (`interrupted`). Never reclaim a run with a fresh heartbeat.
+- Evidence freshness: store evidence fetch time in run events; on resume of a current-date run older than 24h, refetch and record per-agent evidence dates in report sections.
+- Tests: resume state transitions, stale-lease expiry, no duplicate claim, skipped completed agents.
 - Tests go in `src/test/valuation-*.test.ts`. Record the module rule in `src/lib/valuation/AGENTS.md`.
