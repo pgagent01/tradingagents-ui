@@ -133,3 +133,4 @@
 - [x] Annual forecast-vs-actual scorecard implemented; no comparable mature annual-baseline report exists in the requesting account. Rolling quarterly TTM forecasts remain explicitly not comparable with fiscal-year totals.
 - [ ] Rolling-TTM forecast outcome matching and certified historical backtesting — await same-window subsequent filing reconciliation and point-in-time provider revision/peer membership coverage; current outcome scoring is not a full methodological backtest.
 - [ ] Latest complete billed report integration verification — no new billed report was started this turn; updated preference/8-K/anchor paths covered by integration tests and signed-in saved-data flows, not a new live LLM result.
+- [ ] HPE end-to-end report + database/cache integrity check (Nov 8)
