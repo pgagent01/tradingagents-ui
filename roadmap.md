@@ -112,7 +112,8 @@
 - [x] Phase 7: resume failed/cancelled runs (keeps finished steps, max 3 resumes, blocked while AI access paused), 5-minute stuck-run detection with heartbeat, error kind recorded.
 - [x] Live resume verified: cancelled LITE run resumed, 4 finished steps reused, report saved (HOLD 50)
 - [ ] Phase 7 extra: refresh stale evidence when resuming >24h later.
-- [ ] Phases 1/1b: reconciled inputs, rolling TTM, 8-K bridge, reconciliation table.
+- [x] Phase 1b: rolling 12-month SEC figures with freshness line and SEC-vs-provider comparison table in each new analysis (AMZN live check: TTM to 2026-09-30)
+- [ ] Phase 1b remaining: earnings-release (8-K) figure bridge; show comparison table on report page.
 - [ ] Phases 2/2b/3: method selection, comps, valuation engine with tests.
 - [ ] Phases 4/4b: feed valuation to analysts, prompt improvements.
 - [ ] Phases 5/6: Valuation card, exports, verification run.
