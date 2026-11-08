@@ -65,7 +65,7 @@ describe('real execution analyst handoffs', () => {
     const saved = rpc.mock.calls.find(([name]) => name === 'finalize_research_report');
     expect(saved).toBeDefined();
     expect(storedReport['storage_version']).toBe(2);
-    expect(storedReport['quality_review']).toMatchObject({version:2,warnings:[]});
+    expect(storedReport['quality_review']).toMatchObject({version: 3,warnings:[]});
     expect(calls[6]).toContain('warm-up bars are separate');
     expect(storedReport['analyst_outputs']).toMatchObject({fundamentals:{content:'fundamentals verified finding',model:'test-model'},risk:{content:'risk verified finding'}});
     expect(storedReport['scoring_anchor']).toMatchObject({date:'2026-11-07',price:null,horizonMonths:12});
