@@ -5,7 +5,7 @@ import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-c
 import { selectSecFact } from '@/lib/sec-periods';
 import { valuationBalance } from './financial-inputs';
 import type { Candle } from '@/lib/stock-data';
-import { qualityRatios, grossMarginTrend, riskStats, periodChange, snapshotRatios, extendedRatios, annualGrowth, offHigh, type PeerSnapshot, type PeerSnapshotRow } from './peer-snapshot';
+import { snapshotDebt, qualityRatios, grossMarginTrend, riskStats, periodChange, snapshotRatios, extendedRatios, annualGrowth, offHigh, type PeerSnapshot, type PeerSnapshotRow } from './peer-snapshot';
 async function chart(ticker: string): Promise<unknown> {
   for (const host of ['query1','query2']) {
     try { const r=await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker.replace('.','-'))}?range=2y&interval=1d`,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'},signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); } catch { /* try second host */ }
@@ -24,22 +24,25 @@ async function row(ticker: string, role: 'subject'|'peer', today: string, spy: C
   const aligned=f?.ttm && f.ttm.revenue.periodEnd===f.ttm.netIncome.periodEnd;
   const notes=[!raw?'Price history unavailable.':null,!usd?`Quoted in ${String(meta['currency'])}; ratios withheld.`:null,!f||revenue===null?'SEC trailing figures unavailable (may be a foreign filer).':null,numeric(meta['marketCap'])===null&&cap!==null?'Market cap = price × SEC period-end shares.':null].filter(Boolean);
   const last=candles.at(-1);
-  const vb=f?.valuationBalance, ann=f?.annual??[];
-  const ext=usd&&aligned?extendedRatios(cap,vb?.debt?.value??null,vb?.cash?.value??null,revenue,f?.ttm?.operatingIncome.value??null,f?.ttm?.freeCashFlow??null):{};
+  const ann=f?.annual??[];
   const la=ann.at(-1); const anchor=la?{accn:la.accession,end:la.end,start:la.start??null,filed:la.filed,form:la.form}:null;
   const gaap=((facts as {facts?:{'us-gaap'?:Record<string,unknown>}}|null)?.facts?.['us-gaap'])??null;
   const g=(tags:string[],kind:'annual'|'instant')=>gaap&&anchor?selectSecFact(gaap,tags,anchor,kind,'USD',today)?.value??null:null;
   const ab=gaap&&anchor?valuationBalance(gaap,anchor,today):null;
-  const quality=usd?qualityRatios({operatingIncome:la?.operatingIncome??null,da:g(['DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'],'annual'),debt:ab?.debt?.value??null,cash:ab?.cash?.value??null,equity:g(['StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],'instant'),dividends:g(['PaymentsOfDividends','PaymentsOfDividendsCommonStock'],'annual'),buybacks:g(['PaymentsForRepurchaseOfCommonStock'],'annual'),ttmFcf:aligned?f?.ttm?.freeCashFlow??null:null,marketCap:cap}):{};
+  const gi=(tags:string[])=>g(tags,'instant');
+  const dbt=snapshotDebt(ab?.debt?.value??null,{longTermDebt:gi(['LongTermDebt']),debtCurrent:gi(['DebtCurrent']),ltdCurrent:gi(['LongTermDebtCurrent']),shortTagged:gi(['ShortTermBorrowings','CommercialPaper','ShortTermDebtCurrent'])!==null});
+  const ext=usd&&aligned?extendedRatios(cap,dbt.value,ab?.cash?.value??null,revenue,f?.ttm?.operatingIncome.value??null,f?.ttm?.freeCashFlow??null):{};
+  const equity=g(['StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],'instant');
+  const quality=usd?qualityRatios({operatingIncome:la?.operatingIncome??null,da:g(['DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'],'annual'),debt:dbt.value,cash:ab?.cash?.value??null,equity,dividends:g(['PaymentsOfDividends','PaymentsOfDividendsCommonStock'],'annual'),buybacks:g(['PaymentsForRepurchaseOfCommonStock'],'annual'),ttmFcf:aligned?f?.ttm?.freeCashFlow??null:null,marketCap:cap}):{};
   const risk=riskStats(candles,spy); const c1y=periodChange(candles,365), s1y=periodChange(spy,365);
   const growth=annualGrowth(ann.at(-1)?.revenue,ann.at(-2)?.revenue);
-  return {...empty,company:String(meta['longName']??meta['shortName']??ticker),price,change1d:candles.length>1&&candles.at(-2)!.close>0?(candles.at(-1)!.close-candles.at(-2)!.close)/candles.at(-2)!.close*100:null,change30d:periodChange(candles,30),change1y:periodChange(candles,365),marketCap:usd?cap:null,ttmRevenue:revenue,ttmNetIncome:aligned?net:null,...(usd&&aligned?snapshotRatios(cap,revenue,net):{pe:null,ps:null,netMargin:null}),...ext,revenueGrowth:growth,...quality,grossMarginTrend:grossMarginTrend(ann),...risk,vsSpy1y:c1y!==null&&s1y!==null?c1y-s1y:null,fiscalYearEnd:la?.end??null,offHigh:offHigh(candles),revenuePeriodEnd:f?.ttm?.revenue.periodEnd??null,priceDate:last?new Date(last.time*1000).toISOString().slice(0,10):null,note:notes.join(' ')||null};
+  return {...empty,company:String(meta['longName']??meta['shortName']??ticker),price,change1d:candles.length>1&&candles.at(-2)!.close>0?(candles.at(-1)!.close-candles.at(-2)!.close)/candles.at(-2)!.close*100:null,change30d:periodChange(candles,30),change1y:periodChange(candles,365),marketCap:usd?cap:null,ttmRevenue:revenue,ttmNetIncome:aligned?net:null,...(usd&&aligned?snapshotRatios(cap,revenue,net):{pe:null,ps:null,netMargin:null}),...ext,revenueGrowth:growth,note:[notes.join(' '),dbt.note,la?`Debt, cash and yearly ratios from fiscal year ending ${la.end}.`:null,equity!==null&&equity<0?'Shareholders’ equity is negative, which inflates ROIC.':null].filter(Boolean).join(' ')||null,...quality,grossMarginTrend:grossMarginTrend(ann),...risk,vsSpy1y:c1y!==null&&s1y!==null?c1y-s1y:null,fiscalYearEnd:la?.end??null,offHigh:offHigh(candles),revenuePeriodEnd:f?.ttm?.revenue.periodEnd??null,priceDate:last?new Date(last.time*1000).toISOString().slice(0,10):null,note:notes.join(' ')||null};
 }
 /** Descriptive side-by-side table only: never feeds valuation math, which keeps its stricter verified-peer rules. */
 export async function peerSnapshot(sb: EvidenceClient, userId: string, subject: string, candidates: string[], model: string|null): Promise<PeerSnapshot> {
   const picks=[...new Set(candidates.filter(t=>validTicker(t)&&t!==subject))].slice(0,3);
   const today=new Date().toISOString().slice(0,10);
-  const key=`v4:${subject}:${picks.join(',')}:${today}`;
+  const key=`v5:${subject}:${picks.join(',')}:${today}`;
   const cached=await readDataCache(sb,userId,'peer-snapshot',key);
   if(cached?.fresh) return cached.payload as PeerSnapshot;
   const spy=parseYahooChart(await chart('SPY').catch(()=>null)).candles;
