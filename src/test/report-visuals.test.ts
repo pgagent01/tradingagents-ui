@@ -14,3 +14,19 @@ describe('heat map tone',()=>{
   expect(heatTone(105,100)).toBe('bg-muted'); expect(heatTone(160,100)).toBe('bg-primary/40'); expect(heatTone(40,100)).toBe('bg-destructive/40'); expect(heatTone(5,null)).toBe('bg-muted');
  });
 });
+import { qualityRatios, grossMarginTrend, riskStats } from '@/lib/valuation/peer-snapshot';
+describe('comparable quality and risk',()=>{
+ it('ROIC, net debt/EBITDA, FCF and shareholder yield from same inputs',()=>{
+  const q=qualityRatios({operatingIncome:100,da:20,debt:300,cash:100,equity:300,dividends:-10,buybacks:-30,ttmFcf:50,marketCap:1000});
+  expect(q.roic).toBeCloseTo(100*0.79/500*100); expect(q.netDebtEbitda).toBeCloseTo(200/120); expect(q.fcfYield).toBeCloseTo(5); expect(q.shareholderYield).toBeCloseTo(4);
+  expect(qualityRatios({operatingIncome:100,da:null,debt:1,cash:1,equity:1,dividends:null,buybacks:5,ttmFcf:null,marketCap:1}).netDebtEbitda).toBeNull();
+ });
+ it('gross margin trend needs three years with gross profit',()=>{
+  expect(grossMarginTrend([{revenue:100,grossProfit:30},{revenue:100,grossProfit:31},{revenue:100,grossProfit:35}])).toBeCloseTo(5);
+  expect(grossMarginTrend([{revenue:100,grossProfit:null},{revenue:1,grossProfit:1},{revenue:100,grossProfit:35}])).toBeNull();
+ });
+ it('a stock moving exactly 2x SPY has beta 2',()=>{
+  const spy=[],st=[];let a=100,b=100;for(let i=0;i<200;i++){const r=Math.sin(i)*0.01;a*=1+r;b*=1+2*r;spy.push({time:1.7e9+i*86400,open:a,high:a,low:a,close:a,volume:0});st.push({time:1.7e9+i*86400,open:b,high:b,low:b,close:b,volume:0});}
+  expect(riskStats(st,spy).beta).toBeCloseTo(2,5); expect(riskStats(st.slice(0,50),spy).beta).toBeNull();
+ });
+});

@@ -5,17 +5,18 @@ import type { PeerSnapshotRow } from '@/lib/valuation/peer-snapshot';
 import { heatTone } from '@/lib/report-visuals';
 function useMounted(){const [m,setM]=useState(false);useEffect(()=>setM(true),[]);return m;}
 const axis={tickLine:false,axisLine:false} as const;
-const cfg={change1d:{label:'1 day %',color:'var(--chart-3)'},change30d:{label:'30 days %',color:'var(--chart-2)'},change1y:{label:'1 year %',color:'var(--chart-1)'},pe:{label:'P/E',color:'var(--chart-1)'},evSales:{label:'EV/Sales',color:'var(--chart-2)'},evEbit:{label:'EV/EBIT',color:'var(--chart-3)'},operatingMargin:{label:'Operating margin %',color:'var(--chart-1)'},fcfMargin:{label:'FCF margin %',color:'var(--chart-2)'},revenueGrowth:{label:'Revenue growth %',color:'var(--chart-3)'},returnPct:{label:'This stock %',color:'var(--chart-1)'},benchmarkPct:{label:'S&P 500 (SPY) %',color:'var(--chart-5)'}};
+const cfg={change1d:{label:'1 day %',color:'var(--chart-3)'},change30d:{label:'30 days %',color:'var(--chart-2)'},change1y:{label:'1 year %',color:'var(--chart-1)'},pe:{label:'P/E',color:'var(--chart-1)'},evSales:{label:'EV/Sales',color:'var(--chart-2)'},evEbit:{label:'EV/EBIT',color:'var(--chart-3)'},operatingMargin:{label:'Operating margin %',color:'var(--chart-1)'},fcfMargin:{label:'FCF margin %',color:'var(--chart-2)'},revenueGrowth:{label:'Revenue growth %',color:'var(--chart-3)'},roic:{label:'ROIC %',color:'var(--chart-1)'},fcfYield:{label:'FCF yield %',color:'var(--chart-2)'},shareholderYield:{label:'Shareholder yield %',color:'var(--chart-3)'},returnPct:{label:'This stock %',color:'var(--chart-1)'},benchmarkPct:{label:'S&P 500 (SPY) %',color:'var(--chart-5)'}};
 function Box({title,note,children}:{title:string;note:string;children:React.ReactNode}){return <div className="min-w-0 rounded-md border border-border p-3"><h3 className="text-sm font-semibold">{title}</h3><p className="mb-2 text-xs text-muted-foreground">{note}</p>{children}</div>;}
 function Bars({data,keys,x}:{data:object[];keys:(keyof typeof cfg)[];x:string}){
   return <ChartContainer config={cfg} className="h-56 w-full aspect-auto"><BarChart data={data} accessibilityLayer><CartesianGrid vertical={false} stroke="var(--border)"/><XAxis dataKey={x} {...axis}/><YAxis width={40} {...axis}/><ReferenceLine y={0} stroke="var(--border)"/><ChartTooltip content={<ChartTooltipContent/>}/><ChartLegend content={<ChartLegendContent/>}/>{keys.map(k=><Bar key={k} dataKey={k} fill={`var(--color-${k})`} radius={3}/>)}</BarChart></ChartContainer>;
 }
 export function PeerCharts({rows}:{rows:PeerSnapshotRow[]}){
   if(!useMounted()||rows.length<2) return null;
-  return <div className="grid gap-4 lg:grid-cols-3">
+  return <div className="grid gap-4 md:grid-cols-2">
     <Box title="Share price moves" note="How each stock has traded recently."><Bars data={rows} keys={['change1d','change30d','change1y']} x="ticker"/></Box>
     <Box title="Valuation multiples" note="Lower = cheaper per dollar of profit or sales. Blank when profit is negative."><Bars data={rows} keys={['pe','evSales','evEbit']} x="ticker"/></Box>
     <Box title="Business quality & growth" note="Margins over the last 12 months; growth is the latest fiscal year."><Bars data={rows} keys={['operatingMargin','fcfMargin','revenueGrowth']} x="ticker"/></Box>
+    <Box title="Returns on capital & cash to owners" note="Latest fiscal year; FCF yield uses the last 12 months."><Bars data={rows} keys={['roic','fcfYield','shareholderYield']} x="ticker"/></Box>
   </div>;
 }
 type Win={days:number;status:string;returnPct:number|null;benchmarkPct:number|null};
