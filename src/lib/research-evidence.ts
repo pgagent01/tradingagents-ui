@@ -36,7 +36,7 @@ const TAGS = {
   costOfRevenue: ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold'],
   grossProfit: ['GrossProfit'], operatingIncome: ['OperatingIncomeLoss'], netIncome: ['NetIncomeLoss', 'ProfitLoss'],
   operatingCashFlow: ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
-  capex: ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets'],
+  capex: ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets', 'PaymentsForCapitalImprovements'],
   assets: ['Assets'], liabilities: ['Liabilities'], liabilitiesAndEquity: ['LiabilitiesAndStockholdersEquity'],
   equity: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
   cash: ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents', 'Cash'],
