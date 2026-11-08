@@ -31,6 +31,8 @@ import { reconcileWithSnapshot } from '@/lib/valuation/reconcile';
 import { getComparables } from '@/lib/valuation/comparables.server';
 import { valuationEvidence } from '@/lib/valuation/engine';
 import { valuationRates } from '@/lib/valuation/rates.server';
+import { peerSuggestionPrompt } from '@/lib/valuation/peer-suggestions';
+import { verifyModelPeers } from '@/lib/valuation/model-peers.server';
 export function readCatalog(raw:unknown) {
   const r=sectionObject(raw);const data=Array.isArray(r['data'])?r['data']:[];
   return data.map(v=>{const m=sectionObject(v);const p=sectionObject(m['pricing']);const i=sectionObject(sectionObject(p['input'])['text']);const o=sectionObject(sectionObject(p['output'])['text']);const tiers=(x:unknown)=>{const t=sectionObject(x)['tiers'];return p['cost_currency']==='credits'&&Array.isArray(t)?t as CreditRates['input']:[];};const id=String(m['id']);const surface=id.startsWith('anthropic/')?'messages':id.startsWith('google/')?'chat-completions':'responses';return {id,name:String(m['name']),surfaces:Array.isArray(m['supported_surfaces'])?m['supported_surfaces'] as string[]:[],deprecated:m['deprecated']===true,retention:sectionObject(m['data_retention_by_surface'])[surface],surface,rates:{input:tiers(i),output:tiers(o),cacheRead:tiers(i['cache_read']),cacheWrite:tiers(i['cache_write'])}};});
@@ -71,8 +73,14 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData);if(rec.length)fundamentals.reconciliation=rec;}
   const comparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
   const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
-  const valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
+  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
   const evidence={macro,predictions,news,fundamentals,free,valuation};
+  async function enrichPeers(agent:string,text:string,model:string) {
+    if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
+    const checked=await verifyModelPeers(valuation.comparables,text,run.ticker,run.analysis_date,model);
+    valuation=valuationEvidence(fundamentals,checked,stockSnapshot?.price??null,run.analysis_date,{marketCap:stockSnapshot?.marketCap??null,rates});
+    evidence.valuation=valuation;
+  }
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
   if(evidenceEvent.error)throw evidenceEvent.error;
   emit({type:'data',macro:macro.status,predictions:predictions.status,news:news.status,fundamentals:fundamentals?.status??'unavailable'});
@@ -121,15 +129,16 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     if(signal.aborted) throw new DOMException('Cancelled','AbortError');
     const {data:state,error:stateError}=await sb.from('research_runs').select('status').eq('id',run.id).eq('user_id',userId).single();if(stateError)throw new SafeAiError(503,'Run status could not be verified.');if(state?.status!=='running') throw new DOMException('Cancelled','AbortError');
     const done=completed.get(agent);
-    if(done){storedAnalysts[agent]={content:done.content??'',model:done.model_used??'',status:'completed'};summaries.push(`${agent}: ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
+    if(done){await enrichPeers(agent,done.content??'',done.model_used??'');storedAnalysts[agent]={content:done.content??'',model:done.model_used??'',status:'completed'};summaries.push(`${agent}: ${done.content}`);totalIn+=done.input_tokens;totalOut+=done.output_tokens;totalCost+=Number(done.cost_usd);if(done.lovable_credits===null) creditsKnown=false;else credits+=Number(done.lovable_credits);continue;}
     const {data:started,error:startError}=await sb.from('agent_outputs').insert({run_id:run.id,agent_id:agent,status:'running',model_used:contentText(sectionObject(roles[agent])['model'])}).select('id').single();if(startError) throw startError;
     const startEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'running',message:`${agent} analyst started.`});if(startEvent.error)throw startEvent.error;emit({type:'agent',agent,status:'running'});
-    const prior=agent==='risk'||agent==='debate'?priorFindingsPrompt([...summaries,...(technical?[`Calculated technical evidence: ${JSON.stringify({...technical,candles:undefined})}`]:[])]):'';
+    const prior=(agent==='risk'||agent==='debate'?priorFindingsPrompt([...summaries,...(technical?[`Calculated technical evidence: ${JSON.stringify({...technical,candles:undefined})}`]:[])]):'')+peerSuggestionPrompt(agent==='fundamentals'&&valuation.comparables.status!=='available'&&run.analysis_date===new Date().toISOString().slice(0,10));
     const out=await call(agent,`${scope}${agent==='technical'?technicalPrompt(technical):''}${prior}\nYour role: ${agent}.${ROLE_GUIDE[agent]??''} Produce an evidence-based assessment with catalysts, risks and an explicit evidence limitations paragraph.${agent==='technical'?' Use supplied daily OHLCV and calculated indicators to assess trend, momentum and volatility. Cite chart source, observation dates and coverage. Null indicators are unavailable. Do not claim full lookback coverage when partial.':''}`);
     progress.stage='result_save';
     const {error}=await sb.rpc('save_agent_result',{_output_id:started.id,_result:{...out,object:null,details:{gateway_run_id:requestId??null,rates:catalog.find(m=>m.id===out.model)?.rates??null,source_status:'Model-provided citations, not independently verified'}}});if(error)throw error;
     if(out.model!==contentText(sectionObject(roles[agent])['model'])){const fix=await sb.from('agent_outputs').update({model_used:out.model}).eq('id',started.id);if(fix.error)throw fix.error;}
     storedAnalysts[agent]={content:out.text,model:out.model,status:'completed'};
+    await enrichPeers(agent,out.text,out.model);
     const claimWarnings=reviewReportClaims({[agent]:out.text},technical,fundamentals,run.analysis_date);
     summaries.push(`${agent}: ${out.text}${claimWarnings.length?'\nEvidence conflicts to resolve (do not repeat): '+JSON.stringify(claimWarnings):''}`);totalIn+=out.input;totalOut+=out.output;totalCost+=out.cost;if(out.credit===null) creditsKnown=false;else credits+=out.credit;
     const endEvent=await sb.from('research_events').insert({run_id:run.id,agent_id:agent,event_type:'completed',message:`${agent} analyst completed.`});if(endEvent.error)throw endEvent.error;emit({type:'agent',agent,status:'completed'});
