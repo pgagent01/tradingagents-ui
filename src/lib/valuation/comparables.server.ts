@@ -24,7 +24,7 @@ export async function getComparables(sb: EvidenceClient, userId: string, ticker:
     const tickers = [...new Set(candidates.map(r => String(r['symbol'] ?? '')).filter(s => s !== ticker && validTicker(s)))].slice(0, 12);
     const peers: Peer[] = [];
     for (let i = 0; i < tickers.length; i += 3) {
-      const batch = await Promise.all(tickers.slice(i, i+3).map(async symbol => {
+      const batch = await Promise.all(tickers.slice(i, i+3).map(async (symbol): Promise<Peer | null> => {
         try {
           const p = (await fmpRequest('profile', credential.key, { symbol }))[0];
           const cap = numeric(p?.['marketCap']);

@@ -2,17 +2,18 @@ import type { FundamentalEvidence } from '@/lib/research-evidence';
 import type { ComparableEvidence, Multiple } from './comparables';
 import { summarizePeers } from './comparables';
 import { selectMethod } from './select-method';
+import type { TtmEvidence } from './ttm';
 export type ValuationEvidence = {
   version: number; analysisDate: string; currency: 'USD'; method: string; status: 'relative_only' | 'unavailable';
   intrinsicValue: null; priceTarget: null; horizonMonths: 12; price: number | null;
   bear: number | null; base: number | null; bull: number | null; basis: string | null;
-  comparables: ComparableEvidence; limitations: string[]; inputs: Record<string, unknown>;
+  comparables: ComparableEvidence; limitations: string[]; inputs: { trailing: TtmEvidence | null; balancePeriod: string | null; bookEquity: number | null; shares: TtmEvidence['dilutedShares']; source: string | null };
 };
 /** Relative value is NOT intrinsic value or a forecast of a price twelve months from now. */
 export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string): ValuationEvidence {
   const ttm = f?.ttm, recent = f?.latestQuarter ?? f?.annual.at(-1);
   const shares = ttm?.dilutedShares?.value ?? null;
-  const bases: Partial<Record<Multiple, number | null>> = { pe: ttm?.netIncome.value, pb: recent?.equity, pFcf: ttm?.freeCashFlow };
+  const bases: Partial<Record<Multiple, number | null>> = { pe: ttm?.netIncome.value ?? null, pb: recent?.equity ?? null, pFcf: ttm?.freeCashFlow ?? null };
   const summaries = summarizePeers(comps.peers, bases, shares, null);
   const selection = selectMethod(comps.industry, ttm?.revenue.value ?? null, ttm?.netIncome.value ?? null);
   const preferred = selection.method === 'excess_return' ? 'pb' : selection.method === 'dcf' ? 'pe' : null;
