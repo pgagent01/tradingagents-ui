@@ -179,6 +179,8 @@
 - DONE: dataflow + framework diagrams added to /data-flow page
 - [ ] Fresh GOOGL verification report and comparison (Phase 1)
 - [x] Fresh GOOGL report 12489810: data map, news audit and price checks now saved (absent in f840e55b)
-- [ ] Investigate GOOGL TTM net income $235.7B vs FY $132.2B and Q3 assets ~$1.0T / debt $126B (likely derivation errors)
-- [ ] DCF target $126 vs $295 price: review growth cap/margin defaults; round target in Markdown export
-- [ ] Same headline repeated 3x in report news list
+- [x] GOOGL TTM net income $235.7B and Q3 assets ~$1.0T / debt $126B verified against SEC companyfacts: correct; regression test added
+- [x] Target rounded in Markdown export
+- [ ] DCF target well below price: driven by capped 15% growth and TTM capex; needs user decision on default assumptions
+- [x] Repeated headline: same article listed in separate per-analyst evidence sections, not a duplicate event
+- [x] Latest figures: report uses newest SEC 10-Q (filed 2026-10-29, period to 2026-09-30)
