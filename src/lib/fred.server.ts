@@ -2,6 +2,7 @@ import { decryptSecret } from '@/lib/crypto.server';
 import { MACRO_SERIES, macroMetric, type MacroFeed } from '@/lib/data-evidence';
 import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-cache.server';
 import { sectionObject } from '@/lib/report-content';
+import { dataProviderEnabled } from './data-provider-settings.server';
 
 export function fredObservationsUrl(key: string, series: string, asOf: string, limit = 16): URL {
   const url = new URL('https://api.stlouisfed.org/fred/series/observations');
@@ -18,6 +19,7 @@ export async function validateFredKey(key:string) {
 }
 export async function getFredEvidence(sb:EvidenceClient,userId:string,asOf:string,encryption:string|undefined,signal:AbortSignal):Promise<MacroFeed> {
   const unavailable = (note:string):MacroFeed => ({status:'unavailable',asOf,fetchedAt:null,note,metrics:[]});
+  try{if(!await dataProviderEnabled(sb,userId,'fred'))return unavailable('FRED is off for this account. Enable it in Settings to use your key.');}catch{return unavailable('FRED provider setting could not be verified.');}
   const {data:key,error} = await sb.from('user_api_keys').select('key_ciphertext').eq('user_id',userId).eq('provider','fred').maybeSingle();
   if (error) return unavailable('FRED credential availability could not be checked.');
   if (!key) return unavailable('No FRED key configured. No mock macroeconomic values are used.');

@@ -1,7 +1,8 @@
 # Roadmap
 
-- [ ] Enable account-owned Firecrawl keys in Settings, preserve supplied-key owner isolation, version caches on key changes, and verify the credential workflow.
-- [ ] Add Tiingo evidence with owner-only credentials and account-specific optional-provider switches; other accounts default off and can enable providers with their own keys.
+- [x] Account-owned Firecrawl keys and optional provider switches implemented; supplied secrets remain owner-only, personal keys take precedence, and versioned caches cannot bypass disabled providers. All optional keyed providers default off for other users; keys alone do not enable them. Owner Tiingo off/on persistence verified through Settings and database readback; 363 tests pass including account isolation, encrypted-key requests, cache reuse and analyst/report handoff.
+- [x] Tiingo private connector and personal-key news adapter added with dated symbol-tag filtering, bounded requests, immutable analyst/report evidence and provider error states. No plaintext supplied key written to source.
+- [ ] Live Tiingo news evidence — blocked: provider returned HTTP 403, “You do not have permission to access the News API.” User must obtain Tiingo News API permission. No billed report or access bypass attempted; available sources continue normally.
 
 - [x] Added exact-company dated Wikipedia revision context and owner-only Firecrawl publisher evidence to existing fundamentals/news/sentiment/risk/debate/synthesis inputs and immutable report evidence (including existing Markdown evidence export). Live GOOGL returned one Wikipedia reference and one Firecrawl dated article excerpt; both durable caches read back as cached. Relative search dates are withheld unless publisher publication metadata verifies them; bounded two-host-checked scrapes and no quota bypass. Firecrawl secret stays server-only and belongs exclusively to gprithvi@gmail.com. 353 tests pass, including source routing, owner isolation, historical exclusion and execution-to-report handoff. Existing reports unchanged; no new billed LLM report was run for this addition, so fresh live model interpretation/display remains unverified.
 

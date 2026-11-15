@@ -3,6 +3,7 @@ import {firecrawlReferences,wikipediaReference,publicReferenceUrl} from '@/lib/r
 import {evidenceContext,type ResearchEvidence} from '@/lib/data-evidence';
 vi.mock('@/lib/data-cache.server',()=>({readDataCache:async()=>null,writeDataCache:async()=>true}));
 vi.mock('@/lib/stock-data.server',()=>({secCik:async()=>null,secSubmissions:async()=>null}));
+vi.mock('@/lib/data-provider-settings.server',()=>({dataProviderEnabled:async()=>true}));
 import {getReferenceEvidence} from '@/lib/reference-evidence.server';
 import {encryptSecret} from '@/lib/crypto.server';
 import {firecrawlCredential} from '@/lib/firecrawl-credentials.server';
@@ -40,7 +41,7 @@ describe('reference evidence',()=>{
  });
  it('uses the supplied project credential only for gprithvi@gmail.com',async()=>{
   vi.stubEnv('FIRECRAWL_API_KEY','owner-only-test-key');
-  expect(await firecrawlCredential(client('owner','gprithvi@gmail.com',null),'owner')).toEqual({key:'owner-only-test-key',version:'owner-project-v1'});
+  expect(await firecrawlCredential(client('owner','gprithvi@gmail.com',null),'owner')).toEqual({key:'owner-only-test-key',version:'owner-project-v2',gateway:false});
   expect(await firecrawlCredential(client('other','other@example.com',null),'other')).toBeNull();
   await expect(firecrawlCredential(client('owner','gprithvi@gmail.com',null),'other')).rejects.toThrow('authorization');
  });

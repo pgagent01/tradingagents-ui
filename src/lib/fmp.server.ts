@@ -2,8 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { decryptSecret } from '@/lib/crypto.server';
 import { object,numeric,type Candle,type StockRange } from '@/lib/stock-data';
+import { dataProviderEnabled } from './data-provider-settings.server';
 
 export async function ownFmpCredential(supabase:SupabaseClient<Database>,userId:string){
+  if(!await dataProviderEnabled(supabase,userId,'fmp'))return null;
   const {data,error}=await supabase.from('user_api_keys').select('key_ciphertext,updated_at').eq('user_id',userId).eq('provider','fmp').maybeSingle();
   if(error)throw new Error('Data credentials could not be loaded.');
   if(!data)return null;

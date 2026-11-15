@@ -1,12 +1,14 @@
 import { decryptSecret } from './crypto.server';
 import type { EvidenceClient } from './data-cache.server';
+import { dataProviderEnabled } from './data-provider-settings.server';
 
-export type FirecrawlCredential = { key: string; version: string };
+export type FirecrawlCredential = { key: string; version: string; gateway?: boolean };
 
 /** Caller-owned keys take precedence; a configured but broken key never falls back. */
 export async function firecrawlCredential(sb: EvidenceClient, userId: string): Promise<FirecrawlCredential | null> {
   const { data, error } = await sb.auth.getUser();
   if (error || data.user?.id !== userId) throw new Error('Firecrawl account authorization could not be verified.');
+  if (!await dataProviderEnabled(sb, userId, 'firecrawl')) return null;
   const row = await sb.from('user_api_keys').select('key_ciphertext,updated_at').eq('user_id', userId).eq('provider', 'firecrawl').maybeSingle();
   if (row.error) throw new Error('Firecrawl credential availability could not be checked.');
   if (row.data) {
@@ -16,7 +18,7 @@ export async function firecrawlCredential(sb: EvidenceClient, userId: string): P
   }
   if (data.user.email?.toLowerCase() !== 'gprithvi@gmail.com') return null;
   const key = process.env['FIRECRAWL_API_KEY'];
-  return key ? { key, version: 'owner-project-v1' } : null;
+  return key ? { key, version: 'owner-project-v2', gateway: key.startsWith('lovc_') } : null;
 }
 
 /** Read-only credit check; never spends search/scrape credits or returns credentials. */

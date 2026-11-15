@@ -1,11 +1,13 @@
 import { decryptSecret } from '@/lib/crypto.server';
 import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-cache.server';
 import { object, type FinancialRow } from '@/lib/stock-data';
+import { dataProviderEnabled } from './data-provider-settings.server';
 
 export type AlphaOverview = { symbol: string; date: string | null; fetchedAt: string; ratios: FinancialRow[] };
 export type AlphaCredential = { key: string; version: string; overview?: () => Promise<AlphaOverview | null> };
 
 export async function ownAlphaCredential(sb: EvidenceClient, userId: string): Promise<AlphaCredential | null> {
+  if(!await dataProviderEnabled(sb,userId,'alphavantage'))return null;
   const { data, error } = await sb.from('user_api_keys').select('key_ciphertext,updated_at').eq('user_id', userId).eq('provider', 'alphavantage').maybeSingle();
   if (error) throw new Error('Data credentials could not be loaded.');
   if (!data) return null;

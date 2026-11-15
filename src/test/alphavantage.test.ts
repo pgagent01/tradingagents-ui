@@ -3,6 +3,7 @@ import { ownAlphaCredential, parseAlphaOverview, validateAlphaKey, cachedAlphaOv
 import { normalizeCredentialProvider, normalizeProvider, maskKey } from '@/lib/access-rules';
 import { encryptSecret, decryptSecret } from '@/lib/crypto.server';
 import { getStockData } from '@/lib/stock-data.server';
+vi.mock('@/lib/data-provider-settings.server',()=>({dataProviderEnabled:async()=>true}));
 afterEach(() => vi.unstubAllGlobals());
 describe('account-owned Alpha Vantage enrichment', () => {
   it('supports encrypted masked data credentials but never AI selection', async () => {

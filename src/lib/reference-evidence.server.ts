@@ -29,8 +29,12 @@ async function wikipedia(name:string,cutoff:string):Promise<ReferenceFeed>{
 async function firecrawl(credential:FirecrawlCredential,name:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceFeed>{
   const result=feed(cutoff,'Firecrawl search excerpts from original publishers; partial coverage, not full article bodies or verified facts.');
   const {key}=credential;
+  const gatewayKey=process.env['LOVABLE_API_KEY'];
+  if(credential.gateway&&!gatewayKey)return {...result,note:'Firecrawl connection is unavailable.'};
+  const base=credential.gateway?'https://connector-gateway.lovable.dev/firecrawl/v2':'https://api.firecrawl.dev/v2';
+  const headers:Record<string,string>=credential.gateway?{Authorization:`Bearer ${gatewayKey}`,'X-Connection-Api-Key':key,'Content-Type':'application/json'}:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'};
   try {
-    const r=await fetch('https://api.firecrawl.dev/v2/search',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({query:`"${name}" stock news`,limit:3,sources:['news'],tbs:'qdr:m'}),signal:AbortSignal.timeout(20000),redirect:'error'});
+    const r=await fetch(`${base}/search`,{method:'POST',headers,body:JSON.stringify({query:`"${name}" stock news`,limit:3,sources:['news'],tbs:'qdr:m'}),signal:AbortSignal.timeout(20000),redirect:'error'});
     if(!r.ok){await r.body?.cancel();return {...result,httpStatus:r.status,note:`Firecrawl search unavailable (HTTP ${r.status}); no automatic retry or bypass. Other sources remain usable.`};}
     const raw=await boundedJson(r);if(object(raw)['success']===false)return {...result,note:'Firecrawl reported an unsuccessful search; no automatic retry.'};
     // Search often returns relative dates. Verify publication metadata on at most two explicit public publisher hosts.
@@ -39,7 +43,7 @@ async function firecrawl(credential:FirecrawlCredential,name:string,ticker:strin
       const entry=object(item),url=publicReferenceUrl(entry['url']);if(!url)continue;
       if(!['finance.yahoo.com','apnews.com','www.nbcnews.com'].includes(new URL(url).hostname))continue;
       try{
-        const scrape=await fetch('https://api.firecrawl.dev/v2/scrape',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({url,formats:['markdown'],onlyMainContent:true,maxAge:1800000,timeout:15000}),signal:AbortSignal.timeout(18000),redirect:'error'});
+        const scrape=await fetch(`${base}/scrape`,{method:'POST',headers,body:JSON.stringify({url,formats:['markdown'],onlyMainContent:true,maxAge:1800000,timeout:15000}),signal:AbortSignal.timeout(18000),redirect:'error'});
         if(!scrape.ok){await scrape.body?.cancel();if([401,402,403,429].includes(scrape.status))break;continue;}
         const scraped=object(await boundedJson(scrape));if(scraped['success']===false)continue;
         const d=object(scraped['data']),meta=object(d['metadata']);

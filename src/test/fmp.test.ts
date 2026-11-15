@@ -1,6 +1,7 @@
 import {describe,it,expect,vi,afterEach} from 'vitest';
 import {fmpQuote,fmpChart,fmpFinancials,validateFmpKey,ownFmpCredential} from '@/lib/fmp.server';
 import {getStockData} from '@/lib/stock-data.server';
+vi.mock('@/lib/data-provider-settings.server',()=>({dataProviderEnabled:async()=>true}));
 afterEach(()=>vi.unstubAllGlobals());
 describe('FMP owner credentials and fallback',()=>{
  it('reads only the requesting owner key',async()=>{const eq=vi.fn().mockReturnThis();const query={select:vi.fn().mockReturnThis(),eq,maybeSingle:async()=>({data:null,error:null})};const db={from:()=>query};expect(await ownFmpCredential(db as unknown as Parameters<typeof ownFmpCredential>[0],'owner-id')).toBeNull();expect(eq.mock.calls).toEqual([['user_id','owner-id'],['provider','fmp']]);});
