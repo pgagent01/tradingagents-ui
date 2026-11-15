@@ -44,3 +44,4 @@
 - Owner-scoped scoring stays separate from saved research; adjusted prices are not point-in-time evidence.
 
 - Share dated company Wikipedia revisions between Stock Info and research; derived profiles include credential versions, settings failures fail closed, unified article IDs preserve retrieval provenance, and per-agent evidence snapshots stay in usage details across resume.
+- Massive uses authenticated owner-scoped credential resolution and a read-only Settings pilot; do not cache, export or pass its data to LLMs until plan-specific rights are verified, because endpoint access alone does not grant those rights.

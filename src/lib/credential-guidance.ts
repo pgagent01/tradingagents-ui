@@ -14,6 +14,7 @@ export const CREDENTIAL_HELP: Record<string, { name: string; url: string }> = {
   alphavantage: { name: 'Alpha Vantage', url: 'https://www.alphavantage.co/support/#api-key' },
   firecrawl: { name: 'Firecrawl', url: 'https://www.firecrawl.dev/app/api-keys' },
   tiingo: { name: 'Tiingo', url: 'https://www.tiingo.com/account/api/token' },
+  massive: { name: 'Massive', url: 'https://massive.com/dashboard' },
 };
 
 /** Data keys enrich evidence but never block execution; synthesis needs its own provider key too. */
