@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { generalDataMap } from '@/lib/evidence-map';
 import { DataPipelineDiagram, FrameworkDiagram } from '@/components/data-flow-diagrams';
+import { DecisionFlow } from '@/components/decision-flow';
 import { pageHead } from '@/lib/page-head';
 import { DataError } from '@/components/route-feedback';
 
@@ -58,6 +59,12 @@ function DataFlow() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section>
+        <h2 className="mb-1 text-sm font-semibold">How decisions are made</h2>
+        <p className="mb-3 text-xs text-muted-foreground">From collected evidence to the Buy / Hold / Sell rating, conviction and price target.</p>
+        <DecisionFlow />
       </section>
 
       <section>
