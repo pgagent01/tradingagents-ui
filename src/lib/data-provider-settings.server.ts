@@ -8,9 +8,12 @@ export async function suppliedCredentialOwner(sb: EvidenceClient, userId: string
 }
 export async function dataProviderEnabled(sb: EvidenceClient, userId: string, provider: CredentialProvider) {
   const owner = await suppliedCredentialOwner(sb, userId);
-  const saved = await readDataCache(sb, userId, 'data-provider-settings', provider);
+  const saved = await readDataCache(sb, userId, 'data-provider-settings', provider, true);
   const payload = saved?.payload;
-  if (payload && typeof payload === 'object' && !Array.isArray(payload) && 'enabled' in payload && typeof payload['enabled'] === 'boolean') return payload['enabled'];
+  if (saved) {
+    if (payload && typeof payload === 'object' && !Array.isArray(payload) && 'enabled' in payload && typeof payload['enabled'] === 'boolean') return payload['enabled'];
+    throw new Error('Saved provider setting is invalid. Optional sources remain off.');
+  }
   return owner;
 }
 export async function dataProviderSettings(sb: EvidenceClient, userId: string) {

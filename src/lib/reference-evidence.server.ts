@@ -1,6 +1,5 @@
 import { readDataCache, writeDataCache, type EvidenceClient } from './data-cache.server';
-import { COMPANIES } from './companies';
-import { secCik, secSubmissions } from './stock-data.server';
+import { resolvedCompany, companyWikipedia } from './company-reference.server';
 import { isRelevantHeadline, relevanceTerms } from './research-evidence';
 import { firecrawlReferences, wikipediaReference, publicReferenceUrl, type ReferenceEvidence, type ReferenceFeed } from './reference-evidence';
 import { object } from './stock-data';
@@ -14,17 +13,6 @@ async function boundedJson(response:Response) {
   try { while(true){const r=await reader.read();if(r.done)break;size+=r.value.byteLength;if(size>500000)throw Error('Response too large');chunks.push(r.value);} }
   finally { await reader.cancel(); }
   const bytes=new Uint8Array(size);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
-}
-async function wikipedia(name:string,cutoff:string):Promise<ReferenceFeed>{
-  const result=feed(cutoff,'Wikipedia secondary company context; revision date is not the effective date of every fact. CC BY-SA; original revision linked.');
-  try {
-    const q=new URLSearchParams({action:'query',generator:'search',gsrsearch:`${name} company`,gsrlimit:'3',prop:'extracts|revisions',exintro:'1',explaintext:'1',exchars:'3000',rvprop:'ids|timestamp',format:'json',formatversion:'2'});
-    const r=await fetch(`https://en.wikipedia.org/w/api.php?${q}`,{headers:{'User-Agent':'TradingAgentsAI company research (https://tradingagents-ui.lovable.app)'},signal:AbortSignal.timeout(10000),redirect:'error'});
-    if(!r.ok)return {...result,httpStatus:r.status,note:`Wikipedia retrieval unavailable (HTTP ${r.status}).`};
-    result.items=wikipediaReference(await boundedJson(r),name,new Date().toISOString());result.status=result.items.length?'available':'unavailable';
-    if(!result.items.length)result.note+=' No unambiguous dated company page verified.';
-  }catch{result.note='Wikipedia retrieval failed or timed out; no context invented.';}
-  return result;
 }
 async function firecrawl(credential:FirecrawlCredential,name:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceFeed>{
   const result=feed(cutoff,'Firecrawl search excerpts from original publishers; partial coverage, not full article bodies or verified facts.');
@@ -69,9 +57,7 @@ export async function getReferenceEvidence(sb:EvidenceClient,userId:string,ticke
   const request=load(sb,userId,ticker,cutoff,lookback,credential,unavailableNote).finally(()=>pending.delete(id));if(pending.size<100)pending.set(id,request);return request;
 }
 async function load(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,lookback:number,credential:FirecrawlCredential|null,unavailableNote:string):Promise<ReferenceEvidence>{
-  let name=COMPANIES.find(c=>c.ticker===ticker)?.name??ticker;
-  try{const cik=await secCik(ticker);if(cik){const subs=object(await secSubmissions(cik));if(typeof subs['name']==='string')name=subs['name'];}}catch{/* Saved catalog remains usable. */}
-  name=name.replace(/\b(incorporated|inc\.?|corp\.?|corporation|plc|ltd\.?)\b/gi,'').replace(/[,.]/g,' ').replace(/\s+/g,' ').trim();
+  const {name}=await resolvedCompany(ticker);
   async function cached(provider:string,ttl:number,fetcher:()=>Promise<ReferenceFeed>){
     if(provider==='firecrawl-research'){
       if(!credential)return feed(cutoff,unavailableNote);
@@ -83,6 +69,6 @@ async function load(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,
     if(saved?.status==='available'&&fresh.status==='unavailable'&&provider==='wikipedia-research')return {...saved,cached:true,note:`${saved.note} Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`};
     return fresh;
   }
-  const [wiki,fire]=await Promise.all([cached('wikipedia-research',86400000,()=>wikipedia(name,cutoff)),cached('firecrawl-research',1800000,()=>credential?firecrawl(credential,name,ticker,cutoff,lookback):Promise.resolve(feed(cutoff,unavailableNote)))]);
+  const [wiki,fire]=await Promise.all([companyWikipedia(sb,userId,ticker,name,cutoff),cached('firecrawl-research',1800000,()=>credential?firecrawl(credential,name,ticker,cutoff,lookback):Promise.resolve(feed(cutoff,unavailableNote)))]);
   return {wikipedia:wiki,firecrawl:fire};
 }

@@ -9,8 +9,8 @@ export function newsEvidenceMarkdown(news: NewsEvidence | null | undefined) {
     lines.push('',`### ${event.title}`,`${event.category} (heuristic) · ${event.coverage.length} coverage items · ${event.publisherCount} named publishers, not independent corroboration`);
     for (const h of event.coverage) {
       const url = canonicalNewsUrl(h.url);
-      lines.push(`- ${h.publishedAt} · ${h.publisher}${url?` · ${url}`:''}`);
-      if (h.excerpt) lines.push(`  Partial publisher-feed excerpt: ${h.excerpt}`);
+      lines.push(`- ${h.evidenceId??""} · ${h.publishedAt} · ${h.publisher}${url?` · ${url}`:''}`);
+      if (h.excerpt) lines.push(`  Partial ${h.excerptSource==='search_excerpt'?'search/publisher':'publisher-feed'} excerpt: ${h.excerpt}`);
     }
   }
   if (!news.events?.length) for (const h of news.headlines) lines.push(`- ${h.publishedAt} · ${h.title} · ${h.publisher} · ${canonicalNewsUrl(h.url) ?? 'Link unavailable'}`);

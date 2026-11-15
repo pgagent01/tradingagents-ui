@@ -42,3 +42,5 @@
 - Route dated filings/headlines to fundamentals as well as news, sentiment, risk and synthesis; use both Yahoo hosts for headline retrieval, and label absent social feeds explicitly so proxies cannot be mistaken for measured sentiment.
 - Share filing-aligned SEC period selection across stock and research; derive quarters only from same-filing same-concept comparatives to avoid YTD mislabeling.
 - Owner-scoped scoring stays separate from saved research; adjusted prices are not point-in-time evidence.
+
+- Share dated company Wikipedia revisions between Stock Info and research; derived profiles include credential versions, settings failures fail closed, unified article IDs preserve retrieval provenance, and per-agent evidence snapshots stay in usage details across resume.
