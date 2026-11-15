@@ -4,6 +4,7 @@ import { secCik, secSubmissions } from './stock-data.server';
 import { isRelevantHeadline, relevanceTerms } from './research-evidence';
 import { firecrawlReferences, wikipediaReference, publicReferenceUrl, type ReferenceEvidence, type ReferenceFeed } from './reference-evidence';
 import { object } from './stock-data';
+import { firecrawlCredential, type FirecrawlCredential } from './firecrawl-credentials.server';
 
 const pending=new Map<string,Promise<ReferenceEvidence>>();
 function feed(cutoff:string,note:string,status:ReferenceFeed['status']='unavailable'):ReferenceFeed{return {cutoff,note,status,fetchedAt:new Date().toISOString(),cached:false,items:[]};}
@@ -25,14 +26,9 @@ async function wikipedia(name:string,cutoff:string):Promise<ReferenceFeed>{
   }catch{result.note='Wikipedia retrieval failed or timed out; no context invented.';}
   return result;
 }
-async function firecrawl(sb:EvidenceClient,userId:string,name:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceFeed>{
+async function firecrawl(credential:FirecrawlCredential,name:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceFeed>{
   const result=feed(cutoff,'Firecrawl search excerpts from original publishers; partial coverage, not full article bodies or verified facts.');
-  // This supplied project secret belongs to Prithvi only, never all app users.
-  let auth: Awaited<ReturnType<typeof sb.auth.getUser>>;
-  try { auth=await sb.auth.getUser(); }catch{return {...result,note:'Firecrawl account authorization could not be verified.'};}
-  const {data,error}=auth;
-  if(error || data.user?.id!==userId || data.user.email?.toLowerCase()!=='gprithvi@gmail.com')return {...result,note:'No owner-authorized Firecrawl credential available for this account.'};
-  const key=process.env['FIRECRAWL_API_KEY'];if(!key)return {...result,note:'Firecrawl credential is not configured.'};
+  const {key}=credential;
   try {
     const r=await fetch('https://api.firecrawl.dev/v2/search',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({query:`"${name}" stock news`,limit:3,sources:['news'],tbs:'qdr:m'}),signal:AbortSignal.timeout(20000),redirect:'error'});
     if(!r.ok){await r.body?.cancel();return {...result,httpStatus:r.status,note:`Firecrawl search unavailable (HTTP ${r.status}); no automatic retry or bypass. Other sources remain usable.`};}
@@ -59,27 +55,30 @@ async function firecrawl(sb:EvidenceClient,userId:string,name:string,ticker:stri
   }catch{result.note='Firecrawl search failed or timed out; no automatic retry. Other sources remain usable.';}
   return result;
 }
-export function getReferenceEvidence(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceEvidence>{
-  const id=`${userId}:${ticker}:${cutoff}:${lookback}`;const existing=pending.get(id);if(existing)return existing;
-  const request=load(sb,userId,ticker,cutoff,lookback).finally(()=>pending.delete(id));if(pending.size<100)pending.set(id,request);return request;
-}
-async function load(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceEvidence>{
+export async function getReferenceEvidence(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,lookback:number):Promise<ReferenceEvidence>{
   if(cutoff!==new Date().toISOString().slice(0,10))return {wikipedia:feed(cutoff,'Current Wikipedia excluded: historical revision context is not implemented.','historical_unavailable'),firecrawl:feed(cutoff,'Current Firecrawl search excluded from historical research.','historical_unavailable')};
+  let credential:FirecrawlCredential|null=null;
+  let unavailableNote='No Firecrawl key configured for your account. Add your own in Settings; other sources remain usable.';
+  try { credential=await firecrawlCredential(sb,userId); }
+  catch(e) { unavailableNote=e instanceof Error?e.message:'Firecrawl credentials unavailable.'; }
+  const id=`${userId}:${credential?.version??'none'}:${ticker}:${cutoff}:${lookback}`;const existing=pending.get(id);if(existing)return existing;
+  const request=load(sb,userId,ticker,cutoff,lookback,credential,unavailableNote).finally(()=>pending.delete(id));if(pending.size<100)pending.set(id,request);return request;
+}
+async function load(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,lookback:number,credential:FirecrawlCredential|null,unavailableNote:string):Promise<ReferenceEvidence>{
   let name=COMPANIES.find(c=>c.ticker===ticker)?.name??ticker;
   try{const cik=await secCik(ticker);if(cik){const subs=object(await secSubmissions(cik));if(typeof subs['name']==='string')name=subs['name'];}}catch{/* Saved catalog remains usable. */}
   name=name.replace(/\b(incorporated|inc\.?|corp\.?|corporation|plc|ltd\.?)\b/gi,'').replace(/[,.]/g,' ').replace(/\s+/g,' ').trim();
   async function cached(provider:string,ttl:number,fetcher:()=>Promise<ReferenceFeed>){
     if(provider==='firecrawl-research'){
-      try{const {data,error}=await sb.auth.getUser();if(error||data.user?.id!==userId||data.user.email?.toLowerCase()!=='gprithvi@gmail.com')return feed(cutoff,'No owner-authorized Firecrawl credential available for this account.');}
-      catch{return feed(cutoff,'Firecrawl account authorization could not be verified.');}
+      if(!credential)return feed(cutoff,unavailableNote);
     }
-    const key=`v1:${ticker}:${cutoff}:${lookback}`;const c=await readDataCache(sb,userId,provider,key);const saved=c?.payload as ReferenceFeed|undefined;
+    const key=provider==='firecrawl-research'?`v2:${credential?.version}:${ticker}:${cutoff}:${lookback}`:`v1:${ticker}:${cutoff}:${lookback}`;const c=await readDataCache(sb,userId,provider,key);const saved=c?.payload as ReferenceFeed|undefined;
     if(c?.fresh&&saved?.cutoff)return {...saved,cached:true};
     const fresh=await fetcher();if(fresh.status==='available')await writeDataCache(sb,userId,provider,key,fresh,ttl);
     // No stale Firecrawl fallback after authorization/entitlement failures.
     if(saved?.status==='available'&&fresh.status==='unavailable'&&provider==='wikipedia-research')return {...saved,cached:true,note:`${saved.note} Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`};
     return fresh;
   }
-  const [wiki,fire]=await Promise.all([cached('wikipedia-research',86400000,()=>wikipedia(name,cutoff)),cached('firecrawl-research',1800000,()=>firecrawl(sb,userId,name,ticker,cutoff,lookback))]);
+  const [wiki,fire]=await Promise.all([cached('wikipedia-research',86400000,()=>wikipedia(name,cutoff)),cached('firecrawl-research',1800000,()=>credential?firecrawl(credential,name,ticker,cutoff,lookback):Promise.resolve(feed(cutoff,unavailableNote)))]);
   return {wikipedia:wiki,firecrawl:fire};
 }

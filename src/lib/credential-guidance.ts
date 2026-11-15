@@ -12,6 +12,7 @@ export const CREDENTIAL_HELP: Record<string, { name: string; url: string }> = {
   fred: { name: 'FRED', url: 'https://fred.stlouisfed.org/docs/api/api_key.html' },
   fmp: { name: 'Financial Modeling Prep', url: 'https://financialmodelingprep.com/developer/docs' },
   alphavantage: { name: 'Alpha Vantage', url: 'https://www.alphavantage.co/support/#api-key' },
+  firecrawl: { name: 'Firecrawl', url: 'https://www.firecrawl.dev/app/api-keys' },
 };
 
 /** Data keys enrich evidence but never block execution; synthesis needs its own provider key too. */

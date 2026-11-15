@@ -6,7 +6,7 @@ describe('research credential requirements', () => {
     expect(missingResearchProviders(['nvidia', 'anthropic', 'anthropic'], ['nvidia'], false)).toEqual(['anthropic']);
   });
   it('does not require optional FRED or FMP keys', () => {
-    expect(missingResearchProviders(['nvidia', 'fred', 'fmp'], ['nvidia'], false)).toEqual([]);
+    expect(missingResearchProviders(['nvidia', 'fred', 'fmp', 'firecrawl'], ['nvidia'], false)).toEqual([]);
   });
   it('requires no user key for built-in AI', () => {
     expect(missingResearchProviders(['lovable'], [], false)).toEqual([]);
