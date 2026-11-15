@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedCompareRouteImport } from './routes/_authenticated/compare'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDataFlowRouteImport } from './routes/_authenticated/data-flow'
 import { Route as AuthenticatedNewAnalysisRouteImport } from './routes/_authenticated/new-analysis'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -54,6 +55,11 @@ const AuthenticatedCompareRoute = AuthenticatedCompareRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDataFlowRoute = AuthenticatedDataFlowRouteImport.update({
+  id: '/data-flow',
+  path: '/data-flow',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNewAnalysisRoute =
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/data-flow': typeof AuthenticatedDataFlowRoute
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/data-flow': typeof AuthenticatedDataFlowRoute
   '/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/compare': typeof AuthenticatedCompareRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/data-flow': typeof AuthenticatedDataFlowRoute
   '/_authenticated/new-analysis': typeof AuthenticatedNewAnalysisRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/compare'
     | '/dashboard'
+    | '/data-flow'
     | '/new-analysis'
     | '/reports'
     | '/settings'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/compare'
     | '/dashboard'
+    | '/data-flow'
     | '/new-analysis'
     | '/reports'
     | '/settings'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/compare'
     | '/_authenticated/dashboard'
+    | '/_authenticated/data-flow'
     | '/_authenticated/new-analysis'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
@@ -279,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/data-flow': {
+      id: '/_authenticated/data-flow'
+      path: '/data-flow'
+      fullPath: '/data-flow'
+      preLoaderRoute: typeof AuthenticatedDataFlowRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/new-analysis': {
@@ -365,6 +384,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCompareRoute: typeof AuthenticatedCompareRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDataFlowRoute: typeof AuthenticatedDataFlowRoute
   AuthenticatedNewAnalysisRoute: typeof AuthenticatedNewAnalysisRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -381,6 +401,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCompareRoute: AuthenticatedCompareRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDataFlowRoute: AuthenticatedDataFlowRoute,
   AuthenticatedNewAnalysisRoute: AuthenticatedNewAnalysisRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
