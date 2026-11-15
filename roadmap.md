@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Enable account-owned Firecrawl keys in Settings, preserve supplied-key owner isolation, version caches on key changes, and verify the credential workflow.
+- [ ] Add Tiingo evidence with owner-only credentials and account-specific optional-provider switches; other accounts default off and can enable providers with their own keys.
 
 - [x] Added exact-company dated Wikipedia revision context and owner-only Firecrawl publisher evidence to existing fundamentals/news/sentiment/risk/debate/synthesis inputs and immutable report evidence (including existing Markdown evidence export). Live GOOGL returned one Wikipedia reference and one Firecrawl dated article excerpt; both durable caches read back as cached. Relative search dates are withheld unless publisher publication metadata verifies them; bounded two-host-checked scrapes and no quota bypass. Firecrawl secret stays server-only and belongs exclusively to gprithvi@gmail.com. 353 tests pass, including source routing, owner isolation, historical exclusion and execution-to-report handoff. Existing reports unchanged; no new billed LLM report was run for this addition, so fresh live model interpretation/display remains unverified.
 
