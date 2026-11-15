@@ -2,6 +2,7 @@ import { COMPANIES } from '@/lib/companies';
 import { fmpChart,fmpQuote,fmpFinancials } from '@/lib/fmp.server';
 import { type AlphaCredential } from '@/lib/alphavantage.server';
 import { emptyStock,firstAvailable,numeric,object,parseYahooChart,parseSecFinancials, type StockData,type StockRange, yahooSymbol } from '@/lib/stock-data';
+import { comparePrices } from './stock-processing';
 
 const cache=new Map<string,{expires:number;data:StockData}>();
 const pending=new Map<string,Promise<StockData>>();
@@ -42,6 +43,7 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   const query=ranges[range];const symbol=encodeURIComponent(yahooSymbol(ticker));
   const chart=await firstAvailable(['query1','query2'].map(host=>({source:`Yahoo Finance · ${host}`,load:async()=>{const parsed=parseYahooChart(await json(`https://${host}.finance.yahoo.com/v8/finance/chart/${symbol}?range=${query.range}&interval=${query.interval}`));return parsed.candles.length?parsed:null;}})));
   if(chart){const {meta}=chart.data;Object.assign(result,{candles:chart.data.candles,price:chart.data.price,change:chart.data.change,changePercent:chart.data.changePercent,chartSource:chart.source,quoteSource:chart.source,currency:String(meta['currency']??'USD'),company:String(meta['longName']??meta['shortName']??result.company),low52:numeric(meta['fiftyTwoWeekLow']),high52:numeric(meta['fiftyTwoWeekHigh']),volume:numeric(meta['regularMarketVolume']),marketCap:numeric(meta['marketCap']),asOf:numeric(meta['regularMarketTime'])!==null?new Date(Number(meta['regularMarketTime'])*1000).toISOString():null});}
+  if(chart&&fmp&&result.price!==null){try{const backup=await fmpQuote(ticker,fmp);if(backup){const check=comparePrices({source:chart.source,ticker,price:result.price,currency:result.currency,asOf:result.asOf,url:`https://finance.yahoo.com/quote/${symbol}/`,kind:'quote'},{source:'Financial Modeling Prep',ticker,price:backup.price,currency:backup.providerCurrency,asOf:backup.asOf,url:'https://financialmodelingprep.com/developer/docs/stable/quote',kind:'quote'});result.priceChecks=[check];if(check.status==='conflicting')result.warnings.push('Compatible Yahoo/FMP quotes disagree by more than 1%; primary quote retained, not averaged.');}}catch{result.warnings.push('Secondary quote check unavailable; primary price is not independently cross-verified.');}}
   if(chart&&range!=='1D'){try{const daily=parseYahooChart(await json(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=5m`));result.change=daily.change;result.changePercent=daily.changePercent;}catch{result.change=null;result.changePercent=null;}}
   const av=alpha?.key;
   if(!result.candles.length&&fmp){try{const candles=await fmpChart(ticker,fmp,range);if(candles){result.candles=candles;result.chartSource='Financial Modeling Prep';}}catch{/* Continue with optional Alpha Vantage. */}}
@@ -57,9 +59,9 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   const key=(label:string)=>label.split(' ')[0]==='EV'?'EV/EBITDA':label.split(/[ ·]/)[0];
   if(!result.financialSource||result.ratios.some(r=>r.value===null)||Object.values(result.statements).some(rows=>!rows.length||rows.some(r=>r.value===null))){try{const raw=await secFacts(ticker);if(raw){const financial=parseSecFinancials(raw,result.price,period);
     if(financial.date&&!result.financialSource)Object.assign(result,{financialSource:`SEC EDGAR · ${period==='annual'?'annual 10-K':'quarterly 10-Q'}`,financialDate:financial.date,ratios:financial.ratios,statements:financial.statements});
-    else if(financial.date&&financial.date===result.financialDate){let filled=false;
+    else if(financial.date&&financial.date===result.financialDate&&Object.values(result.statements).flat().filter(r=>r.value!==null).every(r=>r.currency==='USD')){let filled=false;
       result.ratios=result.ratios.map(row=>{if(row.value!==null)return row;const v=financial.ratios.find(r=>key(r.label)===key(row.label))?.value??null;if(v!==null)filled=true;return {...row,value:v};});
-      result.statements=Object.fromEntries((['income','balance','cash'] as const).map(group=>{const own=result.statements[group];if(!own.length){if(financial.statements[group].some(r=>r.value!==null))filled=true;return [group,financial.statements[group]];}return [group,own.map(row=>{if(row.value!==null)return row;const v=financial.statements[group].find(r=>r.label===row.label)?.value??null;if(v!==null)filled=true;return {...row,value:v};})];})) as StockData['statements'];
+      result.statements=Object.fromEntries((['income','balance','cash'] as const).map(group=>{const own=result.statements[group];if(!own.length){if(financial.statements[group].some(r=>r.value!==null))filled=true;return [group,financial.statements[group]];}return [group,own.map(row=>{if(row.value!==null)return row;const backup=financial.statements[group].find(r=>r.label===row.label);if(backup?.value!==null&&backup?.value!==undefined){filled=true;return {...backup};}return row;})];})) as StockData['statements'];
       if(filled)result.financialSource=`${result.financialSource} + SEC EDGAR (gaps filled)`;}
     if(result.marketCap===null)result.marketCap=financial.marketCap;}}catch{result.warnings.push('SEC financial filings are temporarily unavailable.');}}
   if(period==='annual'&&alpha?.overview&&result.ratios.every(r=>!r.label.startsWith('EV / EBITDA')||r.value===null)){
@@ -74,7 +76,7 @@ async function loadStock(ticker:string,range:StockRange,fmp:string|null,period:'
   return result;
 }
 export async function getStockData(ticker:string,range:StockRange,userId:string,credential:{key:string;version:string}|null,period:'annual'|'quarter',alpha:AlphaCredential|null=null){
-  const key=`v4:${userId}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}:${ticker}:${range}:${period}`,cached=cache.get(key);if(cached&&cached.expires>Date.now())return {...cached.data,cached:true};
+  const key=`v5:${userId}:${credential?.version??'public'}:${alpha?.version??'no-alpha'}:${ticker}:${range}:${period}`,cached=cache.get(key);if(cached&&cached.expires>Date.now())return {...cached.data,cached:true};
   const inflight=pending.get(key);if(inflight)return inflight;
   const task=loadStock(ticker,range,credential?.key??null,period,alpha).then(data=>{if(!data.chartSource&&cached){data.candles=cached.data.candles;data.chartSource=cached.data.chartSource;data.warnings.push(`Cached chart fetched ${cached.data.fetchedAt}; current chart unavailable.`);}if(cache.size>=100)cache.delete(cache.keys().next().value??'');cache.set(key,{expires:Date.now()+60000,data});return data;}).finally(()=>pending.delete(key));pending.set(key,task);return task;
 }

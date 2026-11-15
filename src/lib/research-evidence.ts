@@ -28,7 +28,7 @@ export type FundamentalEvidence = {
   earningsBridge?: ReturnType<typeof import('./sources/earnings-bridge').releaseBridge>;
 };
 export type FilingEvent = { form: string; filed: string; reportDate: string | null; description: string; url: string };
-export type Headline = { title: string; publisher: string; publishedAt: string; url: string; excerpt?: string; excerptSource?: 'publisher_feed' | 'search_excerpt'; feed?: string; evidenceId?: string; retrievalServices?: string[] };
+export type Headline = { title: string; publisher: string; publishedAt: string; url: string; excerpt?: string; excerptSource?: 'publisher_feed' | 'search_excerpt'; feed?: string; evidenceId?: string; retrievalServices?: string[]; provenance?: import('./evidence-contract').EvidenceProvenance; possibleSyndication?: string[] };
 export type NewsEvidence = {
   status: 'available' | 'partial' | 'unavailable'; cutoff: string; windowStart: string; fetchedAt: string; cached: boolean;
   filings: FilingEvent[]; filingsSource: string | null; headlines: Headline[]; headlinesSource: string | null; notes: string[];
@@ -36,6 +36,7 @@ export type NewsEvidence = {
   headlineCounts?: Record<string, number>;
   events?: import('./news-quality').NewsEvent[];
   sourceStates?: Record<string, import('./news-quality').NewsSourceState>;
+  audit?: import('./evidence-contract').EvidenceAudit;
 };
 
 const IFRS: Record<TagKey,string[]> & { revenue: string[] } = {

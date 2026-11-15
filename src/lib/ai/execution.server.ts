@@ -87,7 +87,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const technicalStock=stockData??pastStock;
   const technical=technicalStock?technicalEvidence(technicalStock,run.analysis_date,run.lookback_days):null;
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
-  if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData);if(rec.length)fundamentals.reconciliation=rec;}
+  if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData,fundamentals.currency);if(rec.length)fundamentals.reconciliation=rec;}
   const parsedPreferences=valuationPreferencesSchema.safeParse(sectionObject(run.model_config)['valuationPreferences']);
   const preferences=parsedPreferences.success?parsedPreferences.data:{overrides:{},peers:[],excludedPeers:[]};
   const automaticComparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
@@ -99,7 +99,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const references=await getReferenceEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   references.tiingo=await getTiingoEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const companyContext=run.analysis_date===new Date().toISOString().slice(0,10)?await companyProfile(sb,userId,run.ticker).catch(()=>null):null;
-  const unified=unifiedNews(news,references);
+  const unified=unifiedNews(news,references,run.ticker);
   const providerSettings=await dataProviderSettings(sb,userId).catch(()=>null);
   const evidence={macro,predictions,news:unified,fundamentals,free,valuation,dataChecks:checks,references,companyContext};
   const technicalEvents=technicalNewsEvents(unified,technical?.firstObservation??null,technical?.lastObservation??null);

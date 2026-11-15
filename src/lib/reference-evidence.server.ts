@@ -64,7 +64,7 @@ async function load(sb:EvidenceClient,userId:string,ticker:string,cutoff:string,
     }
     const key=provider==='firecrawl-research'?`v2:${credential?.version}:${ticker}:${cutoff}:${lookback}`:`v1:${ticker}:${cutoff}:${lookback}`;const c=await readDataCache(sb,userId,provider,key);const saved=c?.payload as ReferenceFeed|undefined;
     if(c?.fresh&&saved?.cutoff)return {...saved,cached:true};
-    const fresh=await fetcher();if(fresh.status==='available')await writeDataCache(sb,userId,provider,key,fresh,ttl);
+    const fresh=await fetcher();if(fresh.status==='available'&&!await writeDataCache(sb,userId,provider,key,fresh,ttl))fresh.note+=' Shared cache storage failed; later requests may fetch again.';
     // No stale Firecrawl fallback after authorization/entitlement failures.
     if(saved?.status==='available'&&fresh.status==='unavailable'&&provider==='wikipedia-research')return {...saved,cached:true,note:`${saved.note} Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`};
     return fresh;

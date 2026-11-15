@@ -25,10 +25,10 @@ export async function validateFmpKey(key:string){
   return {provider:'fmp' as const,valid:false,message:'FMP could not validate this key. Check your key, endpoint access and rate limits.'};
 }
 export async function fmpQuote(ticker:string,key:string){
-  const q=(await fmpRequest('quote',key,{symbol:ticker}))[0];if(!q||numeric(q['price'])===null)return null;
+  const q=(await fmpRequest('quote',key,{symbol:ticker}))[0];if(!q||q['symbol']!==ticker||numeric(q['price'])===null||Number(q['price'])<=0)return null;
   const rawRange=typeof q['yearRange']==='string'?q['yearRange'].trim():'';
   const range=/^\d+(\.\d+)?\s*-\s*\d+(\.\d+)?$/.test(rawRange)?rawRange.split('-').map(Number):[];
-  return {price:numeric(q['price']),change:numeric(q['change']),changePercent:numeric(q['changePercentage']),marketCap:numeric(q['marketCap']),volume:numeric(q['volume']),low52:numeric(q['yearLow'])??numeric(range[0]),high52:numeric(q['yearHigh'])??numeric(range[1]),asOf:numeric(q['timestamp'])!==null?new Date(Number(q['timestamp'])*1000).toISOString():null};
+  return {price:numeric(q['price']),change:numeric(q['change']),changePercent:numeric(q['changePercentage']),marketCap:numeric(q['marketCap']),volume:numeric(q['volume']),low52:numeric(q['yearLow'])??numeric(range[0]),high52:numeric(q['yearHigh'])??numeric(range[1]),asOf:numeric(q['timestamp'])!==null?new Date(Number(q['timestamp'])*1000).toISOString():null,providerCurrency:typeof q['currency']==='string'?q['currency']:null};
 }
 export async function fmpChart(ticker:string,key:string,range:StockRange){
   const days={'1D':2,'1W':7,'1M':31,'6M':183,'1Y':366,'5Y':1827}[range];const from=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
@@ -45,7 +45,7 @@ export async function fmpFinancials(ticker:string,key:string,period:'annual'|'qu
   const aligned=(endpoint:string)=>{const row=data[endpoint]?.[0];return row?.['date']===reference?.['date']?row:undefined;};
   const income=aligned('income-statement'),balance=aligned('balance-sheet-statement'),cash=aligned('cash-flow-statement'),ratios=aligned('ratios'),metrics=aligned('key-metrics');
   if(!income&&!balance&&!cash&&!ratios&&!metrics)return null;
-  const rows=(r:Record<string,unknown>|undefined,fields:[string,string][])=>fields.map(([label,key])=>({label,value:numeric(r?.[key])}));
+  const rows=(r:Record<string,unknown>|undefined,fields:[string,string][])=>fields.map(([label,key])=>({label,value:numeric(r?.[key]),source:'Financial Modeling Prep',sourceUrl:typeof r?.['finalLink']==='string'&&String(r['finalLink']).startsWith('https://www.sec.gov/')?String(r['finalLink']):'https://financialmodelingprep.com/developer/docs/stable',periodEnd:typeof r?.['date']==='string'?String(r['date']):null,currency:typeof r?.['reportedCurrency']==='string'?String(r['reportedCurrency']):undefined,basis:period,method:'reported' as const}));
   const date=String(income?.['date']??balance?.['date']??cash?.['date']??ratios?.['date']??metrics?.['date']??'')||null;
   return {date,ratios:[{label:'P/E',value:numeric(ratios?.['priceToEarningsRatio'])},{label:'P/S',value:numeric(ratios?.['priceToSalesRatio'])},{label:'EV / EBITDA',value:numeric(ratios?.['enterpriseValueMultiple'])??numeric(metrics?.['evToEBITDA'])},{label:'Net margin %',value:numeric(ratios?.['netProfitMargin'])!==null?Number(ratios?.['netProfitMargin'])*100:null},{label:'ROE %',value:numeric(metrics?.['returnOnEquity'])!==null?Number(metrics?.['returnOnEquity'])*100:null}],statements:{income:rows(income,[['Revenue','revenue'],['Gross profit','grossProfit'],['Operating income','operatingIncome'],['Net income','netIncome']]),balance:rows(balance,[['Total assets','totalAssets'],['Total liabilities','totalLiabilities'],['Stockholders equity','totalStockholdersEquity'],['Cash & equivalents','cashAndCashEquivalents'],['Total debt','totalDebt']]),cash:rows(cash,[['Operating cash flow','operatingCashFlow'],['Investing cash flow','netCashUsedForInvestingActivites'],['Financing cash flow','netCashUsedProvidedByFinancingActivities'],['Free cash flow','freeCashFlow']])}};
 }

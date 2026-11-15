@@ -17,12 +17,12 @@ describe('shared news evidence cache',()=>{
   it('deduplicates concurrent reads and reuses a 30-minute owner-scoped durable snapshot',async()=>{
     setup(); const [a,b]=await Promise.all([getNewsEvidence(sb,'owner-a','PFE','2026-11-15',30),getNewsEvidence(sb,'owner-a','PFE','2026-11-15',30)]);
     expect(a).toEqual(b);expect(yahooNewsSearch).toHaveBeenCalledTimes(1);expect(a.events?.[0]?.coverage[0]?.title).toBe('Pfizer earnings beat estimates');expect(a.headlines).toHaveLength(1);
-    expect(state.writes[0]).toMatchObject({owner:'owner-a',key:'v4:PFE:2026-11-15:30',ttl:1800000});
+    expect(state.writes[0]).toMatchObject({owner:'owner-a',key:'v5:PFE:2026-11-15:30',ttl:1800000});
     const again=await getNewsEvidence(sb,'owner-a','PFE','2026-11-15',30);expect(again.cached).toBe(true);expect(yahooNewsSearch).toHaveBeenCalledTimes(1);
     await getNewsEvidence(sb,'owner-b','PFE','2026-11-15',30);expect(yahooNewsSearch).toHaveBeenCalledTimes(2);expect(state.writes[1]?.owner).toBe('owner-b');
   });
   it('preserves original stale retrieval time on outage without renewing the cache',async()=>{
-    setup();const first=await getNewsEvidence(sb,'owner','PFE','2026-11-15',30);const entry=state.cache.get('owner:news-evidence:v4:PFE:2026-11-15:30');if(!entry)throw Error('No cache');entry.fresh=false;state.fail=true;
+    setup();const first=await getNewsEvidence(sb,'owner','PFE','2026-11-15',30);const entry=state.cache.get('owner:news-evidence:v5:PFE:2026-11-15:30');if(!entry)throw Error('No cache');entry.fresh=false;state.fail=true;
     vi.setSystemTime(new Date('2026-11-15T13:00:00Z'));const stale=await getNewsEvidence(sb,'owner','PFE','2026-11-15',30);
     expect(stale.fetchedAt).toBe(first.fetchedAt);expect(stale.sourceStates?.['Yahoo Finance search']?.status).toBe('failed');expect(state.writes).toHaveLength(1);expect(entry.fresh).toBe(false);
   });

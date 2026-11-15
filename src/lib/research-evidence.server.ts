@@ -20,7 +20,7 @@ export function getNewsEvidence(sb: EvidenceClient, userId: string, ticker: stri
   return result;
 }
 async function loadNewsEvidence(sb: EvidenceClient, userId: string, ticker: string, analysisDate: string, lookbackDays: number, today: string): Promise<NewsEvidence> {
-  const start = windowStart(analysisDate, lookbackDays); const key = `v4:${ticker}:${analysisDate}:${lookbackDays}`;
+  const start = windowStart(analysisDate, lookbackDays); const key = `v5:${ticker}:${analysisDate}:${lookbackDays}`;
   const cached = await readDataCache(sb, userId, 'news-evidence', key); const saved = cached?.payload as NewsEvidence | undefined;
   if (cached?.fresh && saved?.cutoff) return { ...saved, cached: true };
   const notes: string[] = []; let filings: NewsEvidence['filings'] = []; let filingsSource: string | null = null; let headlines: NewsEvidence['headlines'] = []; let headlinesSource: string | null = null;
@@ -55,7 +55,7 @@ async function loadNewsEvidence(sb: EvidenceClient, userId: string, ticker: stri
   const feed: NewsEvidence = { status: filings.length && headlines.length ? 'available' : filings.length || headlines.length ? 'partial' : 'unavailable', cutoff: analysisDate, windowStart: start, fetchedAt: new Date().toISOString(), cached: false, filings, filingsSource, headlines, headlinesSource, notes, headlineCounts,sourceStates,events:sourceEvents };
   const headlineRefreshFailed = analysisDate === today && Object.values(sourceStates).some(s => s.status === 'failed') && !headlines.length;
   if (saved?.headlines.length && headlineRefreshFailed) return { ...saved, cached: true,sourceStates, notes: [...saved.notes, `Stale snapshot from ${saved.fetchedAt}; headline refresh unavailable. Original evidence time preserved.`] };
-  if (feed.status !== 'unavailable') await writeDataCache(sb, userId, 'news-evidence', key, feed, analysisDate === today ? 30 * 60 * 1000 : 7 * 86400000);
+  if (feed.status !== 'unavailable') {const stored=await writeDataCache(sb, userId, 'news-evidence', key, feed, analysisDate === today ? 30 * 60 * 1000 : 7 * 86400000);if(!stored)feed.notes.push('Evidence retrieved, but shared cache storage failed; later requests may fetch again.');}
   else if (saved?.cutoff && Object.values(sourceStates).some(s => s.status === 'failed')) return { ...saved, cached: true,sourceStates, notes: [...saved.notes, `Stale snapshot from ${saved.fetchedAt}; refresh unavailable.`] };
   return feed;
 }
