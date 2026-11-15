@@ -17,7 +17,7 @@ export type MacroMetric = { series: string; name: string; unit: string; date: st
 export type MacroFeed = { status: 'live' | 'cached' | 'unavailable'; asOf: string; fetchedAt: string | null; note: string; metrics: MacroMetric[] };
 export type PredictionMarket = { id: string; question: string; source: string; outcomes: { name: string; probability: number }[]; volumeUsd: number | null; change1d: number | null; closesAt: string | null };
 export type PredictionFeed = { status: 'live' | 'cached' | 'unavailable' | 'historical_unavailable'; fetchedAt: string | null; note: string; markets: PredictionMarket[] };
-export type ResearchEvidence = { macro: MacroFeed; predictions: PredictionFeed; news?: NewsEvidence | null; fundamentals?: FundamentalEvidence | null; free?: FreeSourcesEvidence | null; valuation?: ValuationEvidence; references?: ReferenceEvidence; companyContext?: import('./company-profile').CompanyProfile|null };
+export type ResearchEvidence = { macro: MacroFeed; predictions: PredictionFeed; news?: NewsEvidence | null; fundamentals?: FundamentalEvidence | null; free?: FreeSourcesEvidence | null; valuation?: ValuationEvidence; references?: ReferenceEvidence; companyContext?: import('./company-profile').CompanyProfile|null;dataMap?:import('./evidence-map').EvidenceMapRow[] };
 export function macroMetric(series: typeof MACRO_SERIES[number], raw: unknown): MacroMetric {
   const body = sectionObject(raw);
   const rows = (Array.isArray(body['observations']) ? body['observations'] : []).map(v => {

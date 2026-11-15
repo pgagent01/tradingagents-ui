@@ -17,6 +17,7 @@ import { usage } from '@/lib/research-config';
 import { getFredEvidence } from '@/lib/fred.server';
 import { getPredictionEvidence } from '@/lib/polymarket.server';
 import { evidenceContext } from '@/lib/data-evidence';
+import { researchDataMap } from '@/lib/evidence-map';
 import { createLovableAiGatewayProvider } from './gateway-helpers.server.ts';
 import { cachedStockData } from '@/lib/stock-service.server';
 import { snapshotAllowed,stockPrompt } from '@/lib/stock-snapshot';
@@ -101,7 +102,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const companyContext=run.analysis_date===new Date().toISOString().slice(0,10)?await companyProfile(sb,userId,run.ticker).catch(()=>null):null;
   const unified=unifiedNews(news,references,run.ticker);
   const providerSettings=await dataProviderSettings(sb,userId).catch(()=>null);
-  const evidence={macro,predictions,news:unified,fundamentals,free,valuation,dataChecks:checks,references,companyContext};
+  const coreEvidence={macro,predictions,news:unified,fundamentals,free,valuation,dataChecks:checks,references,companyContext};
+  const evidence={...coreEvidence,dataMap:researchDataMap(coreEvidence)};
   const technicalEvents=technicalNewsEvents(unified,technical?.firstObservation??null,technical?.lastObservation??null);
   const selections:Record<string,string>={};
   async function enrichPeers(agent:string,text:string,model:string) {

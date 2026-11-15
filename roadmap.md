@@ -1,5 +1,10 @@
 # Roadmap
 
+- [x] Added a collected-data/source-to-agent map to new immutable report evidence and a collapsible report view; distinguishes processed snapshots from original provider payloads, conditional availability and Massive/social exclusions. Existing reports are not backfilled.
+
+- [x] Added accessible collapsible news/filing/additional-source and per-provider reference groups; contents remain visible in print. Public protected Settings redirects to sign-in, no page errors and no mobile overflow observed. Authenticated report disclosure interaction remains unverified until owner sign-in.
+- [ ] Authenticated end-to-end report flow and interface verification await owner sign-in. Efficiency priorities: coalesce concurrent stock-service requests, conditional HTTP retrieval when sources support it, per-provider latency/cache/failure counters, durable normalized evidence indexes and a bounded retryable ingestion job queue only if long-running/scheduled ingestion is introduced. These are reviewed recommendations, not activated services.
+
 - [x] Verified all seven execution stages receive processed quality evidence and saved report retains audits; updated shared prompts to cite source/date/accession, ignore withheld alternatives and not mistake repetition for corroboration. Regression execution verifies routing, not real model interpretation.
 - [ ] Fresh report-versus-prior quality comparison — needs the owner signed into preview after session mint failed; do not claim report improvement from fixtures alone. Compare evidence coverage, duplicate/conflict counts, source/date citations and unsupported claims under a consistent model/configuration.
 

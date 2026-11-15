@@ -3,6 +3,7 @@ import { ReportReferences } from '@/components/report-references';
 import { ReportFinancialComparison } from '@/components/report-financial-comparison';
 import {DataFreshness} from '@/components/data-freshness';
 import { sectionObject, contentText, financialRows } from '@/lib/report-content';
+import { EvidenceDisclosure } from './evidence-disclosure';
 
 export function ReportEvidence({value}:{value:unknown}) {
   const evidence=sectionObject(value); const macro=sectionObject(evidence['macro']); const predictions=sectionObject(evidence['predictions']);
@@ -10,15 +11,16 @@ export function ReportEvidence({value}:{value:unknown}) {
   const metrics=Array.isArray(macro['metrics'])?macro['metrics']:[];
   const markets=Array.isArray(predictions['markets'])?predictions['markets']:[];
   return <section className="space-y-6 border-t border-border pt-4">
+    {list(evidence['dataMap']).length>0&&<EvidenceDisclosure title="Collected data → Analyst input map"><div className="space-y-3 text-xs"><p className="text-muted-foreground">Processed evidence snapshots, not an archive of original provider payloads. Availability and account permissions apply.</p>{list(evidence['dataMap']).map((row,i)=><div key={i} className="space-y-1 border-b border-border py-2"><h3 className="font-semibold">{contentText(row['source'])} · {contentText(row['state'])}</h3><p>{contentText(row['fields'])}</p><p className="text-muted-foreground">Analysts: {Array.isArray(row['agents'])?row['agents'].join(', ')||'None':'None'} · {contentText(row['policy'])}</p></div>)}</div></EvidenceDisclosure>}
     <div><h2 className="text-xl font-semibold">Macroeconomic Context · FRED</h2><p className="mt-2 text-xs text-muted-foreground">{contentText(macro['status'])} · Vintage {contentText(macro['asOf'])} · {contentText(macro['note'])}</p>
       <DataFreshness date={contentText(macro['fetchedAt'])} origin="Saved FRED evidence"/>{metrics.length>0&&<div className="mt-3 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Indicator</th><th>Observation</th><th>Value</th><th>Trend</th></tr></thead><tbody>{metrics.map((v,i)=>{const m=sectionObject(v);return <tr key={i} className="border-b border-border"><td className="py-3"><a href={`https://fred.stlouisfed.org/series/${encodeURIComponent(contentText(m['series']))}`} target="_blank" rel="noopener noreferrer" className="text-primary underline">{contentText(m['name'])}</a></td><td className="pr-3 font-mono">{contentText(m['date'])}</td><td className="pr-3 font-mono">{contentText(m['value'])} {contentText(m['unit'])}</td><td>{contentText(m['trend'])}</td></tr>;})}</tbody></table></div>}
     </div>
     <div><h2 className="text-xl font-semibold">Prediction Markets · Polymarket</h2><p className="mt-2 text-xs text-muted-foreground">{contentText(predictions['status'])} · {contentText(predictions['fetchedAt'])} · {contentText(predictions['note'])}</p>
       <DataFreshness date={contentText(predictions['fetchedAt'])} origin="Saved Polymarket evidence"/>{markets.length===0?<p className="mt-3 text-sm text-muted-foreground">No relevant prediction quotes available in this snapshot.</p>:<div className="mt-3 divide-y divide-border">{markets.map((v,i)=>{const m=sectionObject(v);const outcomes=financialRows(Array.isArray(m['outcomes'])?m['outcomes']:[]);const rawOutcomes=Array.isArray(m['outcomes'])?m['outcomes']:[];const source=contentText(m['source']);return <div key={i} className="space-y-2 py-3"><h3 className="text-sm font-semibold">{source.startsWith('https://polymarket.com/event/')?<a href={source} target="_blank" rel="noopener noreferrer" className="text-primary underline">{contentText(m['question'])}</a>:contentText(m['question'])}</h3><div className="flex flex-wrap gap-4 font-mono text-xs">{outcomes.map((o,j)=>{const p=sectionObject(rawOutcomes[j])['probability'];return <span key={j}>{o.metric} {typeof p==='number'?`${(p*100).toFixed(1)}%`:'Unavailable'}</span>;})}<span>Volume {typeof m['volumeUsd']==='number'?`$${m['volumeUsd'].toLocaleString()}`:'Unavailable'}</span><span>1d first-outcome change {typeof m['change1d']==='number'?`${(m['change1d']*100).toFixed(1)} pp`:'Unavailable'}</span></div></div>;})}</div>}
     </div>
-    <NewsSection value={evidence['news']}/>
-    <FundamentalsSection value={evidence['fundamentals']}/>
-    <FreeSourcesSection value={evidence['free']}/>
+    <EvidenceDisclosure title="News & filings · Sources and quality checks"><NewsSection value={evidence['news']}/></EvidenceDisclosure>
+    <EvidenceDisclosure title="Financial evidence · Filing references" defaultOpen><FundamentalsSection value={evidence['fundamentals']}/></EvidenceDisclosure>
+    <EvidenceDisclosure title="Additional sources · GDELT, SEC, FINRA and macro"><FreeSourcesSection value={evidence['free']}/></EvidenceDisclosure>
     <ReportReferences value={evidence['references']}/>
   </section>;
 }
