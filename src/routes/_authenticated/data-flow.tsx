@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { generalDataMap } from '@/lib/evidence-map';
+import { DataPipelineDiagram, FrameworkDiagram } from '@/components/data-flow-diagrams';
 import { pageHead } from '@/lib/page-head';
 import { DataError } from '@/components/route-feedback';
 
@@ -35,6 +36,17 @@ function DataFlow() {
         <h1 className="text-lg font-semibold">Data Flow &amp; Sources</h1>
         <p className="mt-1 text-xs text-muted-foreground">What data is collected, how it is cleaned, and which analysts receive it.</p>
       </header>
+
+      <section className="grid gap-6 xl:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Data pipeline</h2>
+          <DataPipelineDiagram />
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold">Overall framework</h2>
+          <FrameworkDiagram />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-3 text-sm font-semibold">How data flows through a run</h2>

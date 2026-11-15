@@ -174,3 +174,6 @@
 
 - [x] Live test 6 stocks (DELL, GLW, TSLA, PFE, JPM, RR.L) with 550B/120B; review reports, caching, reuse
 - [x] Check which comparables metrics can be sourced directly vs computed
+
+## Open
+- DONE: dataflow + framework diagrams added to /data-flow page
