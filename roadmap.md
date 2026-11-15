@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] News/social quality improvement: reviewed plan, dated event grouping, permitted excerpts, source-aware analyst guidance, access-verified social pilot, shared evidence caching and integration/live validation. Social activation waits on verified provider access; do not bypass restrictions.
+
 - [x] Data/report quality plan: IFRS and non-USD foreign filers read (not valued), pre-tax income and bank lines named separately, bank revenue concepts, accounting/freshness data checks stored and passed to analysts, figure matching against evidence, Yahoo+Google RSS headlines with relevance/dedup, peer multiple outlier exclusion. Measured on 14 SEC companies; 339 tests pass. Plan reviewed for weaknesses before build.
 - [ ] Verify data checks, headline counts and figure matching on a fresh billed report — not started this turn (costs ~$0.10–0.15).
 
