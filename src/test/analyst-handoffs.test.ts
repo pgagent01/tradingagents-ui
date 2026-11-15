@@ -9,7 +9,7 @@ vi.mock('@/lib/crypto.server', () => ({ decryptSecret: async () => 'synthetic-te
 vi.mock('@/lib/fred.server', () => ({ getFredEvidence: async () => ({ status: 'live', metrics: [{ series: 'FEDFUNDS', value: 4 }], note: '', asOf: '2026-11-07', fetchedAt: '2026-11-07' }) }));
 vi.mock('@/lib/polymarket.server', () => ({ getPredictionEvidence: async () => ({ status: 'unavailable', markets: [], note: 'No matching markets', fetchedAt: null }) }));
 vi.mock('@/lib/research-evidence.server', () => ({
-  getNewsEvidence: async () => ({ status: 'partial', filings: [{ form: '10-Q', filed: '2026-11-05', url: 'https://www.sec.gov/filing' }], headlines: [], notes: ['No social feed'], cutoff: '2026-11-07' }),
+  getNewsEvidence: async () => ({ status: 'partial', filings: [{ form: '10-Q', filed: '2026-11-05', url: 'https://www.sec.gov/filing' }], headlines: [], events:[{title:'Lumentum earnings event',category:'Earnings / guidance',firstPublishedAt:'2026-11-05T10:00:00Z',lastPublishedAt:'2026-11-05T10:00:00Z',publisherCount:1,coverage:[{title:'Lumentum earnings event',publisher:'Yahoo',publishedAt:'2026-11-05T10:00:00Z',url:'https://finance.yahoo.com/news/event',excerpt:'Lumentum issued guidance.',excerptSource:'publisher_feed'}]}], notes: ['No social feed'], cutoff: '2026-11-07' }),
   getFundamentalEvidence: async () => ({ status: 'available', annual: [{ revenue: 150 }], latestQuarter: { revenue: 50 }, cutoff: '2026-11-07' }),
 }));
 vi.mock('@/lib/sources/free-sources.server', () => { const f = { status: 'unavailable', source: 's', sourceUrl: null, cutoff: '2026-11-07', fetchedAt: '', cached: false, note: 'n', items: [] }; return { getFreeSourcesEvidence: async () => ({ gdelt: { ...f, tone: [], averageTone: null }, shortInterest: f, globalMacro: { ...f, lastUpdated: null }, earningsReleases: f, social: f }) }; });
@@ -62,6 +62,9 @@ describe('real execution analyst handoffs', () => {
     expect(calls[0]).toContain('"revenue":150');
     expect(calls[0]).toContain('2026-11-05');
     expect(calls[2]).toContain('No social feed');
+    const evidence = storedReport['external_evidence'] as Record<string,unknown> | undefined;
+    expect(evidence?.['news']).toMatchObject({events:[{title:'Lumentum earnings event',coverage:[{excerpt:'Lumentum issued guidance.'}]}]});
+    for (const index of [2,3,4,5,6]) expect(calls[index]).toContain('Lumentum issued guidance.');
     const saved = rpc.mock.calls.find(([name]) => name === 'finalize_research_report');
     expect(saved).toBeDefined();
     expect(storedReport['storage_version']).toBe(2);
