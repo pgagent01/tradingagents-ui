@@ -2,6 +2,7 @@ import { readDataCache, writeDataCache, type EvidenceClient } from '@/lib/data-c
 import { secCik, secSubmissions } from '@/lib/stock-data.server';
 import { COMPANIES } from '@/lib/companies';
 import { taggedReleaseFacts } from './earnings-bridge';
+import { isRelevantHeadline, relevanceTerms } from '@/lib/research-evidence';
 import { averageTone, earningsFilings, exhibitName, htmlText, isEarningsExcerpt, currentRevisionAllowed, parseGdeltArticles, parseGdeltTone, parseShortInterest, parseWorldBank, SOCIAL_UNAVAILABLE, WORLD_BANK_INDICATORS, type FreeSourcesEvidence, type SourceFeed } from '@/lib/sources/free-sources';
 
 const SEC_UA = () => process.env['SEC_USER_AGENT'] ?? 'TradingAgentsAI gprithvi@gmail.com';
@@ -13,12 +14,12 @@ const stamp = (d: string, end = false) => d.replace(/-/g, '') + (end ? '235959' 
 function feed<T>(source: string, sourceUrl: string | null, cutoff: string, items: T[], note: string, status?: SourceFeed<T>['status']): SourceFeed<T> {
   return { status: status ?? (items.length ? 'available' : 'unavailable'), source, sourceUrl, cutoff, fetchedAt: new Date().toISOString(), cached: false, note, items };
 }
-async function cached<T extends { status: string; fetchedAt: string }>(sb: EvidenceClient, userId: string, provider: string, key: string, ttl: number, load: () => Promise<T>): Promise<T> {
+async function cached<T extends { status: string; fetchedAt: string; note: string }>(sb: EvidenceClient, userId: string, provider: string, key: string, ttl: number, load: () => Promise<T>): Promise<T> {
   const c = await readDataCache(sb, userId, provider, key); const saved = c?.payload as T | undefined;
   if (c?.fresh && saved?.fetchedAt) return { ...saved, cached: true };
   const fresh = await load();
   if (fresh.status === 'available') await writeDataCache(sb, userId, provider, key, fresh, ttl);
-  else if (saved?.status === 'available') return { ...saved, cached: true };
+  else if (saved?.status === 'available') return { ...saved, cached: true,note:`${saved.note} Stale evidence retrieved ${saved.fetchedAt}; refresh unavailable. ${fresh.note}` };
   return fresh;
 }
 function companyName(ticker: string) {
@@ -32,10 +33,11 @@ async function gdelt(ticker: string, cutoff: string, start: string): Promise<Fre
   try {
     // GDELT allows one request per five seconds and answers rate limits with plain text, so retry once after a pause.
     const call = async (mode: string) => { for (let i = 0; i < 2; i++) { const t = await (await get(`${base}&mode=${mode}`, {}, 20000)).text(); try { return JSON.parse(t) as unknown; } catch { await wait(6000); } } throw new Error('rate limited'); };
-    const items = parseGdeltArticles(await call('artlist&maxrecords=40&sort=datedesc'), cutoff);
+    const terms = relevanceTerms(ticker,companyName(ticker));
+    const items = parseGdeltArticles(await call('artlist&maxrecords=40&sort=datedesc'), cutoff).filter(a => a.seenAt.slice(0,10) >= start && isRelevantHeadline(a.title,terms));
     await wait(5500);
     const tone = parseGdeltTone(await call('timelinetone'), cutoff);
-    return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, items, 'Machine-coded global news; titles and tone only, article bodies not retrieved. Tone is a news proxy, not measured social sentiment. Average is unweighted; coverage counts are unavailable and zero tone is retained.'), tone, averageTone: averageTone(tone) };
+    return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, items, 'Machine-coded global news; titles and tone only, article bodies not retrieved. seendate is first-seen time, not verified publication time. Tone describes the provider search query, not necessarily the filtered article sample; it is not measured social sentiment. Average is unweighted; coverage counts are unavailable and zero tone is retained.'), tone, averageTone: averageTone(tone) };
   } catch { return { ...feed('GDELT Project DOC 2.0', sourceUrl, cutoff, [], 'GDELT temporarily unavailable or rate-limited.'), tone: [], averageTone: null }; }
 }
 async function finra(ticker: string, cutoff: string): Promise<FreeSourcesEvidence['shortInterest']> {
@@ -78,7 +80,7 @@ export async function getFreeSourcesEvidence(sb: EvidenceClient, userId: string,
   const earningsReleases = await cached(sb, userId, 'sec-earnings', `tagged-v1:${k}`, day, () => earnings(ticker, cutoff, releaseStart));
   const shortInterest = current ? await cached(sb, userId, 'finra-short', k, 12 * 3600000, () => finra(ticker, cutoff)) : feed<FreeSourcesEvidence['shortInterest']['items'][number]>('FINRA consolidated short interest','https://www.finra.org/finra-data/browse-catalog/equity-short-interest/data',cutoff,[],'Historical feed omitted: settlement dates do not establish public availability and publication vintages are not available.','historical_unavailable');
   const globalMacro = current ? await cached(sb, userId, 'worldbank', `v2:${cutoff}`, 7 * day, () => worldBank(cutoff)) : {...feed<FreeSourcesEvidence['globalMacro']['items'][number]>('World Bank Open Data','https://data.worldbank.org/',cutoff,[],'Historical feed omitted: current revised data has no point-in-time vintages. FRED vintage evidence remains separate.','historical_unavailable'),lastUpdated:null};
-  const gdeltNews = await cached(sb, userId, 'gdelt', `${k}:${lookbackDays}`, 3 * 3600000, () => gdelt(ticker, cutoff, start));
+  const gdeltNews = await cached(sb, userId, 'gdelt', `relevant-v3:${k}:${lookbackDays}`, 3 * 3600000, () => gdelt(ticker, cutoff, start));
   const social = feed<never>('Social media', null, cutoff, [], SOCIAL_UNAVAILABLE);
   return { gdelt: gdeltNews, shortInterest, globalMacro, earningsReleases, social };
 }

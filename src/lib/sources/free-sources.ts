@@ -79,4 +79,4 @@ export function currentRevisionAllowed(cutoff:string,today:string) { return cuto
 export function htmlText(html: string, max = 2500): string {
   return html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, "'").replace(/&#\d+;|&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 }
-export const SOCIAL_UNAVAILABLE = 'No social-media feed is connected. Bluesky search now requires an authenticated account, Reddit requires approved API access and Stocktwits registrations are closed; sentiment uses news tone and headlines as proxies only.';
+export const SOCIAL_UNAVAILABLE = 'No social-media feed is connected. A Bluesky public-search access check returned HTTP 403; its cause and authenticated search access are unverified. Other platforms require verified provider access before activation. News tone and headlines are proxies, not measured social opinion; missing posts mean insufficient evidence, not neutral sentiment.';
