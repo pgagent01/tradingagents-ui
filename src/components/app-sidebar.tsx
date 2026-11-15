@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Activity, BarChart3, FileText, LayoutDashboard, LogOut, PlusCircle, Settings, GitCompare, Star } from "lucide-react";
+import { Activity, BarChart3, FileText, LayoutDashboard, LogOut, PlusCircle, Settings, GitCompare, Star, Workflow } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
@@ -15,6 +15,7 @@ const items = [
   { title: "Research Reports", url: "/reports", icon: FileText },
   { title: "Watchlists", url: "/watchlists", icon: Star },
   { title: "Token & Cost Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Data Flow", url: "/data-flow", icon: Workflow },
   { title: "Settings", url: "/settings", icon: Settings },
 ] as const;
 
