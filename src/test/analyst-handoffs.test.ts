@@ -13,6 +13,7 @@ vi.mock('@/lib/research-evidence.server', () => ({
   getFundamentalEvidence: async () => ({ status: 'available', annual: [{ revenue: 150 }], latestQuarter: { revenue: 50 }, cutoff: '2026-11-07' }),
 }));
 vi.mock('@/lib/sources/free-sources.server', () => { const f = { status: 'unavailable', source: 's', sourceUrl: null, cutoff: '2026-11-07', fetchedAt: '', cached: false, note: 'n', items: [] }; return { getFreeSourcesEvidence: async () => ({ gdelt: { ...f, tone: [], averageTone: null }, shortInterest: f, globalMacro: { ...f, lastUpdated: null }, earningsReleases: f, social: f }) }; });
+vi.mock('@/lib/reference-evidence.server',()=>({getReferenceEvidence:async()=>{const f={status:'available',cutoff:'2026-11-07',fetchedAt:'2026-11-07',cached:false,note:'secondary reference',items:[{title:'Lumentum',text:'Verified handoff reference',url:'https://en.wikipedia.org/w/index.php?oldid=123',publishedAt:'2026-11-06',kind:'encyclopedia'}]};return {wikipedia:f,firecrawl:f};}}));
 vi.mock('@/lib/stock-service.server', () => ({ cachedStockData: async () => null }));
 vi.mock('@/lib/stock-data.server', () => ({ historicalDailyCandles: async () => null }));
 vi.mock('ai', () => ({
@@ -64,6 +65,8 @@ describe('real execution analyst handoffs', () => {
     expect(calls[2]).toContain('No social feed');
     const evidence = storedReport['external_evidence'] as Record<string,unknown> | undefined;
     expect(evidence?.['news']).toMatchObject({events:[{title:'Lumentum earnings event',coverage:[{excerpt:'Lumentum issued guidance.'}]}]});
+    expect(evidence?.['references']).toMatchObject({wikipedia:{items:[{text:'Verified handoff reference'}]},firecrawl:{items:[{text:'Verified handoff reference'}]}});
+    for(const index of [0,2,3,4,5,6])expect(calls[index]).toContain('Verified handoff reference');
     for (const index of [2,3,4,5,6]) expect(calls[index]).toContain('Lumentum issued guidance.');
     const saved = rpc.mock.calls.find(([name]) => name === 'finalize_research_report');
     expect(saved).toBeDefined();

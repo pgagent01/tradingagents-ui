@@ -26,6 +26,7 @@ import { createNvidiaFailoverFetch } from './nvidia-failover.server';
 import { MODEL_OPTIONS } from '@/lib/research-config';
 import { getFundamentalEvidence, getNewsEvidence } from '@/lib/research-evidence.server';
 import { getFreeSourcesEvidence } from '@/lib/sources/free-sources.server';
+import { getReferenceEvidence } from '@/lib/reference-evidence.server';
 import { priorFindingsPrompt } from '@/lib/research-evidence';
 import { historicalDailyCandles } from '@/lib/stock-data.server';
 import { emptyStock } from '@/lib/stock-data';
@@ -91,7 +92,8 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
   const checks=dataChecks(fundamentals,run.analysis_date);
   if(checks.withholdValuation&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
-  const evidence={macro,predictions,news,fundamentals,free,valuation,dataChecks:checks};
+  const references=await getReferenceEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
+  const evidence={macro,predictions,news,fundamentals,free,valuation,dataChecks:checks,references};
   async function enrichPeers(agent:string,text:string,model:string) {
     if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
     const checked=await verifyModelPeers(valuation.comparables,text,run.ticker,run.analysis_date,model);

@@ -3,6 +3,7 @@ import type { FundamentalEvidence, NewsEvidence } from '@/lib/research-evidence'
 import type { ValuationEvidence } from '@/lib/valuation/engine';
 import type { FreeSourcesEvidence } from '@/lib/sources/free-sources';
 import { NEWS_ANALYSIS_RULES } from '@/lib/news-quality';
+import { REFERENCE_RULES, type ReferenceEvidence } from '@/lib/reference-evidence';
 
 export const MACRO_SERIES = [
   { id: 'FEDFUNDS', name: 'Federal funds effective rate', unit: '%', change: 'points' },
@@ -16,7 +17,7 @@ export type MacroMetric = { series: string; name: string; unit: string; date: st
 export type MacroFeed = { status: 'live' | 'cached' | 'unavailable'; asOf: string; fetchedAt: string | null; note: string; metrics: MacroMetric[] };
 export type PredictionMarket = { id: string; question: string; source: string; outcomes: { name: string; probability: number }[]; volumeUsd: number | null; change1d: number | null; closesAt: string | null };
 export type PredictionFeed = { status: 'live' | 'cached' | 'unavailable' | 'historical_unavailable'; fetchedAt: string | null; note: string; markets: PredictionMarket[] };
-export type ResearchEvidence = { macro: MacroFeed; predictions: PredictionFeed; news?: NewsEvidence | null; fundamentals?: FundamentalEvidence | null; free?: FreeSourcesEvidence | null; valuation?: ValuationEvidence };
+export type ResearchEvidence = { macro: MacroFeed; predictions: PredictionFeed; news?: NewsEvidence | null; fundamentals?: FundamentalEvidence | null; free?: FreeSourcesEvidence | null; valuation?: ValuationEvidence; references?: ReferenceEvidence };
 export function macroMetric(series: typeof MACRO_SERIES[number], raw: unknown): MacroMetric {
   const body = sectionObject(raw);
   const rows = (Array.isArray(body['observations']) ? body['observations'] : []).map(v => {
@@ -64,6 +65,7 @@ export function relevantMarkets(events: unknown[], terms: string[], now: string)
 }
 export function evidenceContext(agent: string, evidence: ResearchEvidence): string {
   const parts: unknown[] = [];
+  if(evidence.references && ['fundamentals','news','sentiment','risk','debate','synthesis'].includes(agent))parts.push({company_references:evidence.references,reference_rules:REFERENCE_RULES});
   if (evidence.valuation && ['fundamentals','risk','debate','synthesis'].includes(agent)) parts.push({calculated_valuation:evidence.valuation,valuation_rules:'Never relabel peer-relative values as intrinsic value or a 12-month target. Discuss missing inputs, do not invent forecasts. Peer TTM ratios are provider-reported, not filing-reconciled.'});
   if (['fundamentals','macro','risk','debate','synthesis'].includes(agent)) parts.push({fred:evidence.macro});
   if (['sentiment','news','risk','debate','synthesis'].includes(agent)) parts.push({polymarket:evidence.predictions});

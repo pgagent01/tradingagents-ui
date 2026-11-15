@@ -1,4 +1,5 @@
 import { MetricLabel } from '@/components/metric-label';
+import { ReportReferences } from '@/components/report-references';
 import { ReportFinancialComparison } from '@/components/report-financial-comparison';
 import {DataFreshness} from '@/components/data-freshness';
 import { sectionObject, contentText, financialRows } from '@/lib/report-content';
@@ -18,6 +19,7 @@ export function ReportEvidence({value}:{value:unknown}) {
     <NewsSection value={evidence['news']}/>
     <FundamentalsSection value={evidence['fundamentals']}/>
     <FreeSourcesSection value={evidence['free']}/>
+    <ReportReferences value={evidence['references']}/>
   </section>;
 }
 const safeLink=(url:string)=>url.startsWith('https://')?url:'';

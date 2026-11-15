@@ -3,3 +3,4 @@
 - IFRS/non-USD filers are shown, never valued; data checks and figure matching flag issues but never edit research.
 - News groups retain original dated coverage and publisher-feed excerpts; versioned owner-scoped caches and in-flight deduplication share retrieval without rewriting saved reports.
 - Source failure, empty results and stale fallback remain distinct; social sources activate only after supported access and retention terms are verified, preventing proxies from being called measured social sentiment.
+- Research references use exact-company dated Wikipedia revisions and bounded dated Firecrawl publisher excerpts; supplied Firecrawl secret is verified against the credential owner before requests, historical runs omit current references, and snapshots flow through existing analyst calls.

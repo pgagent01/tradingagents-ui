@@ -1,0 +1,6 @@
+import { sectionObject,contentText } from '@/lib/report-content';
+import { publicReferenceUrl } from '@/lib/reference-evidence';
+export function ReportReferences({value}:{value:unknown}){
+  const r=sectionObject(value);if(!Object.keys(r).length)return null;
+  return <div className="space-y-5">{[['wikipedia','Wikipedia · Company Context'],['firecrawl','Firecrawl · Publisher Search Evidence']].map(([key,title])=>{const f=sectionObject(r[key??'']);return <section key={key} className="space-y-2"><h2 className="text-xl font-semibold">{title}</h2><p className="text-xs text-muted-foreground">{contentText(f['status'])} · Retrieved {contentText(f['fetchedAt'])} · {contentText(f['note'])}</p>{(Array.isArray(f['items'])?f['items']:[]).map((v,i)=>{const item=sectionObject(v),url=publicReferenceUrl(item['url']);return <article key={i} className="space-y-2 border-b border-border py-3"><h3 className="break-words text-sm font-semibold">{url?<a className="text-primary underline" href={url} target="_blank" rel="noopener noreferrer">{contentText(item['title'])}</a>:contentText(item['title'])}</h3><p className="text-xs text-muted-foreground">{key==='wikipedia'?'Revision':'Published'} {contentText(item['publishedAt'])}</p><p className="break-words text-sm">{contentText(item['text'])}</p></article>;})}</section>;})}</div>;
+}
