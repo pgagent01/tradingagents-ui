@@ -1,7 +1,7 @@
 import { selectSecFact, type SecFact } from '@/lib/sec-periods';
 /** Debt excludes leases: only explicit reported aggregates or complete components are combined. */
-export function valuationBalance(facts: Record<string, unknown>, anchor: Record<string, unknown>, cutoff: string, dei?: Record<string, unknown>) {
-  const get = (tags: string[], unit = 'USD') => selectSecFact(facts,tags,anchor,'instant',unit,cutoff);
+export function valuationBalance(facts: Record<string, unknown>, anchor: Record<string, unknown>, cutoff: string, dei?: Record<string, unknown>, annualAnchor?: Record<string, unknown>) {
+  const get = (tags: string[], unit = 'USD', at: Record<string, unknown> = anchor) => selectSecFact(facts,tags,at,'instant',unit,cutoff);
   const combined = get(['LongTermDebtAndShortTermBorrowings','DebtCurrentAndNoncurrent','DebtLongtermAndShorttermCombinedAmount']);
   // DebtCurrent is the full current aggregate (current long-term debt plus short-term borrowings).
   const currentAll = get(['DebtCurrent']);
@@ -16,11 +16,22 @@ export function valuationBalance(facts: Record<string, unknown>, anchor: Record<
     if (longTotal) debt=add(longTotal,short);
     else if (noncurrent && current) debt=add(add(noncurrent,current),short);
   }
+  let debtNote = '';
+  // Some filers tag quarterly debt only with company-specific extensions; fall back to the latest annual report's standard lines, using the scheduled next-12-month principal as the current portion when no current-debt line is filed.
+  if (!debt && annualAnchor && annualAnchor !== anchor) {
+    const g = (t: string[]) => get(t,'USD',annualAnchor);
+    const nc = g(['LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations']);
+    const cur = g(['LongTermDebtCurrent']) ?? g(['LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths']);
+    const st = g(['ShortTermBorrowings','ShortTermDebtCurrent','CommercialPaper']);
+    const all = g(['DebtCurrent']);
+    const annual = g(['LongTermDebtAndShortTermBorrowings','DebtCurrentAndNoncurrent','DebtLongtermAndShorttermCombinedAmount']) ?? (nc && all ? add(nc,all) : nc && cur && st ? add(add(nc,cur),st) : null);
+    if (annual) { debt = {...annual, derived:true, tag: annual.tag === 'DerivedTotalDebt' ? 'DerivedTotalDebtAnnualFallback' : annual.tag}; debtNote = ` Debt (${annual.end}) comes from the latest annual report because the newest filing uses only company-specific debt tags; it may be stale.`; }
+  }
   const cash = get(['CashAndCashEquivalentsAtCarryingValue']);
   let shares = get(['CommonStockSharesOutstanding'],'shares');
   // Cover-page count from the SAME filing (dated shortly after period end) when the balance sheet omits it.
   if (!shares && dei) { const r=secRowsSameFiling(dei,anchor,cutoff); if (r) shares=r; }
-  return { debt, cash, shares, note:'Same-filing debt, unrestricted cash and period-end common shares. Debt requires an explicit aggregate or complete long/short-term components; missing short-term borrowing is not zero. Lease liabilities, minority interests and preferred equity are not included.' };
+  return { debt, cash, shares, note:'Same-filing debt, unrestricted cash and period-end common shares. Debt requires an explicit aggregate or complete long/short-term components; missing short-term borrowing is not zero. Lease liabilities, minority interests and preferred equity are not included.'+debtNote };
 }
 function secRowsSameFiling(dei: Record<string, unknown>, anchor: Record<string, unknown>, cutoff: string): SecFact | null {
   const units=(dei['EntityCommonStockSharesOutstanding'] as {units?:{shares?:Record<string,unknown>[]}}|undefined)?.units?.shares??[];

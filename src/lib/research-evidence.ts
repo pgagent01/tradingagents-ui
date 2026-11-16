@@ -131,7 +131,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
     status: annual.length || latestQuarter ? 'available' : 'unavailable', source: taxonomy === 'ifrs-full' ? 'SEC EDGAR XBRL company facts (IFRS)' : 'SEC EDGAR XBRL company facts', sourceUrl, cutoff, fetchedAt, cached, currency, taxonomy,
     annual: annual.slice(-4), latestQuarter,
     // Valuation inputs assume US GAAP USD figures; other taxonomies/currencies are shown but not valued.
-    ...(balanceAnchor && taxonomy === 'us-gaap' && currency === 'USD' ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff,object(object(body['facts'])['dei']))} : {}),
+    ...(balanceAnchor && taxonomy === 'us-gaap' && currency === 'USD' ? {valuationBalance:valuationBalance(facts,balanceAnchor,cutoff,object(object(body['facts'])['dei']),annualAnchors.at(-1))} : {}),
     ...(taxonomy === 'us-gaap' && currency === 'USD' ? { ttm: ttmEvidence(facts, { revenue: REVENUE, operatingIncome: TAGS.operatingIncome, netIncome: TAGS.netIncome, operatingCashFlow: TAGS.operatingCashFlow, capex: TAGS.capex }, cutoff, {
       depreciation: ['DepreciationDepletionAndAmortization', 'DepreciationAndAmortization', 'DepreciationAmortizationAndAccretionNet', 'Depreciation'],
       nonOperating: ['NonoperatingIncomeExpense', 'OtherNonoperatingIncomeExpense'],
@@ -139,6 +139,7 @@ export function fundamentalEvidence(raw: unknown, cutoff: string, fetchedAt = ne
       interestExpense: ['InterestExpense', 'InterestExpenseNonoperating'],
       pretaxIncome: TAGS.pretaxIncome,
       incomeTax: ['IncomeTaxExpenseBenefit'],
+      propertySaleGains: ['GainLossOnSaleOfRealEstateInvestmentProperty', 'GainsLossesOnSalesOfInvestmentRealEstate', 'GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes', 'GainLossOnDispositionOfAssets'],
     }) } : {}),
     note: 'USD XBRL facts filed on or before the analysis date (point-in-time). Annual and quarterly periods are separate; quarterly values are not annualized. YTD values are never labeled as quarters; quarter derivation requires same-concept comparative facts in the same filing. Missing compatible comparisons stay unavailable. Per-fact provenance records the filing version and derivation inputs. Derived gross profit (revenue − cost of revenue) and liabilities (total − equity) are flagged. Growth compares consecutive fiscal years. Missing tags stay null. Non-USD and IFRS filers are read in their reported currency and taxonomy; their figures are not converted or valued. Pre-tax income and bank lines are separate named fields, never substituted for operating income.',
   };

@@ -1,11 +1,14 @@
 /** Deterministic final review of a synthesized report (no AI call). Severe failures withhold the target. */
 export type ReviewCheck = { id: string; passed: boolean; severe: boolean; message: string };
-export function reviewReport(i: { rating: string | null; conviction: number | null; target: number | null; calculatedTarget: number | null; scenarioRange: { low: number; high: number } | null; text: string; citedFirms: string[]; evidenceFirms: string[]; sections: Record<string, unknown> }) {
+export function reviewReport(i: { rating: string | null; conviction: number | null; target: number | null; calculatedTarget: number | null; scenarioRange: { low: number; high: number } | null; text: string; citedFirms: string[]; evidenceFirms: string[]; sections: Record<string, unknown>; price?: number | null }) {
   const checks: ReviewCheck[] = [];
   const add = (id: string, passed: boolean, severe: boolean, message: string) => checks.push({ id, passed, severe, message });
   add('rating', ['BUY', 'HOLD', 'SELL'].includes((i.rating ?? '').toUpperCase()), true, 'Rating is BUY, HOLD or SELL.');
   add('conviction', i.conviction === null || (i.conviction >= 0 && i.conviction <= 100), false, 'Conviction is within 0–100.');
   add('hold-conviction', !(i.rating?.toUpperCase() !== 'HOLD' && i.conviction !== null && i.conviction < 40), false, 'A BUY or SELL rating carries conviction of at least 40; lower conviction should be HOLD.');
+  const upside = i.target !== null && i.price ? i.target / i.price - 1 : null;
+  const r = (i.rating ?? '').toUpperCase();
+  add('rating-target-consistency', upside === null || !((r === 'HOLD' && Math.abs(upside) > .3) || (r === 'SELL' && upside > .1) || (r === 'BUY' && upside < -.1)), false, 'The rating agrees with the target: HOLD targets sit within ±30% of price, SELL targets are not more than 10% above price and BUY targets are not more than 10% below it.');
   const inRange = i.target === null || i.scenarioRange === null || (i.target >= i.scenarioRange.low * .95 && i.target <= i.scenarioRange.high * 1.05);
   add('target-range', inRange, true, 'Stated target lies within the calculated bear–bull range.');
   add('target-source', i.target === null || i.calculatedTarget !== null, true, 'A stated target has a calculated valuation behind it.');

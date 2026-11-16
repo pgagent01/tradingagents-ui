@@ -16,7 +16,7 @@ export type TtmEvidence = {
   asOf: string | null; newestFiled: string | null; method: TtmFigure['method'];
   revenue: TtmFigure; operatingIncome: TtmFigure; netIncome: TtmFigure; operatingCashFlow: TtmFigure; capex: TtmFigure;
   /** Optional same-method TTM figures for the capex split and profit bridge; absent on older snapshots. */
-  extra?: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax', TtmFigure>>;
+  extra?: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax'|'propertySaleGains', TtmFigure>>;
   freeCashFlow: number | null; dilutedShares: { value: number; end: string; filed: string } | null;
   freshness: string; note: string;
 };
@@ -84,7 +84,7 @@ export function derivedOperatingIncome(revenue: TtmFigure, lines: { label: strin
     note: `No operating-income line is reported; calculated as revenue minus ${used.map(u => u.label.toLowerCase()).join(', ')} for the same period. Unreported operating lines would overstate it.` };
 }
 
-export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingIncome: string[]; netIncome: string[]; operatingCashFlow: string[]; capex: string[] }, cutoff: string, extraTags: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax', string[]>> = {}): TtmEvidence {
+export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingIncome: string[]; netIncome: string[]; operatingCashFlow: string[]; capex: string[] }, cutoff: string, extraTags: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax'|'propertySaleGains', string[]>> = {}): TtmEvidence {
   const revenue = ttmFigure(facts, tags.revenue, cutoff);
   const reportedOperating = ttmFigure(facts, tags.operatingIncome, cutoff);
   const operatingIncome = reportedOperating.value !== null ? reportedOperating

@@ -33,9 +33,16 @@ describe('industry norms', () => {
 });
 
 describe('bank excess-return valuation', () => {
-  it('values book 100, ROE 15%, ke 9%, growth 2.5% at 192.31 per share', () => {
+  it('fades ROE 15% to ke 9% over 10 years instead of a perpetual premium', () => {
     const v = bankValuation({ netIncome: 15, equity: 100, shares: 1, riskFree: 0.04, beta: 1, norm: null, price: 150 });
-    expect(v.costOfEquity).toBeCloseTo(0.09); expect(v.value).toBeCloseTo(100 + 100 * 0.06 / 0.065, 2); expect(v.priceToBook).toBeCloseTo(1.5);
+    expect(v.costOfEquity).toBeCloseTo(0.09); expect(v.priceToBook).toBeCloseTo(1.5);
+    expect(v.value!).toBeGreaterThan(120); expect(v.value!).toBeLessThan(100 + 100 * 0.06 / 0.065);
+  });
+  it('averages a one-off 28.7% ROE year with filed history and industry ROE', () => {
+    const v = bankValuation({ netIncome: 28.7, equity: 100, shares: 1, riskFree: 0.045, beta: 0.6, price: 100, annualRoes: [0.12, 0.14, 0.11, 0.15, 0.13],
+      norm: { industry: 'Insurance (Prop/Cas.)', roe: 0.12, effectiveDate: '2026-01-05' } as never });
+    expect(v.normalizedRoe!).toBeCloseTo((0.287 + 0.13 + 0.12) / 3, 4);
+    expect(v.value!).toBeLessThan(165);
   });
   it('is unavailable without positive equity', () => {
     expect(bankValuation({ netIncome: 15, equity: 0, shares: 1, riskFree: 0.04, beta: 1, norm: null, price: 150 }).status).toBe('unavailable');

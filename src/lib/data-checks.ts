@@ -43,4 +43,4 @@ export function dataChecksPrompt(c: DataChecks) {
 }
 
 /** Banks/insurers use book equity and ROE, so operating-income alignment failures do not withhold their targets. */
-export const withholdTargetFor = (c: DataChecks, method: string) => method === 'excess_return' ? c.checks.some(x => x.severity === 'failure' && x.usedByValuation && x.code !== 'ttm_alignment') : c.withholdValuation;
+export const withholdTargetFor = (c: DataChecks, method: string) => (method === 'excess_return' || method === 'ffo_nav') ? c.checks.some(x => x.severity === 'failure' && x.usedByValuation && x.code !== 'ttm_alignment') : c.withholdValuation;
