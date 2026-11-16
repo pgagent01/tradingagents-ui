@@ -15,3 +15,5 @@
 - Cover-page share fallback requires one unambiguous positive same-filing count/date; deduplicate identical facts and withhold differing dimensionless values rather than inventing class totals. Complete debt components recognize explicit zero commercial paper without assuming absent borrowings are zero.
 - Hot-cache reuse never extends provider quote freshness; bound descriptive snapshot retrieval to two rows at a time to stay within six outbound connections.
 - Capex split (upkeep ≈ D&A) and the operating→net profit bridge inform analysts and the bear case but never raise base value; unexplained remainders stay labeled.
+- Industry norms come from a dated, versioned Damodaran snapshot mapped by SEC SIC plurality; they set margin fade targets and flags only, are withheld for analysis dates before the snapshot, and never replace reported figures.
+- Banks/insurers use the pure excess-return model with ROE blended toward the dated industry norm; a deterministic report review (no AI call) withholds model targets unsupported by the calculated range.
