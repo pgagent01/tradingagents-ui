@@ -204,4 +204,7 @@
 - [~] 4 edgartools-style standard operating-line map added; per-figure ID citation audit still open
 - [x] 5 Automatic report review
 - [x] 6 Daily refresh job 06:15 UTC (SEC filings stale-marking, watchlist analyst views, Damodaran due check) + health on Data Flow page
-- [ ] 7 Paid comparison runs (needs approval)
+- [x] 7 New-stock runs 16 Nov: MRK, O, TRV (x2), CAT
+- [ ] REIT FFO/NAV valuation (Realty Income gets no target)
+- [ ] Debt for filers using company-specific tags (Caterpillar) — needs filing-level extraction
+- [ ] Insurer ROE normalisation: TRV target $624 vs $401 price looks high (trailing ROE from a strong year)
