@@ -19,6 +19,11 @@ Goal: close the weak areas from the four-stock comparison (targets far below Wal
 - Keep the existing "no target, explained" path for pre-revenue biotech.
 
 ## 4. Traceable figures (edgartools approach)
+edgartools (MIT, Python) cannot run inside the app, so its methods are ported, not installed:
+- Its standardised statement mapping (many company-specific XBRL tags -> one label like "Revenue") to cut missing or mislabeled figures across companies.
+- Its handling of amended filings, duplicate facts and dimensional (segment) facts, so the newest non-segment value is chosen consistently.
+- Its 8-K / earnings-release parsing as a reference for the existing filing bridge.
+- Optionally, use it offline as a test oracle: compare our extracted figures for the fixed stocks against edgartools output and record the snapshot as regression data.
 - Label every SEC figure with concept, period, form, accession and filed date (standardised statement labels).
 - Code computes all numbers (VYNN rule); the AI may only quote figures from a supplied, ID-tagged figure list.
 - Strengthen the figure audit to match numbers to figure IDs, report the untraceable count, and flag them in the report. Target: under 3 per report.

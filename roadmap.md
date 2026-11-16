@@ -193,3 +193,4 @@
 - [x] Finnhub: owner-encrypted personal key slot in Settings; rating-count cross-check (off by default)
 - [ ] Capex upkeep/growth split; wider peer fallback; live 4-stock comparison (needs paid runs)
 - [x] Analyst rating visual: Buy/Hold/Sell totals + price range
+- [ ] Port edgartools statement-mapping approach into SEC figure extraction (in plan step 4)
