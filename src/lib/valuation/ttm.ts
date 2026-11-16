@@ -13,6 +13,8 @@ export type TtmFigure = {
 export type TtmEvidence = {
   asOf: string | null; newestFiled: string | null; method: TtmFigure['method'];
   revenue: TtmFigure; operatingIncome: TtmFigure; netIncome: TtmFigure; operatingCashFlow: TtmFigure; capex: TtmFigure;
+  /** Optional same-method TTM figures for the capex split and profit bridge; absent on older snapshots. */
+  extra?: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax', TtmFigure>>;
   freeCashFlow: number | null; dilutedShares: { value: number; end: string; filed: string } | null;
   freshness: string; note: string;
 };
@@ -51,7 +53,7 @@ export function ttmFigure(facts: Row, names: string[], cutoff = '9999-12-31'): T
   return none('No annual SEC period available to anchor a trailing-twelve-month figure.');
 }
 
-export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingIncome: string[]; netIncome: string[]; operatingCashFlow: string[]; capex: string[] }, cutoff: string): TtmEvidence {
+export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingIncome: string[]; netIncome: string[]; operatingCashFlow: string[]; capex: string[] }, cutoff: string, extraTags: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax', string[]>> = {}): TtmEvidence {
   const revenue = ttmFigure(facts, tags.revenue, cutoff);
   const operatingIncome = ttmFigure(facts, tags.operatingIncome, cutoff);
   const netIncome = ttmFigure(facts, tags.netIncome, cutoff);
@@ -66,6 +68,7 @@ export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingInco
   const newestFiled = all.flatMap(f => [f.inputs.ytd?.filed, f.inputs.annual?.filed]).filter((x): x is string => !!x).sort().at(-1) ?? null;
   const ageDays = asOf ? Math.round((t(`${cutoff === '9999-12-31' ? new Date().toISOString().slice(0, 10) : cutoff}T00:00:00Z`) - t(asOf)) / DAY) : null;
   return {
+    extra: Object.fromEntries(Object.entries(extraTags).map(([k, names]) => [k, ttmFigure(facts, names ?? [], cutoff)]).filter(([, f]) => (f as TtmFigure).value !== null)),
     asOf, newestFiled, method: revenue.method, revenue, operatingIncome, netIncome, operatingCashFlow, capex, freeCashFlow,
     dilutedShares: s ? { value: Number(s['val']), end: String(s['end']), filed: String(s['filed']) } : null,
     freshness: asOf ? `Newest period ends ${asOf}${newestFiled ? `, filed ${newestFiled}` : ''}${ageDays !== null ? ` (${ageDays} days before the analysis date)` : ''}.` : 'No dated trailing-twelve-month period available.',
