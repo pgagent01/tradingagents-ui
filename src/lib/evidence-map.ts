@@ -14,6 +14,7 @@ function rows(stateFor:StateFor):EvidenceMapRow[]{
   {source:'Polymarket',fields:'Event probabilities, liquidity, dates and links',agents:['sentiment','news','risk','debate','synthesis'],state:stateFor('polymarket'),policy:'Crowd probabilities, not verified forecasts; current quotes excluded from historical runs.'},
   {source:'GDELT / SEC releases / FINRA / World Bank',fields:'Dated news/tone, tagged earnings facts/excerpts, short-interest coverage, macro observations',agents:['fundamentals','macro','news','sentiment','technical','risk','debate','synthesis'],state:stateFor('free'),policy:'Each role receives relevant subsets only; unavailable datasets remain explicit. GDELT tone is not social sentiment.'},
   {source:'Calculated valuation / verified comparable inputs',fields:'Scenarios, assumptions, rates, peer inputs and limitations',agents:['fundamentals','risk','debate','synthesis'],state:stateFor('valuation'),policy:'Derived values labelled; descriptive post-report peer table is not an input to valuation.'},
+  {source:'Wall Street analyst views: Yahoo / enabled FMP / enabled Finnhub',fields:'Consensus average/median/high/low targets, analyst count, rating, monthly rating counts, dated firm rating and target changes with source links',agents:['fundamentals','news','sentiment','risk','debate','synthesis'],state:stateFor('analysts'),policy:'Outside opinion, never valuation input or our target. Historical runs keep only firm actions dated on or before the cutoff. Provider disagreements shown, not averaged.'},
   {source:'Massive',fields:'Ticker identity and previous-day bar access check only',agents:[],state:stateFor('massive'),policy:'No provider facts sent to analysts, cached or exported until usage rights confirmed.'},
   {source:'Direct social posts',fields:'None',agents:[],state:stateFor('social'),policy:'No connected social feed; news proxies never relabelled as measured social opinion.'},
  ];
@@ -31,6 +32,7 @@ export function researchDataMap(e:ResearchEvidence):EvidenceMapRow[]{
    case 'polymarket':return e.predictions.status;
    case 'free':return 'source_specific';
    case 'valuation':return e.valuation?.status??'conditional_available';
+   case 'analysts':return e.analystViews?.status??'unavailable';
    case 'massive':return 'pilot_only';
    default:return 'unavailable';
   }
@@ -49,6 +51,7 @@ export function generalDataMap():EvidenceMapRow[]{
    case 'polymarket':return 'Free; current-date runs only';
    case 'free':return 'Free; per-dataset coverage varies';
    case 'valuation':return 'Calculated when financial inputs pass quality checks';
+   case 'analysts':return 'Yahoo free; FMP and Finnhub need your own enabled key';
    case 'massive':return 'Pilot access check only';
    default:return 'Not connected';
   }

@@ -64,7 +64,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const completed=new Map((previous.data??[]).filter(o=>o.status==='completed').map(o=>[o.agent_id,o]));
   const freshness=resumeEvidencePolicy(run.analysis_date,run.started_at,run.resume_count);
   if(freshness.refresh){
-    const invalidated=await sb.from('research_data_cache').update({expires_at:new Date(0).toISOString()}).eq('user_id',userId).in('provider',['sec-fundamentals','news-evidence','sec-earnings','gdelt','finra-short','worldbank','valuation-peers','stocks','fred','polymarket']);
+    const invalidated=await sb.from('research_data_cache').update({expires_at:new Date(0).toISOString()}).eq('user_id',userId).in('provider',['sec-fundamentals','news-evidence','sec-earnings','gdelt','finra-short','worldbank','valuation-peers','stocks','fred','polymarket','analyst-views']);
     if(invalidated.error)throw new SafeAiError(503,'Stale evidence could not be refreshed safely. Finished steps are still saved.');
   }
   const summaries:string[]=[];let credits=0;let creditsKnown=true;let totalIn=0,totalOut=0,totalCost=0;
@@ -90,11 +90,11 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const stockSnapshot=stockData?{...stockData,candles:technical?.candles??[]}:null;
   if(fundamentals){const rec=reconcileWithSnapshot(fundamentals.annual.at(-1),stockData,fundamentals.currency);if(rec.length)fundamentals.reconciliation=rec;}
   const parsedPreferences=valuationPreferencesSchema.safeParse(sectionObject(run.model_config)['valuationPreferences']);
-  const preferences=parsedPreferences.success?parsedPreferences.data:{overrides:{},peers:[],excludedPeers:[]};
+  const preferences=parsedPreferences.success?parsedPreferences.data:{overrides:{},peers:[],excludedPeers:[],growthMode:'blend' as const};
   const automaticComparables=await getComparables(sb,userId,run.ticker,run.analysis_date);
   const comparables=run.analysis_date===new Date().toISOString().slice(0,10)?await customPeers(automaticComparables,run.ticker,run.analysis_date,preferences):automaticComparables;
   const rates=await valuationRates(sb,userId,run.analysis_date,macro,stockData);
-  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
+  let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides,growthMode:preferences.growthMode});
   const checks=dataChecks(fundamentals,run.analysis_date);
   if(checks.withholdValuation&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
   const references=await getReferenceEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
@@ -102,7 +102,9 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const companyContext=run.analysis_date===new Date().toISOString().slice(0,10)?await companyProfile(sb,userId,run.ticker).catch(()=>null):null;
   const unified=unifiedNews(news,references,run.ticker);
   const providerSettings=await dataProviderSettings(sb,userId).catch(()=>null);
-  const coreEvidence={macro,predictions,news:unified,fundamentals,free,valuation,dataChecks:checks,references,companyContext};
+  const {getAnalystViews}=await import('@/lib/analyst-views.server');
+  const analystViews=await getAnalystViews(sb,userId,run.ticker,run.analysis_date).catch(()=>null);
+  const coreEvidence={macro,predictions,news:unified,fundamentals,free,valuation,dataChecks:checks,references,companyContext,analystViews};
   const evidence={...coreEvidence,dataMap:researchDataMap(coreEvidence)};
   const technicalEvents=technicalNewsEvents(unified,technical?.firstObservation??null,technical?.lastObservation??null);
   const selections:Record<string,string>={};
@@ -110,7 +112,7 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
     if(agent!=='fundamentals'||valuation.comparables.status==='available')return;
     const checked=await verifyModelPeers(valuation.comparables,text,run.ticker,run.analysis_date,model);
     const selected={...checked,peers:checked.peers.filter(p=>!preferences.excludedPeers.includes(p.ticker))};
-    valuation=valuationEvidence(fundamentals,selected,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
+    valuation=valuationEvidence(fundamentals,selected,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides,growthMode:preferences.growthMode});
     evidence.valuation=valuation;
   }
   const evidenceEvent=await sb.from('research_events').insert({run_id:run.id,event_type:'data',message:`FRED: ${macro.status} (${macro.metrics.length} series). Polymarket: ${predictions.status} (${predictions.markets.length} markets). Technical: ${technical?.observations??0} daily bars; ${technical?.chartSource??'unavailable'}; ${technical?.cached?'cached':'retrieved'}. News: ${news.status} (${news.filings.length} SEC filings, ${news.headlines.length} headlines${news.cached?', cached':''}). SEC fundamentals: ${fundamentals?.status??'unavailable'} (${fundamentals?.annual.length??0} fiscal years${fundamentals?.latestQuarter?' + latest quarter':''}). GDELT: ${free.gdelt.status} (${free.gdelt.items.length} articles). Earnings releases: ${free.earningsReleases.items.length}. FINRA short interest: ${free.shortInterest.status}. World Bank: ${free.globalMacro.status}. Social: unavailable.`});
@@ -193,6 +195,10 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const synthesisEnd=await sb.from('research_events').insert({run_id:run.id,agent_id:'synthesis',event_type:'completed',message:'Final synthesis completed.'});if(synthesisEnd.error)throw synthesisEnd.error;emit({type:'agent',agent:'synthesis',status:'completed'});
   const targetReview=reviewCalculatedTarget(final.object.price_target,valuation,stockSnapshot?.price);
+  const {copiesConsensus,analystGap}=await import('@/lib/analyst-views');
+  if(copiesConsensus(targetReview.target,valuation.priceTarget,analystViews)){targetReview.warnings.push({code:'target_copies_analyst_consensus',section:'final_synthesis',message:'The model target matched the Wall Street analyst average without a calculated valuation behind it, so it was withheld.',evidence:`Model target ${targetReview.target}; no calculated target.`});targetReview.target=null;}
+  const gap=analystGap(targetReview.target,analystViews);
+  if(gap)targetReview.warnings.push({code:'target_far_from_analyst_consensus',section:'final_synthesis',message:gap.message,evidence:`Gap ${gap.gapPct}% vs analyst average; descriptive only, target unchanged.`});
   const analysisClose=technical?.candles.filter(c=>new Date(c.time*1000).toISOString().slice(0,10)<=run.analysis_date).at(-1);
   const scoringAnchor={date:run.analysis_date,price:analysisClose?.close??null,priceDate:analysisClose?new Date(analysisClose.time*1000).toISOString().slice(0,10):null,target:targetReview.target,horizonMonths:12,bear:valuation.intrinsic?.scenarios.find(c=>c.name==='Bear')?.target??null,bull:valuation.intrinsic?.scenarios.find(c=>c.name==='Bull')?.target??null,source:technical?.chartSource??null};
   const reviewTexts={...Object.fromEntries(Object.entries(storedAnalysts).map(([a,v])=>[a,v.content])),executive_summary:final.object.executive_summary,technical_analysis:final.object.technical_analysis,fundamental_analysis:final.object.fundamental_analysis,final_synthesis:final.object.final_synthesis};

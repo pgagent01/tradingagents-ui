@@ -22,5 +22,5 @@ export const getValuation = createServerFn({ method: 'POST' }).middleware([requi
     const stock=await cachedStockData(context.supabase,context.userId,data.ticker,'1Y','annual').catch(()=>null);
     const macro=await getFredEvidence(context.supabase,context.userId,today,process.env['API_KEY_ENCRYPTION_SECRET'],new AbortController().signal);
     const rates=await valuationRates(context.supabase,context.userId,today,macro,stock);
-    return valuationEvidence(f, comps, stock?.price??null, today,{marketCap:marketCapOrDerived(stock?.marketCap,stock?.price,f?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides});
+    return valuationEvidence(f, comps, stock?.price??null, today,{marketCap:marketCapOrDerived(stock?.marketCap,stock?.price,f?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides,growthMode:preferences.growthMode});
   });

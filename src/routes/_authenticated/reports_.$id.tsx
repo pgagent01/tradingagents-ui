@@ -2,6 +2,7 @@ import { ReportFinancialCharts, ReportScenarioChart } from '@/components/report-
 import { ReportPeerSnapshot } from '@/components/report-peer-snapshot';
 import { ReportQuality } from '@/components/report-quality';
 import { ReportValuation } from '@/components/report-valuation';
+import { WallStreetView } from '@/components/wall-street-view';
 import { ReportScorecard } from '@/components/report-scorecard';
 import { ReportCalibration } from '@/components/report-calibration';
 import {DataFreshness} from '@/components/data-freshness';
@@ -53,6 +54,7 @@ function ReportDetail() {
     <section className="space-y-3 border-t border-border pt-4"><h2 className="text-xl font-semibold">Financial Snapshot</h2><ReportFinancialCharts sections={r.sections}/>{financial.length?<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 font-medium">Metric</th><th className="py-2 text-right font-medium">Reported value</th></tr></thead><tbody>{financial.map((f,i)=><tr key={i} className="border-b border-border"><td className="py-2 capitalize"><MetricLabel label={f.metric}/></td><td className="py-2 text-right font-mono">{f.value}</td></tr>)}</tbody></table></div>:<p className="text-sm text-muted-foreground">No financial figures were supplied. Values are never inferred.</p>}</section>
     <ReportQuality sections={r.sections} summary={r.executive_summary??''} analysisDate={run.analysis_date}/><DataFreshness date={r.created_at} origin="Saved report · not live research"/><ReportEvidence value={s['external_evidence']} />
     <ReportValuation value={s['valuation']}/>
+    <WallStreetView value={sectionObject(s['external_evidence'])['analystViews']} price={typeof sectionObject(s['stock_snapshot'])['price']==='number'?sectionObject(s['stock_snapshot'])['price'] as number:null} ourTarget={r.price_target==null?null:Number(r.price_target)}/>
     <ReportScenarioChart valuation={s['valuation']} price={typeof sectionObject(s['valuation'])['price']==='number'?sectionObject(s['valuation'])['price'] as number:null}/>
     {!run.is_demo&&<ReportPeerSnapshot id={r.id}/>}
     {!run.is_demo&&<ReportScorecard id={r.id}/>}

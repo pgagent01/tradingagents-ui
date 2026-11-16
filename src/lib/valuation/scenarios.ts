@@ -2,7 +2,19 @@ import type { FundamentalEvidence } from '@/lib/research-evidence';
 import { forecastScenario, sensitivityGrid, type ForecastAssumptions } from './forecast';
 import type { ForecastOverrides } from './preferences';
 export type RateContext = { riskFree: number; riskFreeDate: string | null; riskFreeSource: string; beta: number; betaObservations: number; betaSource: string };
-export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: number | null, rates: RateContext,overrides:ForecastOverrides={}) {
+export type GrowthMode='blend'|'recent'|'fixed';
+/** Default growth from filed annual revenue: fixed caps latest growth at 0–15%; recent caps it at −10–35%; blend averages latest and 3-year CAGR, capped at 0–30%. */
+export function defaultGrowth(annual:{revenue:number|null;revenueGrowthPct:number|null}[],mode:GrowthMode='blend'):{growth:number;label:string}{
+  const latest=annual.at(-1)?.revenueGrowthPct;const l=latest===null||latest===undefined?null:latest/100;
+  const a=annual.at(-1)?.revenue,b=annual.at(-4)?.revenue;const cagr=a&&b&&a>0&&b>0?Math.pow(a/b,1/3)-1:null;
+  const clamp=(x:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,x));
+  if(l===null&&cagr===null)return {growth:.05,label:'labeled 5% default (no filed revenue growth)'};
+  if(mode==='fixed')return l===null?{growth:.05,label:'labeled 5% default'}:{growth:clamp(l,0,.15),label:'latest annual revenue growth capped at 0–15% (fixed setting)'};
+  if(mode==='recent')return {growth:clamp(l??cagr!,-.1,.35),label:`latest annual revenue growth${l===null?' (3-year CAGR used; latest unavailable)':''}, limited to −10–35%`};
+  const vals=[l,cagr].filter((x):x is number=>x!==null);
+  return {growth:clamp(vals.reduce((x,y)=>x+y,0)/vals.length,0,.3),label:`blend of latest annual growth${l!==null?` ${(l*100).toFixed(1)}%`:''} and 3-year revenue CAGR${cagr!==null?` ${(cagr*100).toFixed(1)}%`:' (unavailable)'}, limited to 0–30%`};
+}
+export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: number | null, rates: RateContext,overrides:ForecastOverrides={},growthMode:GrowthMode='blend') {
   const t=f?.ttm,b=f?.valuationBalance;
   const unavailable = (reason: string) => ({status:'unavailable' as const,reason,scenarios:[] as ReturnType<typeof forecastScenario>[],sensitivity:[] as ReturnType<typeof sensitivityGrid>,notes:[] as string[]});
   if (!t || t.revenue.value===null || t.revenue.value<=0 || t.operatingIncome.value===null || t.operatingIncome.value<=0 || t.revenue.periodEnd!==t.operatingIncome.periodEnd) return unavailable('Positive, period-aligned revenue and operating income are required for operating-company DCF.');
@@ -11,8 +23,7 @@ export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: num
   const coverOk=Boolean(b.shares.tag?.startsWith('dei:'))&&t.revenue.periodEnd!==null&&b.shares.end>=t.revenue.periodEnd&&(Date.parse(b.shares.end)-Date.parse(t.revenue.periodEnd))/86400000<=75;
   if (b.shares.end!==t.revenue.periodEnd&&!coverOk) return unavailable('Revenue and equity-conversion share-count periods do not align.');
   const currentMargin=t.operatingIncome.value/t.revenue.value;
-  const historical=f?.annual.at(-1)?.revenueGrowthPct;
-  const growth=historical!==null && historical!==undefined ? Math.max(0,Math.min(.15,historical/100)) : .05;
+  const auto=defaultGrowth(f?.annual??[],growthMode);const growth=auto.growth;
   const common: ForecastAssumptions={...overrides,growth:overrides.growth??growth,margin:overrides.margin??currentMargin,taxRate:overrides.taxRate??.25,reinvestment:overrides.reinvestment??.4,terminalGrowth:overrides.terminalGrowth??.025,riskFree:rates.riskFree,beta:rates.beta,equityPremium:.05,creditSpread:.02,dividendsPerShare:overrides.dividendsPerShare??0};
   const input={revenue:t.revenue.value,debt:b.debt.value,cash:b.cash.value,shares:b.shares.value,marketCap,assumptions:common};
   const cases=[{name:'Bear',assumptions:{...common,growth:Math.max(-.2,common.growth-.04),margin:common.margin*.8,reinvestment:Math.min(.95,common.reinvestment+.1),creditSpread:.03,terminalGrowth:Math.max(0,common.terminalGrowth-.005)}},{name:'Base',assumptions:common},{name:'Bull',assumptions:{...common,growth:Math.min(.5,common.growth+.04),margin:Math.min(.8,common.margin*1.2),reinvestment:Math.max(0,common.reinvestment-.1),creditSpread:.015,terminalGrowth:Math.min(.05,common.terminalGrowth+.005)}}];
@@ -20,7 +31,7 @@ export function intrinsicScenarios(f: FundamentalEvidence | null, marketCap: num
   const base=scenarios.find(c=>c.name==='Base');
   return {status:base?.value!==null && base?.value!==undefined ? 'estimated' as const : 'unavailable' as const,reason:base?.reason??null,scenarios,sensitivity:base?sensitivityGrid(input,base):[],notes:[...(Object.keys(overrides).length?[`Owner-entered estimates override defaults: ${JSON.stringify(overrides)}. These are assumptions, not verified reported figures.`, 'Separate cash-flow ratios, dilution and equity adjustments apply only when explicitly supplied; unspecified items keep the disclosed default limitations.']:[]),
     'Model estimates, not management guidance or analyst consensus. Five-year constant growth/margin and reinvestment scenarios; no LLM-generated assumptions.',
-    `Base growth ${ (common.growth*100).toFixed(1)}%: ${overrides.growth!==undefined?'owner-entered estimate':'latest annual revenue growth capped at 0–15%, or a labeled 5% default if unavailable'}. Base operating margin ${overrides.margin!==undefined?'is an owner-entered estimate':'uses aligned SEC TTM EBIT/revenue'}.`,
+    `Base growth ${ (common.growth*100).toFixed(1)}%: ${overrides.growth!==undefined?'owner-entered estimate':auto.label}. Base operating margin ${overrides.margin!==undefined?'is an owner-entered estimate':'uses aligned SEC TTM EBIT/revenue'}.`,
     'Defaults: tax 25%, equity premium 5%, base credit spread 2%, terminal growth 2.5%, reinvestment 40% of after-tax EBIT (bear 50%, bull 30%). Net reinvestment substitutes for separate D&A, capex and working-capital forecasts; it is not measured historical FCFF.',
     `Risk-free ${ (rates.riskFree*100).toFixed(2)}% · ${rates.riskFreeSource}${rates.riskFreeDate?` dated ${rates.riskFreeDate}`:''}; beta ${rates.beta.toFixed(2)} · ${rates.betaSource} (${rates.betaObservations} return observations).`,
     `Enterprise DCF subtracts net debt once; ${common.annualDilution!==undefined?`owner-estimated annual dilution ${(common.annualDilution*100).toFixed(2)}% applied over five years`:'uses period-end common shares without forecast dilution'}. ${common.equityAdjustments!==undefined?`Owner-entered additional equity deductions USD ${common.equityAdjustments}`:'Lease liabilities, minority interests and preferred equity excluded; omissions may overstate value'}.`,

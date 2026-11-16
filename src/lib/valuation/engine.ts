@@ -13,7 +13,7 @@ export type ValuationEvidence = {
   intrinsic?: ReturnType<typeof intrinsicScenarios>;
 };
 /** Relative value is NOT intrinsic value or a forecast of a price twelve months from now. */
-export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string, context?: {marketCap: number | null; rates: RateContext;overrides?:ForecastOverrides}): ValuationEvidence {
+export function valuationEvidence(f: FundamentalEvidence | null, comps: ComparableEvidence, price: number | null, analysisDate: string, context?: {marketCap: number | null; rates: RateContext;overrides?:ForecastOverrides;growthMode?:'blend'|'recent'|'fixed'}): ValuationEvidence {
   const ttm = f?.ttm, recent = f?.latestQuarter ?? f?.annual.at(-1);
   const shares = ttm?.dilutedShares?.value ?? null;
   const earningsAligned = ttm?.netIncome.periodEnd != null && ttm.netIncome.periodEnd === ttm.dilutedShares?.end;
@@ -30,7 +30,7 @@ export function valuationEvidence(f: FundamentalEvidence | null, comps: Comparab
   const limitations = [selection.reason, missingByMethod[selection.method]??'Intrinsic valuation awaits explicit growth, margin, reinvestment and discount-rate scenarios; reported operating cash flow minus capex is not automatically FCFF.', 'A 12-month target awaits a documented roll-forward rate and dividend assumption; peer-relative value is not a price forecast.'];
   if (shares === null || shares <= 0) limitations.push('Positive dated diluted share count unavailable.');
   if (!aligned) limitations.push('Earnings and share-count periods do not align; implied values withheld.');
-  const intrinsic=selection.method==='dcf' && context ? intrinsicScenarios(f,context.marketCap,context.rates,context.overrides) : undefined;
+  const intrinsic=selection.method==='dcf' && context ? intrinsicScenarios(f,context.marketCap,context.rates,context.overrides,context.growthMode) : undefined;
   const base=intrinsic?.scenarios.find(s=>s.name==='Base');
   const estimated=intrinsic?.status==='estimated';
   const implausible=estimated && price!==null && price>0 && base?.value!==null && base?.value!==undefined && (base.value<price*0.25 || base.value>price*4);

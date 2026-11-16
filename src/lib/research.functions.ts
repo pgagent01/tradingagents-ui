@@ -30,7 +30,7 @@ export const createAnalysis = createServerFn({ method: 'POST' }).middleware([req
     if(error) throw error;
     for(const provider of providers) assertCanRunResearch({ provider: normalizeProvider(provider), hasOwnApiKey: (keys ?? []).some(k => k.provider === provider) });
   }
-  const valuationPreferences=data.date===new Date().toISOString().slice(0,10)?await readValuationPreferences(context.supabase,context.userId,ticker):{overrides:{},peers:[],excludedPeers:[]};
+  const valuationPreferences=data.date===new Date().toISOString().slice(0,10)?await readValuationPreferences(context.supabase,context.userId,ticker):{overrides:{},peers:[],excludedPeers:[],growthMode:'blend' as const};
   const { data: run, error } = await context.supabase.from('research_runs').insert({ user_id: context.userId, ticker, analysis_date: data.date, status: 'pending', research_depth: data.depth,lookback_days:data.lookback, selected_agents: data.agents, model_config: { roles: data.roles,preset:data.preset, pricing_source: 'user_configured_usd_per_million',valuationPreferences }, lovable_credits:demo?0:null,credit_basis:demo?'demo':null,is_demo: demo }).select('id').single();
   if(error) throw error;
   return { id: run.id };

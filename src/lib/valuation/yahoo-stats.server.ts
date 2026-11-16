@@ -66,3 +66,11 @@ async function loadStats(ticker: string): Promise<YahooStats | null> {
 export function ratioMismatch(ours: number | null | undefined, theirs: number | null, tol = 0.15): boolean {
   return typeof ours === 'number' && theirs !== null && theirs !== 0 && Math.abs(ours / theirs - 1) > tol;
 }
+
+/** Raw quoteSummary modules for other shared helpers (analyst views); null when Yahoo is unavailable. */
+export async function yahooQuoteSummary(ticker: string, modules: string): Promise<Record<string, unknown> | null> {
+  const s = await auth(); if (!s) return null;
+  const r = await fetch(`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yahooSymbol(ticker))}?modules=${modules}&crumb=${encodeURIComponent(s.crumb)}`, { headers: { ...UA, Cookie: s.cookie }, signal: AbortSignal.timeout(6000) }).catch(() => null);
+  if (!r || !r.ok) { if (r?.status === 401) session = null; return null; }
+  return ((await r.json().catch(() => null)) as { quoteSummary?: { result?: Record<string, unknown>[] } } | null)?.quoteSummary?.result?.[0] ?? null;
+}

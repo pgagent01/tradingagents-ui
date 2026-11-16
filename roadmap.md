@@ -184,3 +184,12 @@
 - [ ] DCF target well below price: driven by capped 15% growth and TTM capex; needs user decision on default assumptions
 - [x] Repeated headline: same article listed in separate per-analyst evidence sections, not a duplicate event
 - [x] Latest figures: report uses newest SEC 10-Q (filed 2026-10-29, period to 2026-09-30)
+
+## Wall Street analyst targets (plan 2026-11-15)
+- [x] Shared analyst views (Yahoo primary, FMP backup) with sources, dates, cache
+- [x] Pass role-specific analyst views to agents; copied-target check; gap note
+- [x] Wall Street view panel in report + stock page; Markdown export; data map row
+- [x] Growth setting: blend recent results (default), fixed cap option
+- [x] Finnhub: owner-encrypted personal key slot in Settings; rating-count cross-check (off by default)
+- [ ] Capex upkeep/growth split; wider peer fallback; live 4-stock comparison (needs paid runs)
+- [x] Analyst rating visual: Buy/Hold/Sell totals + price range

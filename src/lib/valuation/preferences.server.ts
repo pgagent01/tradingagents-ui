@@ -2,7 +2,7 @@ import { readDataCache,writeDataCache,type EvidenceClient } from '@/lib/data-cac
 import { valuationPreferencesSchema,type ValuationPreferences } from './preferences';
 import { secIndustry,secYahooPeer } from './peer-fallback.server';
 import { eligiblePeers,type ComparableEvidence } from './comparables';
-export async function readValuationPreferences(sb:EvidenceClient,userId:string,ticker:string):Promise<ValuationPreferences>{const stored=await readDataCache(sb,userId,'valuation-preferences',ticker);const parsed=valuationPreferencesSchema.safeParse(stored?.payload);return parsed.success?parsed.data:{overrides:{},peers:[],excludedPeers:[]};}
+export async function readValuationPreferences(sb:EvidenceClient,userId:string,ticker:string):Promise<ValuationPreferences>{const stored=await readDataCache(sb,userId,'valuation-preferences',ticker);const parsed=valuationPreferencesSchema.safeParse(stored?.payload);return parsed.success?parsed.data:{overrides:{},peers:[],excludedPeers:[],growthMode:'blend' as const};}
 export async function saveValuationPreferences(sb:EvidenceClient,userId:string,ticker:string,value:ValuationPreferences){if(!await writeDataCache(sb,userId,'valuation-preferences',ticker,value,10*365*86400000))throw new Error('Valuation assumptions could not be saved.');}
 export async function customPeers(comps:ComparableEvidence,ticker:string,date:string,prefs:ValuationPreferences){
   const filtered={...comps,peers:comps.peers.filter(p=>!prefs.excludedPeers.includes(p.ticker))};
