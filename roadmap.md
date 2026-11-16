@@ -195,13 +195,13 @@
 - [x] Analyst rating visual: Buy/Hold/Sell totals + price range
 - [ ] Port edgartools statement-mapping approach into SEC figure extraction (in plan step 4)
 - [x] Plan improvements ticker-independent (SIC-driven); [ ] verify on untested stocks with paid runs
-- [ ] Scheduled refresh job for industry norms, SEC filings, analyst views (plan step 6)
+- [x] Scheduled refresh job (plan step 6)
 
 ## Report-quality plan (16 Nov)
 - [x] 1 Industry-norm margin fades (Damodaran Jan 2026)
 - [x] 2 Bank/insurer excess-return valuation
-- [~] 3 Mature-company coverage: fades apply; Pfizer-type missing operating income still blocks DCF
-- [ ] 4 Figure IDs / edgartools-style statement mapping
+- [x] 3 Mature-company coverage: operating income derived from reported expense lines when no line is filed (labelled, guarded)
+- [~] 4 edgartools-style standard operating-line map added; per-figure ID citation audit still open
 - [x] 5 Automatic report review
-- [ ] 6 Scheduled refreshes (SEC filings, analyst views, yearly Damodaran)
+- [x] 6 Daily refresh job 06:15 UTC (SEC filings stale-marking, watchlist analyst views, Damodaran due check) + health on Data Flow page
 - [ ] 7 Paid comparison runs (needs approval)

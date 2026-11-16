@@ -9,6 +9,8 @@ export type TtmFigure = {
   periodEnd: string | null;
   inputs: { annual: TtmInput | null; ytd: TtmInput | null; priorYtd: TtmInput | null };
   note?: string | undefined;
+  /** Set when the figure is calculated from separately reported same-period lines, never from pre-tax income. */
+  derivedFrom?: string[] | undefined;
 };
 export type TtmEvidence = {
   asOf: string | null; newestFiled: string | null; method: TtmFigure['method'];
@@ -53,9 +55,40 @@ export function ttmFigure(facts: Row, names: string[], cutoff = '9999-12-31'): T
   return none('No annual SEC period available to anchor a trailing-twelve-month figure.');
 }
 
+/** Standard operating-expense lines (edgartools-style concept map). Required lines must all be reported. */
+export const OPERATING_LINES: { label: string; tags: string[]; required: boolean }[] = [
+  { label: 'Cost of revenue', tags: ['CostOfGoodsAndServicesSold', 'CostOfRevenue', 'CostOfGoodsSold'], required: true },
+  { label: 'Selling, general & administrative', tags: ['SellingGeneralAndAdministrativeExpense'], required: true },
+  { label: 'Research & development', tags: ['ResearchAndDevelopmentExpense', 'ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost'], required: false },
+  { label: 'Acquired in-process R&D', tags: ['ResearchAndDevelopmentInProcess'], required: false },
+  { label: 'Amortization of intangibles', tags: ['AmortizationOfIntangibleAssets'], required: false },
+  { label: 'Restructuring', tags: ['RestructuringCharges', 'RestructuringSettlementAndImpairmentProvisions'], required: false },
+];
+/**
+ * Operating income when the filer reports no operating-income line: revenue minus reported operating-expense lines,
+ * all for the same TTM period. Withheld when a required line is missing, the result exceeds revenue,
+ * or it differs from pre-tax income by more than 30% of revenue (a sign of unreported lines).
+ */
+export function derivedOperatingIncome(revenue: TtmFigure, lines: { label: string; figure: TtmFigure; required: boolean }[], pretax: TtmFigure | null): TtmFigure | null {
+  if (revenue.value === null || revenue.value <= 0) return null;
+  const used: { label: string; value: number }[] = [];
+  for (const l of lines) {
+    const aligned = l.figure.value !== null && l.figure.periodEnd === revenue.periodEnd;
+    if (!aligned) { if (l.required) return null; continue; }
+    used.push({ label: l.label, value: l.figure.value as number });
+  }
+  const value = revenue.value - used.reduce((a, b) => a + b.value, 0);
+  if (value >= revenue.value) return null;
+  if (pretax?.value != null && pretax.periodEnd === revenue.periodEnd && Math.abs(value - pretax.value) > 0.3 * revenue.value) return null;
+  return { value, method: revenue.method, periodEnd: revenue.periodEnd, inputs: revenue.inputs, derivedFrom: used.map(u => u.label),
+    note: `No operating-income line is reported; calculated as revenue minus ${used.map(u => u.label.toLowerCase()).join(', ')} for the same period. Unreported operating lines would overstate it.` };
+}
+
 export function ttmEvidence(facts: Row, tags: { revenue: string[]; operatingIncome: string[]; netIncome: string[]; operatingCashFlow: string[]; capex: string[] }, cutoff: string, extraTags: Partial<Record<'depreciation'|'nonOperating'|'investmentGains'|'interestExpense'|'pretaxIncome'|'incomeTax', string[]>> = {}): TtmEvidence {
   const revenue = ttmFigure(facts, tags.revenue, cutoff);
-  const operatingIncome = ttmFigure(facts, tags.operatingIncome, cutoff);
+  const reportedOperating = ttmFigure(facts, tags.operatingIncome, cutoff);
+  const operatingIncome = reportedOperating.value !== null ? reportedOperating
+    : derivedOperatingIncome(revenue, OPERATING_LINES.map(l => ({ label: l.label, required: l.required, figure: ttmFigure(facts, l.tags, cutoff) })), extraTags.pretaxIncome ? ttmFigure(facts, extraTags.pretaxIncome, cutoff) : null) ?? reportedOperating;
   const netIncome = ttmFigure(facts, tags.netIncome, cutoff);
   const operatingCashFlow = ttmFigure(facts, tags.operatingCashFlow, cutoff);
   const capex = ttmFigure(facts, tags.capex, cutoff);

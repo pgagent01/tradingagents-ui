@@ -47,3 +47,5 @@
 - Massive uses authenticated owner-scoped credential resolution and a read-only Settings pilot; do not cache, export or pass its data to LLMs until plan-specific rights are verified, because endpoint access alone does not grant those rights.
 - Shared evidence contracts preserve type-specific provenance; unified news carries bounded duplicate/rejection/conflict audits into analyst/report snapshots, and disputed publication days are withheld regardless of audit display limits.
 - Stock processing is ticker-independent and runs before shared caching/model prompts; redundant quotes compare only matching currencies/security/time, and malformed or conflicting duplicate OHLCV bars are withheld instead of averaged.
+
+- A daily cron route (/api/public/jobs/refresh-data) only expires owner caches after new SEC filings and logs per-source health (no tickers/accounts) to data_refresh_runs; it never triggers paid AI.

@@ -4,6 +4,7 @@ import { DataPipelineDiagram, FrameworkDiagram } from '@/components/data-flow-di
 import { DecisionFlow } from '@/components/decision-flow';
 import { pageHead } from '@/lib/page-head';
 import { DataError } from '@/components/route-feedback';
+import { RefreshHealth } from '@/components/refresh-health';
 
 export const Route = createFileRoute('/_authenticated/data-flow')({
   head: () => pageHead('Data Flow & Sources', 'What data is collected, how it is cleaned and cached, and which analysts receive it.'),
@@ -59,6 +60,12 @@ function DataFlow() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section>
+        <h2 className="mb-1 text-sm font-semibold">Keeping data current</h2>
+        <p className="mb-3 text-xs text-muted-foreground">A daily job checks SEC for new filings and marks older saved figures stale, refreshes watchlist analyst views, and flags when a new yearly industry snapshot is due. Saved reports keep the data they used.</p>
+        <RefreshHealth />
       </section>
 
       <section>

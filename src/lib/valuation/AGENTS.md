@@ -17,3 +17,4 @@
 - Capex split (upkeep ≈ D&A) and the operating→net profit bridge inform analysts and the bear case but never raise base value; unexplained remainders stay labeled.
 - Industry norms come from a dated, versioned Damodaran snapshot mapped by SEC SIC plurality; they set margin fade targets and flags only, are withheld for analysis dates before the snapshot, and never replace reported figures.
 - Banks/insurers use the pure excess-return model with ROE blended toward the dated industry norm; a deterministic report review (no AI call) withholds model targets unsupported by the calculated range.
+- When no operating-income line is filed, derive it only from same-period reported operating-expense lines (cost, SG&A required) within 30% of revenue of pre-tax income, labelled as derived; never from pre-tax income.

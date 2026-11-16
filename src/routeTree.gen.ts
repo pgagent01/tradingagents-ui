@@ -27,6 +27,7 @@ import { Route as AuthenticatedAnalysisNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports_.$id'
 import { Route as AuthenticatedReportsCompareRouteImport } from './routes/_authenticated/reports_.compare'
 import { Route as AuthenticatedStocksTickerRouteImport } from './routes/_authenticated/stocks_.$ticker'
+import { Route as ApiPublicJobsRefreshDataRouteImport } from './routes/api/public/jobs/refresh-data'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -121,6 +122,12 @@ const AuthenticatedStocksTickerRoute =
     path: '/stocks/$ticker',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicJobsRefreshDataRoute =
+  ApiPublicJobsRefreshDataRouteImport.update({
+    id: '/api/public/jobs/refresh-data',
+    path: '/api/public/jobs/refresh-data',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/reports/$id': typeof AuthenticatedReportsIdRoute
   '/reports/compare': typeof AuthenticatedReportsCompareRoute
   '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
+  '/api/public/jobs/refresh-data': typeof ApiPublicJobsRefreshDataRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/reports/$id': typeof AuthenticatedReportsIdRoute
   '/reports/compare': typeof AuthenticatedReportsCompareRoute
   '/stocks/$ticker': typeof AuthenticatedStocksTickerRoute
+  '/api/public/jobs/refresh-data': typeof ApiPublicJobsRefreshDataRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/_authenticated/reports_/$id': typeof AuthenticatedReportsIdRoute
   '/_authenticated/reports_/compare': typeof AuthenticatedReportsCompareRoute
   '/_authenticated/stocks_/$ticker': typeof AuthenticatedStocksTickerRoute
+  '/api/public/jobs/refresh-data': typeof ApiPublicJobsRefreshDataRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/reports/$id'
     | '/reports/compare'
     | '/stocks/$ticker'
+    | '/api/public/jobs/refresh-data'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/reports/$id'
     | '/reports/compare'
     | '/stocks/$ticker'
+    | '/api/public/jobs/refresh-data'
   id:
     | '__root__'
     | '/'
@@ -240,6 +252,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports_/$id'
     | '/_authenticated/reports_/compare'
     | '/_authenticated/stocks_/$ticker'
+    | '/api/public/jobs/refresh-data'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -247,6 +260,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiResearchExecuteRoute: typeof ApiResearchExecuteRoute
+  ApiPublicJobsRefreshDataRoute: typeof ApiPublicJobsRefreshDataRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -377,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStocksTickerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/refresh-data': {
+      id: '/api/public/jobs/refresh-data'
+      path: '/api/public/jobs/refresh-data'
+      fullPath: '/api/public/jobs/refresh-data'
+      preLoaderRoute: typeof ApiPublicJobsRefreshDataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -422,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiResearchExecuteRoute: ApiResearchExecuteRoute,
+  ApiPublicJobsRefreshDataRoute: ApiPublicJobsRefreshDataRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

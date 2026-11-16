@@ -91,6 +91,36 @@ export type Database = {
         }
         Relationships: []
       }
+      data_refresh_runs: {
+        Row: {
+          checked: number
+          id: string
+          message: string | null
+          ran_at: string
+          refreshed: number
+          source: string
+          status: string
+        }
+        Insert: {
+          checked?: number
+          id?: string
+          message?: string | null
+          ran_at?: string
+          refreshed?: number
+          source: string
+          status: string
+        }
+        Update: {
+          checked?: number
+          id?: string
+          message?: string | null
+          ran_at?: string
+          refreshed?: number
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       invite_codes: {
         Row: {
           code: string
