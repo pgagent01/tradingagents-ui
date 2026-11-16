@@ -2,6 +2,9 @@
 
 Goal: close the weak areas from the four-stock comparison (targets far below Wall Street, 7-10 untraceable figures per report, no bank/pharma calculated targets) by adopting proven approaches from edgartools, FinanceToolkit, Damodaran data, FinRobot and VYNN. No Python is run; approaches are ported into the existing TypeScript modules.
 
+## Principle: works for any stock
+Every step is ticker-independent. Method selection is driven by data the app already gets for any company (SIC code / sector, filing type, currency, available figures): general DCF for operating companies, excess-return for banks/insurers, FFO/NAV for REITs, scenario methods for loss-makers, and "no target, explained" when inputs are insufficient. No stock-specific rules or hardcoded tickers. The four stocks (GOOGL, DELL, PFE, JPM) are only a test sample, plus a few unseen tickers (e.g. a REIT, an insurer, a non-US filer) to prove it generalises.
+
 ## 1. Industry-norm margin and growth forecasts (Damodaran)
 - Import Damodaran's free yearly industry tables (operating margin, ROIC, sales-to-capital, beta, growth) as a dated, versioned snapshot stored in the app.
 - Map each company to an industry via its SEC SIC code (fallback: Yahoo sector).
@@ -12,10 +15,10 @@ Goal: close the weak areas from the four-stock comparison (targets far below Wal
 ## 2. Bank and insurer valuation (FinanceToolkit formulas)
 - Add an excess-return model: value = book equity + PV of (ROE - cost of equity) x book equity, with P/TBV cross-check.
 - Source net interest margin, CET1-style capital, tangible book and ROE from SEC filings; mark missing values unavailable.
-- JPMorgan-style reports get a calculated range and target, or a stated reason if inputs are missing.
+- Any bank or insurer (detected by SIC code) get a calculated range and target, or a stated reason if inputs are missing.
 
 ## 3. Pharma / mature-company coverage
-- For Pfizer-type firms, run the full DCF with industry-norm fades plus a peer-multiple cross-check, so a target is produced when inputs are sufficient.
+- For any mature operating company, run the full DCF with industry-norm fades plus a peer-multiple cross-check, so a target is produced when inputs are sufficient.
 - Keep the existing "no target, explained" path for pre-revenue biotech.
 
 ## 4. Traceable figures (edgartools approach)
@@ -34,7 +37,7 @@ edgartools (MIT, Python) cannot run inside the app, so its methods are ported, n
 
 ## 6. Verification
 - Unit tests for industry fades, bank excess-return math, figure-ID matching and review checks, with concrete values.
-- Re-run the fixed four-stock set (GOOGL, DELL, PFE, JPM) after approval for paid runs, and compare targets, Wall Street gap, untraceable figures and citations against the 16 Nov results.
+- Re-run the four-stock set (GOOGL, DELL, PFE, JPM) plus 2-3 untested tickers from other industries after approval for paid runs, and compare targets, Wall Street gap, untraceable figures and citations against the 16 Nov results.
 
 ## Technical details
 - New modules: `src/lib/valuation/industry-norms.ts` (pure, dated snapshot), `src/lib/valuation/bank.ts`, `src/lib/report-review.ts`.
