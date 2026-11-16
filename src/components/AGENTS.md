@@ -1,0 +1,1 @@
+- Source disclosures use a shared accessible collapsible control and force visible contents in print so reducing screen clutter never removes exported evidence.
