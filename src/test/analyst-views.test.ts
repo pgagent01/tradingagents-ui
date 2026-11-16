@@ -54,3 +54,11 @@ describe('default growth setting', () => {
   it('recent follows latest year up to 35%', () => { expect(defaultGrowth(annual, 'recent').growth).toBeCloseTo(0.2); });
   it('defaults to a labeled 5% without data', () => { expect(defaultGrowth([], 'blend').growth).toBe(0.05); });
 });
+
+import { evidenceContext } from '@/lib/data-evidence';
+describe('analyst views reach every non-technical agent prompt', () => {
+  const v = buildAnalystViews({ ticker: 'X', cutoff: '2026-11-16', today: '2026-11-16', retrievedAt: '2026-11-16T00:00:00Z', consensus: [{ source: 'Yahoo Finance', sourceUrl: 'https://finance.yahoo.com', mean: 100, median: 100, high: 120, low: 80, analysts: 10, rating: 'buy', ratingMean: 2, currency: 'USD', retrievedAt: '2026-11-16T00:00:00Z' }], trend: [], actions: [] });
+  const ev = { macro: { status: 'unavailable', metrics: [] }, predictions: { status: 'unavailable', markets: [] }, analystViews: v } as never;
+  for (const agent of ['fundamentals', 'sentiment', 'news', 'debate', 'risk', 'synthesis']) it(agent, () => expect(evidenceContext(agent, ev)).toContain('wall_street_analyst_views'));
+  it('technical excluded', () => expect(evidenceContext('technical', ev)).not.toContain('wall_street_analyst_views'));
+});
