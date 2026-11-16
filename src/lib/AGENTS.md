@@ -4,3 +4,4 @@
 - News groups retain original dated coverage and publisher-feed excerpts; versioned owner-scoped caches and in-flight deduplication share retrieval without rewriting saved reports.
 - Source failure, empty results and stale fallback remain distinct; social sources activate only after supported access and retention terms are verified, preventing proxies from being called measured social sentiment.
 - Research references use exact-company dated Wikipedia revisions and bounded dated Firecrawl publisher excerpts; historical runs omit current references, and snapshots flow through existing analyst calls.
+- Wall Street analyst views live in src/lib/analyst-views.ts (pure) with an owner/credential-versioned cached server helper; they are outside opinion routed per role, never valuation inputs, and historical runs keep only firm actions dated by the cutoff.

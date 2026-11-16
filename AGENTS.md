@@ -48,4 +48,3 @@
 - Shared evidence contracts preserve type-specific provenance; unified news carries bounded duplicate/rejection/conflict audits into analyst/report snapshots, and disputed publication days are withheld regardless of audit display limits.
 - Stock processing is ticker-independent and runs before shared caching/model prompts; redundant quotes compare only matching currencies/security/time, and malformed or conflicting duplicate OHLCV bars are withheld instead of averaged.
 - Source disclosures use a shared accessible collapsible control and force visible contents in print so reducing screen clutter never removes exported evidence.
-- Wall Street analyst views live in src/lib/analyst-views.ts (pure) with an owner/credential-versioned cached server helper; they are outside opinion routed per role, never valuation inputs, and historical runs keep only firm actions dated by the cutoff.
