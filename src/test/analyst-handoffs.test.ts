@@ -16,8 +16,7 @@ vi.mock('@/lib/sources/free-sources.server', () => { const f = { status: 'unavai
 vi.mock('@/lib/reference-evidence.server',()=>({getReferenceEvidence:async()=>{const f={status:'available',cutoff:'2026-11-07',fetchedAt:'2026-11-07',cached:false,note:'secondary reference',items:[{title:'Lumentum',text:'Verified handoff reference',url:'https://en.wikipedia.org/w/index.php?oldid=123',publishedAt:'2026-11-06',kind:'encyclopedia'}]};return {wikipedia:f,firecrawl:f};}}));
 vi.mock('@/lib/company-profile.server',()=>({companyProfile:async()=>null}));
 vi.mock('@/lib/stock-service.server', () => ({ cachedStockData: async () => null }));
-vi.mock('@/lib/tiingo.server',()=>({getTiingoEvidence:async()=>({status:'available',cutoff:'2026-11-07',items:[{title:'Lumentum guidance',url:'https://news.example/guidance',publishedAt:'2026-11-06',text:'Tiingo handoff evidence'}]})}));
-vi.mock('@/lib/data-provider-settings.server',()=>({dataProviderSettings:async()=>[{provider:'tiingo',enabled:true,configured:true}]}));
+vi.mock('@/lib/data-provider-settings.server',()=>({dataProviderSettings:async()=>[{provider:'firecrawl',enabled:true,configured:true}]}));
 vi.mock('@/lib/stock-data.server', () => ({ historicalDailyCandles: async () => null }));
 vi.mock('ai', () => ({
   Output: { object: () => ({}) },
@@ -68,12 +67,10 @@ describe('real execution analyst handoffs', () => {
     expect(calls[2]).toContain('No social feed');
     for(const prompt of calls)expect(prompt).toContain('processed_evidence_quality');
     const evidence = storedReport['external_evidence'] as Record<string,unknown> | undefined;
-    expect((evidence?.['news'] as {audit:{version:string;retained:number}}).audit).toMatchObject({version:'news-v2',retained:3});
+    expect((evidence?.['news'] as {audit:{version:string;retained:number}}).audit).toMatchObject({version:'news-v2',retained:2});
     expect((evidence?.['news'] as {events:unknown[]}).events).toEqual(expect.arrayContaining([expect.objectContaining({title:'Lumentum earnings event',coverage:expect.arrayContaining([expect.objectContaining({excerpt:'Lumentum issued guidance.'})])})]));
     expect(evidence?.['references']).toMatchObject({wikipedia:{items:[{text:'Verified handoff reference'}]},firecrawl:{items:[{text:'Verified handoff reference'}]}});
     for(const index of [0,2,3,4,5,6])expect(calls[index]).toContain('Verified handoff reference');
-    for(const index of [0,2,3,4,5,6])expect(calls[index]).toContain('Tiingo handoff evidence');
-    expect(evidence?.['references']).toMatchObject({tiingo:{items:[{text:'Tiingo handoff evidence'}]}});
     for (const index of [2,3,4,5,6]) expect(calls[index]).toContain('Lumentum issued guidance.');
     const saved = rpc.mock.calls.find(([name]) => name === 'finalize_research_report');
     expect(saved).toBeDefined();

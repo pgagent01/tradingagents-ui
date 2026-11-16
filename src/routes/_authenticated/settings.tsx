@@ -28,7 +28,6 @@ import { PROVIDERS,DATA_PROVIDERS } from "@/lib/access-rules";
 import { getNvidiaKeys, updateNvidiaKeys } from '@/lib/nvidia-credentials.functions';
 import { CREDENTIAL_HELP } from '@/lib/credential-guidance';
 import { getMyDataProviders, setMyDataProvider } from '@/lib/data-provider-settings.functions';
-import { checkMyMassiveConnection } from '@/lib/massive.functions';
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -79,8 +78,6 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
   const remove = useServerFn(deleteMyApiKey);
   const test=useServerFn(testMyApiKey);
   const setEnabled=useServerFn(setMyDataProvider);
-  const checkMassive=useServerFn(checkMyMassiveConnection);
-  const massiveCheck=useMutation({mutationFn:()=>checkMassive({data:{ticker:'GOOGL'}}),onError:(e:Error)=>toast.error(e.message)});
   const providers=useQuery({queryKey:['my-data-providers'],queryFn:()=>getMyDataProviders(),enabled:dataOnly});
   const enableMut=useMutation({mutationFn:(data:{provider:string;enabled:boolean})=>setEnabled({data}),onSuccess:()=>{void qc.invalidateQueries({queryKey:['my-data-providers']});qc.removeQueries({queryKey:['stock-data']});},onError:(e:Error)=>toast.error(e.message)});
   const [validation,setValidation]=useState<Record<string,string>>({});
@@ -124,13 +121,12 @@ function ApiKeysPanel({dataOnly=false}:{dataOnly?:boolean}) {
     >
       {dataOnly?<p className="mb-3 text-xs text-muted-foreground"><a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get a FRED API key</a> · <a href="https://financialmodelingprep.com/developer/docs" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get an FMP API key</a> · FMP endpoint access depends on your plan. Without FMP, stocks use Yahoo and SEC. Missing macro data stays unavailable; Polymarket requires no key.</p>:<p className="mb-3 text-xs text-muted-foreground">OpenAI requires an API key from platform.openai.com. Consumer ChatGPT Plus/Pro subscriptions do not provide API access or programmatic requests. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">OpenAI Platform API Keys</a></p>}
       <div className="mb-3 space-y-2 text-xs text-muted-foreground">
-        <p>{dataOnly ? 'Optional keys: FRED for macroeconomic evidence; FMP and Alpha Vantage for financial data; Firecrawl and Tiingo for publisher evidence. Every account uses its own keys. Optional providers default off for other accounts; saving a key does not enable a provider. Requests use your provider quota or credits. Free sources remain available.' : 'Choose an AI provider below, get a key from that provider, paste it here, then Save key and Test key. Select it as your active execution provider for new analyses. NVIDIA keys have their own section below.'}</p>
+        <p>{dataOnly ? 'Optional keys: FRED for macroeconomic evidence; FMP and Alpha Vantage for financial data; Firecrawl for publisher evidence; Finnhub for analyst ratings. Every account uses its own keys. Optional providers default off for other accounts; saving a key does not enable a provider. Requests use your provider quota or credits. Free sources remain available.' : 'Choose an AI provider below, get a key from that provider, paste it here, then Save key and Test key. Select it as your active execution provider for new analyses. NVIDIA keys have their own section below.'}</p>
         {dataOnly && <p>SEC filings provide free annual/quarterly revenue, earnings, assets, liabilities and cash flow. Alpha Vantage overview enrichment is cached for 24 hours; its standard free limit is 25 requests per day, with endpoint access depending on your plan. <a href="https://www.alphavantage.co/premium/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Provider limits</a>. Agents receive available stock data for current-date research; historical runs do not use current snapshots.</p>}
         <p><a href={CREDENTIAL_HELP[provider]?.url} target="_blank" rel="noopener noreferrer" className="text-primary underline">Get your {CREDENTIAL_HELP[provider]?.name ?? provider} key</a> · To replace a rejected or expired key, select the same provider and save the replacement, then test it. Saved does not mean validated or funded.</p>
         {dataOnly && <p>No key needed: <a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Yahoo Finance</a>, <a href="https://www.sec.gov/edgar" target="_blank" rel="noopener noreferrer" className="text-primary underline">SEC EDGAR</a>, <a href="https://www.wikipedia.org" target="_blank" rel="noopener noreferrer" className="text-primary underline">Wikipedia</a> and <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Polymarket</a>. Availability and provider limits still apply.</p>}
       </div>
       {dataOnly && <div className="mb-4 divide-y divide-border">{providers.isError?<p role="alert" className="text-xs text-negative">Provider switches could not be loaded.</p>:providers.data?.map(p=><div key={p.provider} className="flex items-center justify-between gap-3 py-2"><Label htmlFor={`enable-${p.provider}`} className="text-xs">{CREDENTIAL_HELP[p.provider]?.name} · {p.configured?'Key configured':'Own key required'}</Label><Switch id={`enable-${p.provider}`} aria-label={`Enable ${CREDENTIAL_HELP[p.provider]?.name}`} checked={p.enabled} disabled={enableMut.isPending||(!p.enabled&&!p.configured)} onCheckedChange={enabled=>enableMut.mutate({provider:p.provider,enabled})}/></div>)}</div>}
-      {dataOnly && <div className="mb-4 space-y-2"><Button size="sm" variant="outline" disabled={massiveCheck.isPending} onClick={()=>massiveCheck.mutate()}><ShieldCheck className="h-3.5 w-3.5" />{massiveCheck.isPending?'Checking Massive…':'Check Massive access'}</Button>{massiveCheck.data && <p role="status" className="text-xs text-muted-foreground">{massiveCheck.data.message}</p>}</div>}
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <Label htmlFor={dataOnly?'data-provider':'provider'}>Provider</Label>

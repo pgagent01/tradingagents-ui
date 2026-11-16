@@ -40,3 +40,11 @@ describe('figure tracing with anchors', () => {
     expect(r.checked).toBe(2); expect(r.unverified).toBe(1);
   });
 });
+import { keyNumbers } from '@/lib/report-key-numbers';
+describe('report key numbers', () => {
+  it('computes upside and Wall Street gap from saved sections only', () => {
+    const k = keyNumbers({ valuation: { price: 100, intrinsicValue: 110, method: 'dcf' }, external_evidence: { analystViews: { consensus: [{ source: 'Yahoo Finance', mean: 150 }] } }, quality_review: { figures: { checked: 40, unverified: 3 }, warnings: [1, 2] } }, 120);
+    expect(k.upsidePct).toBe(20); expect(k.gapToWallStreetPct).toBe(-20); expect(k.untracedFigures).toBe(3); expect(k.warnings).toBe(2);
+  });
+  it('leaves missing values empty', () => { const k = keyNumbers({}, null); expect(k.price).toBeNull(); expect(k.upsidePct).toBeNull(); });
+});

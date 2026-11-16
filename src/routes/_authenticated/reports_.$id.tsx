@@ -3,6 +3,7 @@ import { ReportPeerSnapshot } from '@/components/report-peer-snapshot';
 import { ReportQuality } from '@/components/report-quality';
 import { ReportValuation } from '@/components/report-valuation';
 import { WallStreetView } from '@/components/wall-street-view';
+import { ReportKeyNumbers } from '@/components/report-key-numbers';
 import { ReportScorecard } from '@/components/report-scorecard';
 import { ReportCalibration } from '@/components/report-calibration';
 import {DataFreshness} from '@/components/data-freshness';
@@ -46,6 +47,7 @@ function ReportDetail() {
       <div className="flex flex-wrap gap-x-5 gap-y-2 border-y border-border py-2 font-mono text-[10px] text-muted-foreground"><span>{new Date(r.created_at).toLocaleString()} · Analysis {run.analysis_date}</span><span className="break-all">Model: {model}</span><span>Conviction {r.conviction_score===null?'Not provided':`${r.conviction_score}/100`}</span><span>Input <b className="text-foreground">{r.total_input_tokens.toLocaleString()}</b></span><span>Output <b className="text-foreground">{r.total_output_tokens.toLocaleString()}</b></span><span>Total <b className="text-foreground">{(r.total_input_tokens+r.total_output_tokens).toLocaleString()}</b></span><span>{run.is_demo?'Hypothetical':'Report'} USD <b className="text-foreground">{!run.is_demo&&r.total_input_tokens+r.total_output_tokens===0?'Not reported by provider':`$${Number(r.total_cost_usd).toFixed(4)}`}</b></span></div>
       <CreditMetric credits={run.is_demo?0:r.lovable_credits} basis={r.credit_basis} />
     </header>
+    <ReportKeyNumbers sections={r.sections} target={r.price_target==null?null:Number(r.price_target)} rating={r.recommendation} conviction={r.conviction_score}/>
     {!run.is_demo&&<p className="text-xs text-muted-foreground">AI-generated research · model-provided citations and prices are not independently verified. Missing evidence is not a recommendation.</p>}
     {run.is_demo&&<p className="border-l-2 border-warning pl-3 text-xs text-warning">DEMO ONLY · Simulated output, not investment research. No live financial data. Actual charge $0.</p>}
     <section className="grid gap-6 border-b border-border pb-6 lg:grid-cols-[3fr_1fr]"><div><h2 className="mb-3 text-xl font-semibold">Executive Summary</h2><Markdown text={r.executive_summary || 'The analyst did not provide an executive summary.'} /></div><dl className="grid grid-cols-3 gap-4 lg:grid-cols-1"><div><dt className="text-[10px] uppercase text-muted-foreground">Target price · USD</dt><dd className="mt-1 font-mono text-xl">{r.price_target===null?'Not provided':`$${Number(r.price_target).toFixed(2)}`}</dd></div><div><dt className="text-[10px] uppercase text-muted-foreground">Conviction rating</dt><dd className="mt-1 font-mono text-xl">{r.conviction_score===null?'Not provided':`${r.conviction_score}/100`}</dd></div><div><dt className="text-[10px] uppercase text-muted-foreground">Risk level</dt><dd className="mt-1 text-base font-medium">{risk}</dd></div></dl></section>

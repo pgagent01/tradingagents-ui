@@ -31,7 +31,7 @@ export function DataPipelineDiagram() {
       <Group label="Sources">
         <Node title="SEC filings" tone="muted" />
         <Node title="Market data" sub="Yahoo · FMP · Alpha Vantage" tone="muted" />
-        <Node title="News" sub="RSS · GDELT · Firecrawl · Tiingo" tone="muted" />
+        <Node title="News" sub="RSS · GDELT · Firecrawl" tone="muted" />
         <Node title="Macro" sub="FRED · World Bank" tone="muted" />
         <Node title="Other" sub="Wikipedia · Polymarket · FINRA" tone="muted" />
       </Group>

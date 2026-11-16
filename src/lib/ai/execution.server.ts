@@ -28,7 +28,6 @@ import { MODEL_OPTIONS } from '@/lib/research-config';
 import { getFundamentalEvidence, getNewsEvidence } from '@/lib/research-evidence.server';
 import { getFreeSourcesEvidence } from '@/lib/sources/free-sources.server';
 import { getReferenceEvidence } from '@/lib/reference-evidence.server';
-import { getTiingoEvidence } from '@/lib/tiingo.server';
 import { unifiedNews, technicalNewsEvents } from '@/lib/unified-news';
 import { dataProviderSettings } from '@/lib/data-provider-settings.server';
 import { companyProfile } from '@/lib/company-profile.server';
@@ -101,7 +100,6 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const withhold=(await import('@/lib/data-checks')).withholdTargetFor(checks,valuation.method);
   if(withhold&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
   const references=await getReferenceEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
-  references.tiingo=await getTiingoEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const companyContext=run.analysis_date===new Date().toISOString().slice(0,10)?await companyProfile(sb,userId,run.ticker).catch(()=>null):null;
   const unified=unifiedNews(news,references,run.ticker);
   const providerSettings=await dataProviderSettings(sb,userId).catch(()=>null);

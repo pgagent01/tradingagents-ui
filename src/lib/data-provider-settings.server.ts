@@ -22,7 +22,7 @@ export async function dataProviderSettings(sb: EvidenceClient, userId: string) {
   if (keys.error) throw new Error('Provider credentials could not be checked.');
   return Promise.all(DATA_PROVIDERS.map(async provider => ({
     provider, enabled: await dataProviderEnabled(sb, userId, provider),
-    configured: (keys.data ?? []).some(k => k.provider === provider) || (owner && (provider === 'firecrawl' ? Boolean(process.env['FIRECRAWL_API_KEY']) : provider === 'tiingo' ? Boolean(process.env['UDC_TIINGO_API_KEY']) : provider === 'massive' ? Boolean(process.env['UDC_MASSIVE_API_KEY']) : false)),
+    configured: (keys.data ?? []).some(k => k.provider === provider) || (owner && (provider === 'firecrawl' ? Boolean(process.env['FIRECRAWL_API_KEY']) : false)),
   })));
 }
 export async function saveDataProviderSetting(sb: EvidenceClient, userId: string, provider: CredentialProvider, enabled: boolean) {

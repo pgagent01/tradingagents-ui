@@ -15,7 +15,7 @@ export function unifiedNews(news: NewsEvidence, references: ReferenceEvidence, e
   const audit:EvidenceAudit={version:'news-v2',scope:'Normalized adapter candidates only; upstream filtering and provider coverage are not a complete news census.',received:0,retained:0,duplicates:0,rejected:0,truncated:0,conflicts:0,reasons:{},records:[]};
   const record=(reason:string,evidenceId?:string,alternatives?:EvidenceAudit['records'][number]['alternatives'])=>{audit.reasons[reason]=(audit.reasons[reason]??0)+1;if(audit.records.length<50)audit.records.push({reason,...(evidenceId?{evidenceId}:{}),...(alternatives?{alternatives}:{})});};
   const states = { ...news.sourceStates };
-  for (const [provider, feed] of [['firecrawl',references.firecrawl],['tiingo',references.tiingo]] as const) {
+  for (const [provider, feed] of [['firecrawl',references.firecrawl]] as const) {
     if (!feed) continue;
     states[provider] = { status:feed.status==='historical_unavailable'?'historical_unavailable':feed.httpStatus?'failed':feed.status==='available'?'available':'empty',count:feed.items.length,reason:feed.note };
     for (const item of feed.items) headlines.push({ title:item.title,publisher:canonicalNewsUrl(item.url)?new URL(item.url).hostname:provider,publishedAt:item.publishedAt??'',url:item.url,excerpt:item.text.slice(0,1800),excerptSource:'search_excerpt',feed:provider });

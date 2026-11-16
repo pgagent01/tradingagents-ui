@@ -12,7 +12,7 @@
 - Authenticate every account mutation with requireSupabaseAuth and scope queries to context.userId; roles never grant access to another user's credentials or research.
 - API keys are encrypted with Web Crypto AES-GCM and decrypted only in server helpers; server functions never return plaintext keys.
 - Firecrawl resolves the authenticated caller's encrypted personal key first; only the verified supplied-secret owner may use the project fallback, and credential-versioned caches prevent replacement/deletion from reusing prior-key evidence.
-- Optional keyed data/news providers use owner-scoped durable enable settings, default off for other accounts, and guard credential reads before cache access; Tiingo supplied credentials use the private connector only for its verified owner while personal keys use direct API calls.
+- Optional keyed data/news providers use owner-scoped durable enable settings, default off for other accounts, and guard credential reads before cache access.
 - Use shared browser-safe credential guidance for provider setup links and selected-role missing-key checks; optional data credentials never block AI research, and saved status never implies validation.
 - Alpha Vantage uses owner-encrypted credentials, not shared environment keys; cache sanitized overview evidence by owner and credential version, keep TTM ratios separate from filing-period statements, and feed enrichment through the shared stock service into current-date research.
 - NVIDIA stores up to three keys in a versioned encrypted envelope in the existing owner-only credential row; all credential writes preserve unrelated slots and Settings uses dedicated slot controls. Active-key selection is explicit, never quota-driven. NVIDIA model fallback is bounded to pre-stream transient HTTP failures, records actual models, and never replays quotas, denials, refusals or partial output to avoid bypassing limits or duplicate billing.
@@ -44,7 +44,7 @@
 - Owner-scoped scoring stays separate from saved research; adjusted prices are not point-in-time evidence.
 
 - Share dated company Wikipedia revisions between Stock Info and research; derived profiles include credential versions, settings failures fail closed, unified article IDs preserve retrieval provenance, and per-agent evidence snapshots stay in usage details across resume.
-- Massive uses authenticated owner-scoped credential resolution and a read-only Settings pilot; do not cache, export or pass its data to LLMs until plan-specific rights are verified, because endpoint access alone does not grant those rights.
+- Unused or unentitled sources (Massive, Tiingo) were removed to keep the evidence pipeline small; add a source only when it supplies new, rights-cleared evidence an analyst uses.
 - Shared evidence contracts preserve type-specific provenance; unified news carries bounded duplicate/rejection/conflict audits into analyst/report snapshots, and disputed publication days are withheld regardless of audit display limits.
 - Stock processing is ticker-independent and runs before shared caching/model prompts; redundant quotes compare only matching currencies/security/time, and malformed or conflicting duplicate OHLCV bars are withheld instead of averaged.
 
