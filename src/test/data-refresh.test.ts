@@ -38,3 +38,10 @@ describe('derived operating income', () => {
     expect(derivedOperatingIncome(fig(100), lines(30), fig(-20))).toBeNull();
   });
 });
+
+import { withholdTargetFor, type DataChecks } from '@/lib/data-checks';
+describe('target withholding by method', () => {
+  const c: DataChecks = { version: 1, withholdValuation: true, oldestCoreInput: null, filingAgeDays: null, checks: [{ code: 'ttm_alignment', severity: 'failure', period: null, message: '', usedByValuation: true }] };
+  it('does not withhold an insurer target for operating-income misalignment', () => expect(withholdTargetFor(c, 'excess_return')).toBe(false));
+  it('still withholds a DCF target', () => expect(withholdTargetFor(c, 'dcf')).toBe(true));
+});

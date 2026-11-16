@@ -97,7 +97,9 @@ export async function executeResearch(sb:SupabaseClient<Database>,userId:string,
   const secClass=await (await import('@/lib/valuation/peer-fallback.server')).secIndustry(run.ticker).catch(()=>null);
   let valuation=valuationEvidence(fundamentals,comparables,stockSnapshot?.price??null,run.analysis_date,{marketCap:marketCapOrDerived(stockSnapshot?.marketCap,stockSnapshot?.price,fundamentals?.valuationBalance?.shares?.value),rates,overrides:preferences.overrides,growthMode:preferences.growthMode,sic:secClass?.sic??null});
   const checks=dataChecks(fundamentals,run.analysis_date);
-  if(checks.withholdValuation&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
+  // Banks/insurers are valued from book equity and ROE; operating-income alignment does not feed that model.
+  const withhold=(await import('@/lib/data-checks')).withholdTargetFor(checks,valuation.method);
+  if(withhold&&valuation.priceTarget!==null)valuation={...valuation,priceTarget:null,limitations:[...valuation.limitations,'Calculated target withheld: a data check failed on figures the valuation uses.']};
   const references=await getReferenceEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   references.tiingo=await getTiingoEvidence(sb,userId,run.ticker,run.analysis_date,run.lookback_days);
   const companyContext=run.analysis_date===new Date().toISOString().slice(0,10)?await companyProfile(sb,userId,run.ticker).catch(()=>null):null;
