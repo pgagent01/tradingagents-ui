@@ -35,7 +35,16 @@ edgartools (MIT, Python) cannot run inside the app, so its methods are ported, n
 - Add a final checking pass (code, not a new paid agent) that verifies: rating matches conviction rules, target matches calculated range, each cited firm/date exists in evidence, and required sections are present.
 - Failures are listed in the report's quality section; severe failures withhold the target.
 
-## 6. Verification
+## 6. Keeping data current (scheduled refreshes)
+A scheduled background job checks sources and refreshes only what changed; each refresh is dated and versioned so old reports keep the data they used.
+- **Industry norms (Damodaran):** checked monthly; Damodaran republishes each January (mid-year updates sometimes). A new year becomes a new snapshot; the previous one is kept for historical reports.
+- **SEC filings and figure labels:** checked daily against SEC's recent-filings feed for watchlisted and recently researched stocks; a new 10-K/10-Q/8-K marks that company's cached figures stale so the next view or report fetches fresh ones. The tag-to-label mapping is reviewed when tests flag unmapped tags.
+- **Analyst targets and ratings:** refreshed daily for watchlisted stocks; otherwise on view, with a cache age shown.
+- **Prices:** unchanged (fetched on demand with short caches).
+- **Health check:** the job records success/failure per source; the Data Flow page shows last-updated dates and any failed source.
+- Runs server-side under the owner's own keys only; free sources (SEC, Damodaran) need no key. No paid AI runs are triggered automatically.
+
+## 7. Verification
 - Unit tests for industry fades, bank excess-return math, figure-ID matching and review checks, with concrete values.
 - Re-run the four-stock set (GOOGL, DELL, PFE, JPM) plus 2-3 untested tickers from other industries after approval for paid runs, and compare targets, Wall Street gap, untraceable figures and citations against the 16 Nov results.
 

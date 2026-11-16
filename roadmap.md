@@ -195,3 +195,4 @@
 - [x] Analyst rating visual: Buy/Hold/Sell totals + price range
 - [ ] Port edgartools statement-mapping approach into SEC figure extraction (in plan step 4)
 - [ ] Plan improvements must be ticker-independent; verify on untested stocks
+- [ ] Scheduled refresh job for industry norms, SEC filings, analyst views (plan step 6)
