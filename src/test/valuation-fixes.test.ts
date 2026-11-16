@@ -33,3 +33,10 @@ describe('rating/target consistency', () => {
     expect(reviewReport({ ...base, rating: 'HOLD', target: 450, price: 401 }).checks.find(c => c.id === 'rating-target-consistency')?.passed).toBe(true);
   });
 });
+import { reviewFigures } from '@/lib/report-quality';
+describe('figure tracing with anchors', () => {
+  it('verifies a percentage gap between target and consensus but not an invented one', () => {
+    const r = reviewFigures({ s: 'Our target is 65.2% below the analyst average; a 12.3% gap elsewhere.' }, {}, [139.41, 400.37]);
+    expect(r.checked).toBe(2); expect(r.unverified).toBe(1);
+  });
+});

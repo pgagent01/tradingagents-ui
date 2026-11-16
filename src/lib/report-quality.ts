@@ -79,8 +79,14 @@ export function checkFigures(text: string, pool: number[]): FigureCheck {
   }
   return { checked, unverified };
 }
-export function reviewFigures(texts: Record<string, string>, evidence: unknown): { warnings: ClaimWarning[]; checked: number; unverified: number } {
-  const pool = evidenceNumbers(evidence); const warnings: ClaimWarning[] = []; let checked = 0; let unverified = 0;
+/** Percentage gaps and ratios between key anchors (price, targets, consensus) so "X% below the analyst average" claims verify without accepting arbitrary numbers. */
+export function anchorRelations(anchors: (number | null | undefined)[]): number[] {
+  const a = [...new Set(anchors.filter((x): x is number => typeof x === 'number' && Number.isFinite(x) && x > 0))].slice(0, 12); const out: number[] = [];
+  for (const x of a) for (const y of a) if (x !== y) out.push((x / y - 1) * 100, x / y);
+  return out;
+}
+export function reviewFigures(texts: Record<string, string>, evidence: unknown, anchors: (number | null | undefined)[] = []): { warnings: ClaimWarning[]; checked: number; unverified: number } {
+  const pool = [...evidenceNumbers(evidence), ...anchorRelations(anchors)]; const warnings: ClaimWarning[] = []; let checked = 0; let unverified = 0;
   for (const [section, text] of Object.entries(texts)) {
     const r = checkFigures(text, pool); checked += r.checked; unverified += r.unverified.length;
     if (r.unverified.length) warnings.push({ code: 'unverified_figure', section, message: `${r.unverified.length} figure(s) in this section could not be matched to saved evidence. They may be derived, rounded differently or unsupported.`, evidence: r.unverified.slice(0, 6).join('; ') });
