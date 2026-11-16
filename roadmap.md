@@ -194,5 +194,14 @@
 - [ ] Capex upkeep/growth split; wider peer fallback; live 4-stock comparison (needs paid runs)
 - [x] Analyst rating visual: Buy/Hold/Sell totals + price range
 - [ ] Port edgartools statement-mapping approach into SEC figure extraction (in plan step 4)
-- [ ] Plan improvements must be ticker-independent; verify on untested stocks
+- [x] Plan improvements ticker-independent (SIC-driven); [ ] verify on untested stocks with paid runs
 - [ ] Scheduled refresh job for industry norms, SEC filings, analyst views (plan step 6)
+
+## Report-quality plan (16 Nov)
+- [x] 1 Industry-norm margin fades (Damodaran Jan 2026)
+- [x] 2 Bank/insurer excess-return valuation
+- [~] 3 Mature-company coverage: fades apply; Pfizer-type missing operating income still blocks DCF
+- [ ] 4 Figure IDs / edgartools-style statement mapping
+- [x] 5 Automatic report review
+- [ ] 6 Scheduled refreshes (SEC filings, analyst views, yearly Damodaran)
+- [ ] 7 Paid comparison runs (needs approval)
