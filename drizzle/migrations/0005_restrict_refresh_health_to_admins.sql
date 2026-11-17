@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Signed-in users can read refresh health" ON public.data_refresh_runs;
+CREATE POLICY "Admins can read refresh health" ON public.data_refresh_runs FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'::public.app_role));
